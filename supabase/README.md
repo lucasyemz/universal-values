@@ -1,5 +1,7 @@
-# Persistence
+# Banco de dados
 
-No database migrations have been applied. The next persistence milestone includes workspaces, memberships, sites and RLS, with tenant-isolation tests.
+A migration inicial cria workspaces, memberships, prévias e auditoria. Todas as tabelas usam RLS; usuários recebem apenas SELECT e execução das duas RPCs autorizadas.
 
-Before introducing any business mutation, implement the preview/validation/confirmation/audit workflow and transactional idempotency. Credentials and privileged keys must remain server-side.
+Nenhuma migration foi aplicada em banco remoto. Consulte o README da raiz para configurar o projeto de desenvolvimento.
+
+Execute `npm test` para verificar o esquema e as políticas em PostgreSQL embutido. A suíte emula a identidade do Supabase e não testa o serviço Auth real. Não use credenciais privilegiadas no frontend.

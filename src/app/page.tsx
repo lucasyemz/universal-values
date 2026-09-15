@@ -1,9 +1,11 @@
+import Link from "next/link";
+
 export default function HomePage() {
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-16 sm:py-24">
       <header className="mb-16 flex items-center justify-between gap-4">
         <span className="text-lg font-bold tracking-tight">Universal Values</span>
-        <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">Em desenvolvimento</span>
+        <Link href="/login" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-teal-800">Entrar</Link>
       </header>
       <section aria-labelledby="welcome-heading" className="max-w-2xl">
         <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">Um lugar para cada informação</p>
