@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { requireUser } from "@/modules/auth/service";
 import { logout } from "@/modules/auth/actions";
 import { listWorkspaces } from "@/modules/workspaces/service";
@@ -21,7 +22,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     {params.created && <p role="status" className="mt-6 text-teal-800">Workspace criado. A operação foi registrada no histórico.</p>}
     <section aria-label="Workspaces disponíveis" className="mt-8">
       {workspaces.length === 0 ? <p className="text-slate-600">Você ainda não participa de um workspace.</p> :
-        <ul className="grid gap-4 sm:grid-cols-2">{workspaces.map((workspace) => <li key={workspace.id} className="rounded-xl border border-slate-200 bg-white p-6"><h2 className="font-semibold">{workspace.name}</h2><p className="mt-2 text-sm text-slate-500">Conexão Webflow disponível em uma próxima etapa.</p></li>)}</ul>}
+        <ul className="grid gap-4 sm:grid-cols-2">{workspaces.map((workspace) => <li key={workspace.id} className="rounded-xl border border-slate-200 bg-white p-6"><h2 className="font-semibold">{workspace.name}</h2><Link href={`/dashboard/workspaces/${workspace.id}/sites`} className="mt-3 inline-block text-sm font-medium text-teal-800 underline">Gerenciar sites</Link></li>)}</ul>}
     </section>
     <form action={previewWorkspace} className="mt-10 max-w-lg space-y-4 rounded-xl border border-slate-200 bg-white p-6">
       <h2 className="text-xl font-semibold">Criar workspace</h2>

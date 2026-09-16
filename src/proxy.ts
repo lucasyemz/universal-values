@@ -24,4 +24,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/login", "/dashboard/:path*"] };
+export const config = { matcher: ["/login", "/dashboard/:path*", "/api/connectors/webflow/:path*"] };

@@ -47,9 +47,11 @@ Moedas inicialmente aceitas: BRL, USD e EUR. O schema de telefone verifica o for
 
 ## Próximos passos
 
+A conexão Webflow em modo de leitura está implementada. Siga [o guia de configuração](docs/webflow.md) para aplicar a segunda migration, registrar um Webflow App e habilitar OAuth. O fluxo permite escolher um site, revisar o vínculo e explorar coleções, campos e itens. A validação OAuth real depende das credenciais do App.
+
 1. Validar login, refresh, logout e isolamento com duas contas em Supabase de desenvolvimento.
 2. Validar confirmações concorrentes com conexões reais de banco.
-3. OAuth Webflow e prova de viabilidade de leitura/publicação em site de testes.
+3. Validar OAuth Webflow e leitura em site de testes com o App configurado.
 4. Scan, revisão de sugestões e criação de Managed Values.
 5. Escrita autorizada no CMS com conflitos, retomada e verificação.
 
