@@ -2,6 +2,9 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { loadSiteContent, webflowMessage } from "@/modules/sites/service";
 import { safeOffset } from "@/modules/sites/schema";
+import { PageHeader, Notice, StatusBadge, EmptyState, DataTable } from "@/components/ui";
+import { SiteContext } from "@/components/layout/app-shell";
+import { ScanLine } from "lucide-react";
 
 export default async function SitePage({ params, searchParams }: {
   params: Promise<{ id: string }>; searchParams: Promise<{ collection?: string; offset?: string }>;
@@ -12,32 +15,32 @@ export default async function SitePage({ params, searchParams }: {
   try { view = await loadSiteContent(id, query.collection, safeOffset(query.offset)); }
   catch (cause) {
     unstable_rethrow(cause);
-    return <main className="mx-auto max-w-3xl px-6 py-12"><Link href="/dashboard" className="text-teal-800 underline">Voltar aos workspaces</Link><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
+    return <main className="ui-page"><Link href="/dashboard" className="text-accent underline">Voltar aos workspaces</Link><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
   }
   const base = "/dashboard/sites/" + id;
-  return <main className="mx-auto max-w-5xl px-6 py-12">
-    <Link href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} className="text-sm text-teal-800">← Sites do workspace</Link>
-    <h1 className="mt-6 text-3xl font-semibold">{view.site.display_name}</h1>
-    <Link href={base + "/scans"} className="mt-4 inline-block rounded bg-teal-800 px-4 py-3 text-white">Scans e Managed Values</Link>
-    <p className="mt-3 text-slate-600">Explorador do CMS · conteúdo preparado no Webflow, que pode diferir do site publicado.</p>
+  return <main className="ui-page">
+    <SiteContext title={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
+    <Link href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} className="text-sm text-accent">← Sites do workspace</Link>
+    <PageHeader title={view.site.display_name} eyebrow="Explorador do CMS" description="Explore as coleções e confira o conteúdo disponível antes de preparar um scan." actions={<Link href={base + "/scans"} className="ui-btn ui-btn-primary"><ScanLine size={16} />Scans e Managed Values</Link>} />
+    <Notice>Conteúdo preparado no Webflow. Rascunhos e alterações ainda não publicadas podem aparecer aqui.</Notice>
     <section className="mt-8"><h2 className="text-xl font-semibold">Coleções</h2>
-      {!view.collections.length ? <p className="mt-4 text-slate-600">Este site não possui coleções disponíveis.</p> :
-        <nav aria-label="Coleções" className="mt-4 flex flex-wrap gap-3">{view.collections.map((collection) => <Link key={collection.id} href={base + "?collection=" + collection.id} aria-current={query.collection === collection.id ? "page" : undefined} className="rounded border border-slate-200 bg-white px-4 py-3 text-teal-800 aria-[current=page]:border-teal-700">{collection.displayName}</Link>)}</nav>}
+      {!view.collections.length ? <EmptyState title="Nenhuma coleção disponível" description="Confira as coleções e as permissões desta autorização no Webflow antes de iniciar um scan." /> :
+        <nav aria-label="Coleções" className="ui-tabs mt-4">{view.collections.map((collection) => <Link key={collection.id} href={base + "?collection=" + collection.id} aria-current={view.details?.id === collection.id ? "page" : undefined} className="ui-tab">{collection.displayName}</Link>)}</nav>}
     </section>
     {view.details && view.page && <section className="mt-10">
-      <h2 className="text-2xl font-semibold">{view.details.displayName}</h2>
+      <h2 className="text-xl font-semibold tracking-tight">{view.details.displayName}</h2>
       <details className="mt-4 rounded border bg-white p-4"><summary className="cursor-pointer font-medium">Campos da coleção ({view.details.fields.length})</summary>
-        <ul className="mt-4 space-y-2">{view.details.fields.map((field) => <li key={field.id}>{field.displayName} <span className="text-sm text-slate-500">({field.type})</span></li>)}</ul>
+        <ul className="mt-4 space-y-2">{view.details.fields.map((field) => <li key={field.id}>{field.displayName} <span className="text-sm text-faint">({field.type})</span></li>)}</ul>
       </details>
-      <p className="mt-6 text-sm text-slate-600">{view.page.pagination.total} itens · mostrando {view.page.items.length} nesta página.</p>
-      <ul className="mt-4 space-y-4">{view.page.items.map((item) => <li key={item.id + ":" + (item.cmsLocaleId ?? "")} className="rounded-xl border bg-white p-5">
-        <h3 className="font-semibold">{typeof item.fieldData.name === "string" ? item.fieldData.name : item.id}</h3>
-        <p className="mt-2 text-xs text-slate-500">{item.isDraft ? "Rascunho" : "Conteúdo preparado"}{item.isArchived ? " · Arquivado" : ""}{item.cmsLocaleId ? " · Locale: " + item.cmsLocaleId : ""}</p>
-        <dl className="mt-4 space-y-3">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" ? value : JSON.stringify(value)}</dd></div>)}</dl>
-      </li>)}</ul>
+      <p className="mt-6 text-sm text-muted">{view.page.pagination.total} itens · mostrando {view.page.items.length} nesta página.</p>
+      <div className="mt-4"><DataTable label="Itens do CMS"><thead><tr><th>Item</th><th>Estado</th><th>Conteúdo</th></tr></thead><tbody>{view.page.items.map((item) => <tr key={item.id + ":" + (item.cmsLocaleId ?? "")}>
+        <td className="min-w-44 align-top"><h3 className="font-semibold">{typeof item.fieldData.name === "string" ? item.fieldData.name : item.id}</h3>{item.cmsLocaleId && <p className="mt-2 break-all text-xs text-muted">Locale: {item.cmsLocaleId}</p>}</td>
+        <td className="align-top"><StatusBadge status={item.isDraft ? "draft" : "ready"} label={item.isDraft ? "Rascunho" : "Preparado"} />{item.isArchived && <p className="mt-2 text-xs text-muted">Arquivado</p>}</td>
+        <td className="min-w-64"><details><summary className="font-medium text-accent">Ver campos do item</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" ? value : <details><summary className="text-xs text-muted">Ver dados estruturados</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
+      </tr>)}</tbody></DataTable></div>
       <nav aria-label="Paginação de itens" className="mt-6 flex gap-6">
-        {view.page.pagination.offset > 0 && <Link className="text-teal-800 underline" href={base + "?collection=" + view.details.id + "&offset=" + Math.max(0, view.page.pagination.offset - 25)}>Anterior</Link>}
-        {view.page.pagination.offset + view.page.pagination.limit < view.page.pagination.total && <Link className="text-teal-800 underline" href={base + "?collection=" + view.details.id + "&offset=" + (view.page.pagination.offset + view.page.pagination.limit)}>Próxima</Link>}
+        {view.page.pagination.offset > 0 && <Link className="text-accent underline" href={base + "?collection=" + view.details.id + "&offset=" + Math.max(0, view.page.pagination.offset - 25)}>Anterior</Link>}
+        {view.page.pagination.offset + view.page.pagination.limit < view.page.pagination.total && <Link className="text-accent underline" href={base + "?collection=" + view.details.id + "&offset=" + (view.page.pagination.offset + view.page.pagination.limit)}>Próxima</Link>}
       </nav>
     </section>}
   </main>;

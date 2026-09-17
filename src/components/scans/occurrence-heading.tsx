@@ -8,7 +8,7 @@ export function OccurrenceHeading({ occurrence }: { occurrence: Occurrence }) {
     {display.imageUrl && <ImageThumbnail url={display.imageUrl} alt={display.title} />}
     <span className="min-w-0">
       <span className="block break-words font-semibold">{display.title}</span>
-      {display.subtitle && <span className="mt-1 block break-all text-sm font-normal text-slate-500">{display.subtitle}</span>}
+      {display.subtitle && <span className="mt-1 block break-all text-sm font-normal text-faint">{display.subtitle}</span>}
     </span>
   </span>;
 }

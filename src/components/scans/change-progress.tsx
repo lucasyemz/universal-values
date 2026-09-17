@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { runChangeStep } from "@/modules/scans/change-actions";
+import { Progress, StatusBadge } from "@/components/ui";
 
 export function ChangeProgress({ id, cursor, total, paused }: { id: string; cursor: number; total: number; paused: boolean }) {
   const router = useRouter();
@@ -26,5 +27,5 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
     }, 5000);
     return () => { disposed = true; clearTimeout(timer); };
   }, [active, id, position, router]);
-  return <section className="my-6 rounded border bg-white p-5"><p role="status">{position} de {total} campos processados.</p><p className="mt-2 text-sm">Mantenha esta página aberta. Ao voltar, o processamento retoma dos resultados salvos.</p>{error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}{!active && position < total && <button onClick={() => { setError(""); setActive(true); }} className="mt-3 rounded border px-4 py-2">Retomar</button>}</section>;
+  return <section className="ui-card my-6 p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{position} de {total} campos processados</p><StatusBadge status={active ? "confirmed" : "paused"} /></div><Progress value={position} max={total} label="Campos processados" /><p className="mt-3 text-sm text-muted">Mantenha esta página aberta. Ao voltar, o processamento retoma dos resultados salvos.</p>{error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}{!active && position < total && <button onClick={() => { setError(""); setActive(true); }} className="mt-3 ui-btn">Retomar</button>}</section>;
 }

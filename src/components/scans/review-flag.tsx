@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { setContentReviewed } from "@/modules/scans/review-actions";
+import { Flag } from "lucide-react";
+import { StatusBadge } from "@/components/ui";
 
 export function ReviewFlag({ scanId, pendingIds, reviewedIds }: { scanId: string; pendingIds: string[]; reviewedIds: string[] }) {
   const router = useRouter();
@@ -10,13 +12,13 @@ export function ReviewFlag({ scanId, pendingIds, reviewedIds }: { scanId: string
   const [error, setError] = useState("");
   return <section aria-label="Marcação de revisão" className="mb-4 border-b pb-4">
     <div className="flex flex-wrap gap-3">
-      {!!pendingIds.length && <button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: true, ids: pendingIds }); }} className="rounded border border-teal-700 px-3 py-2 text-sm text-teal-800">⚑ Marcar como revisado</button>}
-      {!!reviewedIds.length && <><span className="rounded-full bg-teal-50 px-3 py-2 text-sm text-teal-800">⚑ {reviewedIds.length} revisadas</span><button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: false, ids: reviewedIds }); }} className="rounded border px-3 py-2 text-sm">Voltar para pendentes</button></>}
+      {!!pendingIds.length && <button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: true, ids: pendingIds }); }} className="ui-btn ui-btn-ghost text-accent"><Flag size={14} aria-hidden="true" />Marcar como revisado</button>}
+      {!!reviewedIds.length && <><StatusBadge status="reviewed" label={`${reviewedIds.length} revisadas`} /><button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: false, ids: reviewedIds }); }} className="ui-btn ui-btn-ghost">Voltar para pendentes</button></>}
     </div>
-    {preview && <div className="mt-3 rounded bg-slate-50 p-4">
+    {preview && <div className="mt-3 rounded bg-subtle p-4">
       <p className="text-sm">{preview.reviewed ? `Marcar ${preview.ids.length} ocorrências como revisadas? Elas sairão de Pendentes neste e nos próximos scans enquanto a origem, o valor e o conteúdo do campo permanecerem iguais. Você poderá encontrá-las em Revisados ou Todos.` : `Voltar ${preview.ids.length} ocorrências para Pendentes neste e nos próximos scans?`}</p>
-      <p className="mt-2 text-xs text-slate-600">A marcação não aplica nem salva edições digitadas nos campos. O Webflow não será alterado.</p>
-      <div className="mt-3 flex gap-3"><button type="button" disabled={busy} className="rounded bg-teal-800 px-3 py-2 text-sm text-white disabled:opacity-50" onClick={async () => {
+      <p className="mt-2 text-xs text-muted">A marcação não aplica nem salva edições digitadas nos campos. O Webflow não será alterado.</p>
+      <div className="mt-3 flex gap-3"><button type="button" disabled={busy} className="rounded bg-accent px-3 py-2 text-sm text-white disabled:opacity-50" onClick={async () => {
         setBusy(true); setError("");
         try {
           const result = await setContentReviewed({ id: preview.id, scanId, occurrenceIds: preview.ids, reviewed: preview.reviewed, confirmed: true });

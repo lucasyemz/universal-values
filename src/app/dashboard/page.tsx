@@ -1,35 +1,26 @@
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
-import { requireUser } from "@/modules/auth/service";
-import { logout } from "@/modules/auth/actions";
-import { listWorkspaces } from "@/modules/workspaces/service";
+import { ArrowRight, Globe2, Plus, ShieldCheck } from "lucide-react";
+import { getWorkspaceNavigation } from "@/components/layout/workspace-data";
 import { previewWorkspace } from "@/modules/workspaces/actions";
+import { Card, EmptyState, Notice, PageHeader, SectionHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 export const dynamic = "force-dynamic";
-
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string }> }) {
-  const { user } = await requireUser();
-  const workspaces = await listWorkspaces();
+  const workspaces = await getWorkspaceNavigation();
   const params = await searchParams;
-  return <main className="mx-auto max-w-4xl px-6 py-12">
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <h1 className="text-3xl font-semibold">Seus workspaces</h1>
-      <details className="text-sm"><summary className="cursor-pointer">{user.email} · Sessão</summary>
-        <form action={logout} className="mt-3 rounded border bg-white p-4"><p>Sair desta sessão neste navegador?</p><button className="mt-3 font-semibold text-teal-800">Confirmar saída</button></form>
-      </details>
-    </header>
-    {params.error && <p role="alert" className="mt-6 rounded border border-red-200 bg-red-50 p-4">Não foi possível concluir a operação. Confira os dados e gere uma nova prévia se necessário.</p>}
-    {params.created && <p role="status" className="mt-6 text-teal-800">Workspace criado. A operação foi registrada no histórico.</p>}
-    <section aria-label="Workspaces disponíveis" className="mt-8">
-      {workspaces.length === 0 ? <p className="text-slate-600">Você ainda não participa de um workspace.</p> :
-        <ul className="grid gap-4 sm:grid-cols-2">{workspaces.map((workspace) => <li key={workspace.id} className="rounded-xl border border-slate-200 bg-white p-6"><h2 className="font-semibold">{workspace.name}</h2><Link href={`/dashboard/workspaces/${workspace.id}/sites`} className="mt-3 inline-block text-sm font-medium text-teal-800 underline">Gerenciar sites</Link></li>)}</ul>}
-    </section>
-    <form action={previewWorkspace} className="mt-10 max-w-lg space-y-4 rounded-xl border border-slate-200 bg-white p-6">
-      <h2 className="text-xl font-semibold">Criar workspace</h2>
-      <p className="text-sm leading-6 text-slate-600">Um espaço para organizar os sites da sua equipe. Você será o proprietário. Revise o nome na próxima etapa antes de confirmar.</p>
-      <input type="hidden" name="id" value={randomUUID()} />
-      <label className="block text-sm font-medium">Nome<input name="name" required minLength={2} maxLength={80} className="mt-2 block w-full rounded border border-slate-300 p-3" placeholder="Minha empresa" /></label>
-      <button className="rounded bg-teal-800 px-4 py-3 font-medium text-white">Revisar criação</button>
-    </form>
+  return <main className="ui-page">
+    <PageHeader eyebrow="Seu centro de controle" title="Visão geral" description="Informações consistentes. Mudanças sob seu controle. Escolha um workspace para acessar seus sites." actions={<Link className="ui-btn ui-btn-primary" href="#create-workspace"><Plus size={16} />Criar workspace</Link>} />
+    {params.error && <Notice tone="danger" title="Não foi possível concluir">Confira os dados e gere uma nova prévia se necessário.</Notice>}
+    {params.created && <Notice tone="success" title="Workspace criado">Agora você pode conectar seu site Webflow.</Notice>}
+    <div className="grid items-start gap-8 xl:grid-cols-[1fr_340px]">
+      <section aria-label="Workspaces disponíveis"><SectionHeader title="Seus workspaces" description={`${workspaces.length} ${workspaces.length === 1 ? "workspace disponível" : "workspaces disponíveis"}`} />
+        {!workspaces.length ? <EmptyState title="Seu primeiro workspace" description="Organize seus sites, scans e Managed Values em um só espaço. Comece criando um workspace." action={<Link href="#create-workspace" className="ui-btn ui-btn-primary">Criar workspace</Link>} /> :
+          <ul className="space-y-3">{workspaces.map((workspace) => <li key={workspace.id}><Link href={`/dashboard/workspaces/${workspace.id}/sites`} className="ui-card flex items-center gap-4 p-5 hover:border-accent"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Globe2 size={21} /></span><div className="min-w-0 flex-1"><h2 className="truncate text-base font-semibold">{workspace.name}</h2><p className="mt-1 text-xs text-muted">Sites, scans e valores centralizados</p></div><span className="hidden text-xs font-medium text-accent sm:block">Abrir workspace</span><ArrowRight size={16} className="text-accent" /></Link></li>)}</ul>}
+        <Card className="mt-8" id="create-workspace"><SectionHeader title="Criar workspace" description="Dê um nome ao espaço que vai reunir seus sites." /><form action={previewWorkspace} className="space-y-4"><input type="hidden" name="id" value={randomUUID()} /><label className="block text-sm font-medium">Nome do workspace<input name="name" required minLength={2} maxLength={80} className="mt-2 block w-full" placeholder="Minha empresa" /></label><p className="text-xs text-muted">Você será o proprietário. Revise o nome na próxima etapa.</p><SubmitButton pendingLabel="Preparando revisão…">Revisar criação<ArrowRight size={15} /></SubmitButton></form></Card>
+      </section>
+      <aside className="space-y-5"><Card><ShieldCheck size={22} className="mb-4 text-accent" /><h2 className="text-base font-semibold">Cada mudança, uma decisão sua.</h2><p className="mt-3 text-sm leading-6 text-muted">O scan encontra as repetições. Você escolhe o que mudar, confere a prévia e confirma a aplicação no CMS.</p><div className="mt-6 space-y-4 border-t pt-5">{["Conecte um site Webflow", "Encontre e revise os valores", "Confirme as alterações"].map((step, i) => <p key={step} className="flex gap-3 text-sm"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-subtle text-xs text-muted">{i + 1}</span>{step}</p>)}</div></Card><p className="px-2 text-xs leading-6 text-muted">As atualizações ficam no CMS. A publicação do site continua sob seu controle no Webflow.</p></aside>
+    </div>
   </main>;
 }

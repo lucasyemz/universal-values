@@ -1,26 +1,11 @@
 import Link from "next/link";
+import { ArrowRight, ScanLine, Layers3, ShieldCheck } from "lucide-react";
+import { Brand } from "@/components/layout/brand";
 
 export default function HomePage() {
-  return (
-    <main className="mx-auto min-h-screen max-w-5xl px-6 py-16 sm:py-24">
-      <header className="mb-16 flex items-center justify-between gap-4">
-        <span className="text-lg font-bold tracking-tight">Universal Values</span>
-        <Link href="/login" className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-teal-800">Entrar</Link>
-      </header>
-      <section aria-labelledby="welcome-heading" className="max-w-2xl">
-        <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-teal-700">Um lugar para cada informação</p>
-        <h1 id="welcome-heading" className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">Mantenha os valores do seu site em sintonia.</h1>
-        <p className="mt-6 text-lg leading-8 text-slate-600">Encontre preços, telefones e datas repetidos. Escolha quais representam a mesma informação e acompanhe suas alterações em um só lugar.</p>
-      </section>
-      <section aria-labelledby="start-heading" className="mt-12 rounded-2xl border border-slate-200 bg-white p-8">
-        <h2 id="start-heading" className="text-xl font-semibold">Seu primeiro site</h2>
-        <p className="mt-3 max-w-2xl leading-7 text-slate-600">Nenhum site conectado. A conexão com Webflow estará disponível na próxima etapa.</p>
-        <ol className="mt-8 grid gap-6 sm:grid-cols-3">
-          <li><h3 className="font-semibold">1. Conecte seu site</h3><p className="mt-2 text-sm leading-6 text-slate-600">Autorize a leitura do conteúdo no Webflow.</p></li>
-          <li><h3 className="font-semibold">2. Revise os valores</h3><p className="mt-2 text-sm leading-6 text-slate-600">Selecione as ocorrências que deseja gerenciar juntas.</p></li>
-          <li><h3 className="font-semibold">3. Confirme alterações</h3><p className="mt-2 text-sm leading-6 text-slate-600">Confira a prévia antes de autorizar uma atualização.</p></li>
-        </ol>
-      </section>
-    </main>
-  );
+  return <main className="mx-auto max-w-6xl px-6 py-8"><header className="flex items-center justify-between gap-4"><Link href="/"><Brand /></Link><Link href="/login" className="ui-btn">Entrar<ArrowRight size={15} /></Link></header>
+    <section className="mx-auto max-w-3xl py-24 text-center sm:py-32"><span className="rounded-full border bg-surface px-4 py-2 text-xs font-medium text-muted">Feito para o seu CMS Webflow</span><h1 className="mt-8 text-4xl font-semibold leading-[1.15] tracking-tight sm:text-6xl">Uma informação.<br /><span className="text-accent">Consistente em todo lugar.</span></h1><p className="mx-auto mt-7 max-w-xl text-lg leading-8 text-muted">Encontre informações repetidas no seu site, revise cada ocorrência e atualize seu CMS com confiança.</p><Link className="ui-btn ui-btn-primary mt-8" href="/login">Acessar meu workspace<ArrowRight size={16} /></Link><p className="mt-4 text-xs text-muted">Prévia antes de aplicar. Publicação sob seu controle.</p></section>
+    <section aria-label="Como funciona" className="grid gap-5 pb-16 sm:grid-cols-3">{[{ Icon: ScanLine, title: "Encontre o que se repete", body: "Preços, textos, links e imagens nas coleções que você escolher." }, { Icon: Layers3, title: "Organize as ocorrências", body: "Revise os grupos de valores iguais e mantenha o foco no que importa." }, { Icon: ShieldCheck, title: "Mude com segurança", body: "Confira o antes e depois. Só aplique quando estiver pronto." }].map(({ Icon, title, body }) => <article key={title} className="ui-card p-7"><Icon size={22} className="mb-5 text-accent" /><h2 className="text-base font-semibold">{title}</h2><p className="mt-3 text-sm leading-6 text-muted">{body}</p></article>)}</section>
+    <footer className="border-t py-6 text-xs text-muted">Universal Values · Informações do seu site, gerenciadas em um só lugar.</footer>
+  </main>;
 }
