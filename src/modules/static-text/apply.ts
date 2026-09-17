@@ -13,8 +13,8 @@ export interface TextPort {
   write(id: string, text: string): Promise<void>;
 }
 export interface AuditStore {
-  load(): AuditEvent[];
-  append(event: AuditEvent): void;
+  load(): AuditEvent[] | Promise<AuditEvent[]>;
+  append(event: AuditEvent): void | Promise<void>;
 }
 
 function sameContext(a: PageContext, b: PageContext) {
@@ -26,7 +26,7 @@ export async function applyPlan(input: TextPlan, confirmed: boolean, port: TextP
   const plan = planSchema.parse(input);
   if (!confirmed) throw new Error("Confirme a prévia antes de aplicar.");
   if (plan.expiresAt < Date.now()) throw new Error("Prévia expirada. Gere outra.");
-  const existing = store.load().filter(event => event.plan.id === plan.id);
+  const existing = (await store.load()).filter(event => event.plan.id === plan.id);
   if (existing.some(event => JSON.stringify(event.plan) !== JSON.stringify(plan))) throw new Error("Prévia alterada.");
   const confirmedAt = existing[0]?.confirmedAt ?? new Date().toISOString();
   const record = (status: AuditEvent["status"], nodeId?: string) => store.append({ plan, confirmedAt, status, nodeId, at: new Date().toISOString() });
@@ -39,30 +39,30 @@ export async function applyPlan(input: TextPlan, confirmed: boolean, port: TextP
     const current = await port.read(change.id);
     const completed = existing.some(event => event.nodeId === change.id && ["applied", "already_applied"].includes(event.status));
     if ((completed && current !== change.after) || (current !== change.before && current !== change.after)) {
-      record("conflict", change.id);
+      await record("conflict", change.id);
       throw new Error("Um texto mudou ou deixou de ser editável. Nenhuma nova escrita foi iniciada.");
     }
   }
-  if (!existing.length) record("confirmed");
+  if (!existing.some(event => event.status === "confirmed")) await record("confirmed");
   for (const change of plan.changes) {
     await checkContext();
-    const history = store.load().filter(event => event.plan.id === plan.id && event.nodeId === change.id);
+    const history = (await store.load()).filter(event => event.plan.id === plan.id && event.nodeId === change.id);
     if (history.some(event => ["applied", "already_applied"].includes(event.status))) continue;
     const current = await port.read(change.id);
-    if (current === change.after) { record("already_applied", change.id); continue; }
+    if (current === change.after) { await record("already_applied", change.id); continue; }
     if (history.some(event => ["dispatching", "uncertain"].includes(event.status))) throw new Error("Resultado anterior incerto. Confira o texto no Designer; não repetimos a escrita.");
-    if (current !== change.before) { record("conflict", change.id); throw new Error("Conflito de conteúdo. Faça uma nova busca."); }
+    if (current !== change.before) { await record("conflict", change.id); throw new Error("Conflito de conteúdo. Faça uma nova busca."); }
     await checkContext();
     // Persist intent before touching Webflow. If storage fails, no write occurs.
-    record("dispatching", change.id);
+    await record("dispatching", change.id);
     try {
       await port.write(change.id, change.after);
       await checkContext();
       if (await port.read(change.id) !== change.after) throw new Error("Leitura após escrita diferente.");
     } catch {
-      record("uncertain", change.id);
+      await record("uncertain", change.id);
       throw new Error("Não foi possível confirmar o resultado. Confira o Designer e exporte o histórico. O lote pode estar parcialmente aplicado.");
     }
-    record("applied", change.id);
+    await record("applied", change.id);
   }
 }

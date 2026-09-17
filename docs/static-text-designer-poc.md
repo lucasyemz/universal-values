@@ -1,5 +1,7 @@
 # Teste de textos estáticos no Webflow Designer
 
+> **Versão atual v0.5:** a extensão agora exige conexão com o dashboard e salva novas prévias/auditoria no Supabase. Siga [Designer e dashboard](./designer-dashboard.md) para aplicar a migration 009 e conectar. As instruções de histórico local abaixo descrevem o protótipo v0.4 e seus registros antigos, que continuam exportáveis.
+
 ## Preparação
 
 Esta é uma extensão experimental separada do dashboard, no mesmo repositório. Use um site de teste **sem Localization**. Não precisa de token, migration ou credenciais do Supabase. A autenticação e as permissões de edição são as da sessão aberta no Designer.

@@ -12,6 +12,13 @@ function fixture() {
   return { context, plan, port, events, store };
 }
 describe("confirmed Designer writes", () => {
+  it("awaits central audit persistence and blocks a write when dispatch recording fails", async () => {
+    const f = fixture();
+    f.store.load = async () => f.events;
+    f.store.append = async event => { await Promise.resolve(); if (event.status === "dispatching") throw new Error("offline"); f.events.push(event); };
+    await expect(applyPlan(f.plan, true, f.port, f.store)).rejects.toThrow("offline");
+    expect(f.port.write).not.toHaveBeenCalled();
+  });
   it("requires confirmation and a valid non-expired preview", async () => {
     const f = fixture();
     await expect(applyPlan(f.plan, false, f.port, f.store)).rejects.toThrow("Confirme");

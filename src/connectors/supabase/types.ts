@@ -10,6 +10,8 @@ type ReadTable<Row> = {
 export type Database = {
   public: {
     Tables: {
+      designer_sessions: ReadTable<{ id: string; site_id: string; actor_id: string; created_at: string; expires_at: string; revoked_at: string | null }>;
+      designer_changes: ReadTable<{ id: string; site_id: string; actor_id: string; session_id: string; plan: Json; search_text: string; events: Json; created_at: string; expires_at: string }>;
       cms_change_requests: ReadTable<{ reverts_request_id: string | null; id: string; scan_id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; changes: Json; status: string; cursor: number; total: number; dispatched: boolean; lease_token: string | null; lease_until: string | null; retry_at: string | null; results: Json; expires_at: string; created_at: string }>;
       cms_scans: ReadTable<{ id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; plan: Json; status: string; collection_index: number; item_offset: number; revision: number; items_read: number; occurrences_count: number; truncated: boolean; skipped_fields: number; error_code: string | null; retry_at: string | null; expires_at: string; created_at: string; lease_token: string | null; lease_until: string | null }>;
       scan_occurrences: ReadTable<{ id: string; scan_id: string; site_id: string; workspace_id: string; collection_id: string; collection_name: string; item_id: string; item_name: string; locale: string; field_slug: string; field_name: string; field_type: string; source_value: string; raw_match: string; start_pos: number; end_pos: number; canonical: Json; source_key: string }>;
@@ -27,6 +29,9 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      authorize_designer_session: { Args: { p_id: string; p_site_id: string; p_token_hash: string }; Returns: string };
+      revoke_designer_session: { Args: { p_id: string }; Returns: undefined };
+      designer_gateway: { Args: { p_token_hash: string; p_webflow_site_id: string; p_action: string; p_payload: Json }; Returns: Json };
       set_scan_content_reviewed: { Args: { p_id: string; p_scan_id: string; p_occurrence_ids: string[]; p_reviewed: boolean }; Returns: string };
       scan_reviewed_occurrences: { Args: { p_scan_id: string }; Returns: { occurrence_id: string }[] };
       preview_cms_revert: { Args: { p_id: string; p_original_id: string; p_sources?: Json }; Returns: string };

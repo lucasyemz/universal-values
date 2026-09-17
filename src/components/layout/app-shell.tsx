@@ -39,6 +39,7 @@ export function AppShell({ children, workspaces, email, workspaceError }: { chil
       {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Sites</Link>}
       {siteBase && <><p className="px-3 pb-1 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">Neste site</p>
         <Link onClick={close} href={siteBase} className="ui-nav-link" aria-current={pathname === siteBase ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Explorar CMS</Link>
+        <Link onClick={close} href={siteBase + "/static"} className="ui-nav-link" aria-current={pathname === siteBase + "/static" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />Páginas estáticas</Link>
         <Link onClick={close} href={siteBase + "/scans#recent-scans"} className="ui-nav-link" aria-current={pathname.startsWith("/dashboard/scans/") || pathname === siteBase + "/scans" ? "page" : undefined}><ScanLine size={17} aria-hidden="true" />Scans</Link>
         <Link onClick={close} href={siteBase + "/scans#managed-values"} className="ui-nav-link" aria-current={pathname.includes("/managed-values/") ? "page" : undefined}><Layers3 size={17} aria-hidden="true" />Managed Values</Link>
         <Link onClick={close} href={siteBase + "/scans#changes"} className="ui-nav-link" aria-current={pathname.includes("/changes/") ? "page" : undefined}><History size={17} aria-hidden="true" />Alterações</Link>
