@@ -47,15 +47,17 @@ Moedas inicialmente aceitas: BRL, USD e EUR. O schema de telefone verifica o for
 
 ## Próximos passos
 
-A conexão Webflow em modo de leitura está implementada. Siga [o guia de configuração](docs/webflow.md) para aplicar a segunda migration, registrar um Webflow App e habilitar OAuth. O fluxo permite escolher um site, revisar o vínculo e explorar coleções, campos e itens. A validação OAuth real depende das credenciais do App.
+O primeiro scan de CMS e a criação de Managed Values estão implementados. Consulte [o guia de scans](docs/scans.md) para aplicar a terceira migration, revisar a cobertura e executar o fluxo. O scan processa lotes enquanto a página está aberta e salva o progresso para retomada.
+
+A conexão Webflow com leitura e edição confirmada de CMS está implementada. Siga [o guia de configuração](docs/webflow.md) para aplicar a segunda migration, registrar um Webflow App e habilitar OAuth. O fluxo permite escolher um site, revisar o vínculo e explorar coleções, campos e itens. A validação OAuth real depende das credenciais do App.
 
 1. Validar login, refresh, logout e isolamento com duas contas em Supabase de desenvolvimento.
 2. Validar confirmações concorrentes com conexões reais de banco.
 3. Validar OAuth Webflow e leitura em site de testes com o App configurado.
-4. Scan, revisão de sugestões e criação de Managed Values.
-5. Escrita autorizada no CMS com conflitos, retomada e verificação.
+4. Validar scan, revisão de sugestões e criação de Managed Values com dados reais.
+5. Validar a escrita autorizada no CMS com conflitos, retomada e verificação em um site de testes.
 
-Nenhuma API de escrita em sites está implementada. Conteúdo estático no idioma principal não deve ser tratado como editável pela Data API sem comprovação de suporte. Consulte `AGENTS.md` antes de contribuir.
+Edição individual e em conjunto usa prévia persistida e confirmação, com auditoria e proteção contra envios repetidos. Aplique a quinta migration e reconecte com `cms:write`, conforme [o guia de alterações](docs/cms-changes.md). A publicação do site permanece separada. Conteúdo estático no idioma principal não deve ser tratado como editável pela Data API sem comprovação de suporte. Consulte `AGENTS.md` antes de contribuir.
 
 ## Garantias e limites
 

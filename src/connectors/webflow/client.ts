@@ -8,7 +8,7 @@ export class WebflowError extends Error {
   }
 }
 
-async function checkedJson<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
+export async function checkedJson<T>(response: Response, schema: z.ZodType<T>): Promise<T> {
   if (!response.ok) {
     if (response.status === 401) throw new WebflowError("unauthorized");
     if (response.status === 403) throw new WebflowError("forbidden");
@@ -44,7 +44,7 @@ export async function exchangeCode(config: WebflowConfig, code: string, fetcher:
 export class WebflowReader {
   constructor(private readonly token: string, private readonly fetcher: typeof fetch = fetch) {}
 
-  private async get<T>(path: string, schema: z.ZodType<T>) {
+  protected async get<T>(path: string, schema: z.ZodType<T>) {
     let response: Response;
     try {
       response = await this.fetcher("https://api.webflow.com/v2" + path, {
@@ -58,6 +58,10 @@ export class WebflowReader {
   }
 
   async sites() { return (await this.get("/sites", sitesSchema)).sites; }
+  async item(collectionId: string, itemId: string, locale = "") {
+    const query = locale ? "?cmsLocaleId=" + webflowIdSchema.parse(locale) : "";
+    return this.get("/collections/" + webflowIdSchema.parse(collectionId) + "/items/" + webflowIdSchema.parse(itemId) + query, itemsSchema.shape.items.element);
+  }
   async collections(siteId: string) {
     return (await this.get("/sites/" + webflowIdSchema.parse(siteId) + "/collections", collectionsSchema)).collections;
   }

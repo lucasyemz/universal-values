@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const WEBFLOW_SCOPES = ["sites:read", "cms:read"] as const;
+export const WEBFLOW_SCOPES = ["sites:read", "cms:read", "cms:write"] as const;
 export const WEBFLOW_CALLBACK_PATH = "/api/connectors/webflow/callback";
 export const encryptionKeySchema = z.string().regex(/^[0-9a-f]{64}$/i);
 const configSchema = z.object({

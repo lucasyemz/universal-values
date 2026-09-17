@@ -1,15 +1,15 @@
-# Conexão Webflow de leitura
+# Conexão Webflow
 
 ## Ativação em desenvolvimento
 
 1. Aplique apenas a nova migration `supabase/migrations/20260916000200_webflow_read_connection.sql` no SQL Editor do mesmo projeto Supabase. Ela depende da migration inicial já aplicada; não reaplique a primeira.
 2. No Webflow, crie um App com o building block **Data Client** em **Apps & Integrations → App Development**.
-3. Configure somente os scopes `sites:read` e `cms:read`.
+3. Configure os scopes `sites:read`, `cms:read` e `cms:write`. Reconecte autorizações antigas para permitir alterações confirmadas.
 4. Cadastre a URL de retorno exata: `http://localhost:3000/api/connectors/webflow/callback`. Use o mesmo host e porta para acessar a aplicação. Se o Webflow exigir HTTPS para seu ambiente, use um domínio/túnel HTTPS e ajuste também `WEBFLOW_REDIRECT_URI`.
 5. Execute `npm run setup:webflow`. Isso prepara as variáveis locais e gera uma chave de criptografia se ausente. Valores existentes são preservados.
 6. No `.env.local`, preencha `WEBFLOW_CLIENT_ID` e `WEBFLOW_CLIENT_SECRET` com os dados do App. Nunca coloque estes valores em variáveis `NEXT_PUBLIC_*`, no Git ou no chat.
 7. Reinicie `npm run dev`, entre, abra o workspace e clique em **Gerenciar sites**.
-8. Revise e confirme a conexão de leitura, autorize no Webflow, escolha um site, revise e confirme o vínculo.
+8. Revise e confirme a conexão de leitura e escrita do CMS, autorize no Webflow, escolha um site, revise e confirme o vínculo.
 9. Abra **Explorar CMS** para consultar coleções, campos e páginas de 25 itens.
 
 Documentação oficial: [OAuth Webflow](https://developers.webflow.com/data/reference/oauth-app), [scopes](https://developers.webflow.com/data/reference/scopes) e [CMS](https://developers.webflow.com/data/reference).
@@ -17,7 +17,7 @@ Documentação oficial: [OAuth Webflow](https://developers.webflow.com/data/refe
 ## Comportamento
 
 - O conector fica em `src/connectors/webflow`.
-- O único POST ao Webflow é a troca do código OAuth pelo token. Todas as consultas de conteúdo usam GET. Não há edição, publicação ou alteração de sites.
+- Consultas usam GET. Edições confirmadas usam PATCH do CMS staged conforme [o guia de alterações](cms-changes.md). O único POST é a troca do código OAuth; não há chamada de publicação.
 - Conteúdo exibido vem do endpoint CMS staged e pode diferir do site publicado. Rascunhos, arquivados e locale são identificados.
 - Rich text é mostrado como texto escapado, nunca como HTML executável.
 - A coleção consultada precisa pertencer ao site selecionado. A autorização do site é verificada novamente antes de consultar seu CMS.
@@ -43,7 +43,7 @@ Eventos de início da autorização, claim, conclusão, prévia e vínculo ficam
 - HTTP 429: a UI informa a espera baseada em Retry-After; não há loop de tentativas.
 - Timeout de rede: 15 segundos por chamada.
 - Não existe rotina de limpeza de autorizações incompletas/prévias expiradas nesta etapa; definir retenção antes de produção.
-- Desconexão/revogação dentro do dashboard, scans completos e detecção de valores ficam para as próximas etapas.
+- Desconexão/revogação dentro do dashboard fica para uma etapa posterior. Scans e detecção são descritos em [scans](scans.md).
 - A chave secret/service-role do Supabase não é necessária.
 
 ## Verificação

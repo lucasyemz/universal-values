@@ -18,6 +18,7 @@ export default async function SitePage({ params, searchParams }: {
   return <main className="mx-auto max-w-5xl px-6 py-12">
     <Link href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} className="text-sm text-teal-800">← Sites do workspace</Link>
     <h1 className="mt-6 text-3xl font-semibold">{view.site.display_name}</h1>
+    <Link href={base + "/scans"} className="mt-4 inline-block rounded bg-teal-800 px-4 py-3 text-white">Scans e Managed Values</Link>
     <p className="mt-3 text-slate-600">Explorador do CMS · conteúdo preparado no Webflow, que pode diferir do site publicado.</p>
     <section className="mt-8"><h2 className="text-xl font-semibold">Coleções</h2>
       {!view.collections.length ? <p className="mt-4 text-slate-600">Este site não possui coleções disponíveis.</p> :

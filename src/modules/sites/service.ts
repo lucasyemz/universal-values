@@ -1,4 +1,5 @@
 import "server-only";
+import { WebflowWriter } from "@/connectors/webflow/writer";
 import { z } from "zod";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
@@ -40,7 +41,7 @@ export async function getConnectionReader(id: string) {
   const { data, error } = await client.rpc("read_webflow_credential", { p_id: id });
   if (error || !data) throw new Error("Credencial indisponível.");
   const token = decryptToken(data, credentialContext(connection), config.encryptionKey);
-  return { connection, reader: new WebflowReader(token) };
+  return { connection, reader: new WebflowReader(token), writer: new WebflowWriter(token) };
 }
 
 export async function loadWorkspaceSites(workspaceId: string) {

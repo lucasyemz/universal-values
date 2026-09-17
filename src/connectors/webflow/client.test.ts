@@ -13,10 +13,10 @@ const collectionId = "abcdef0123456789abcdef01";
 const site = { id: siteId, displayName: "Site", shortName: "site" };
 
 describe("Webflow read connector", () => {
-  it("requests only the two read scopes", () => {
+  it("requests CMS write access without publication or site-write scopes", () => {
     const url = new URL(authorizationUrl(config, "state"));
     expect(url.origin).toBe("https://webflow.com");
-    expect(url.searchParams.get("scope")).toBe("sites:read cms:read");
+    expect(url.searchParams.get("scope")).toBe("sites:read cms:read cms:write");
     expect(url.searchParams.get("redirect_uri")).toBe(config.redirectUri);
     expect(url.searchParams.get("state")).toBe("state");
     expect(url.toString()).not.toContain(config.clientSecret);
