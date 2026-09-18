@@ -10,14 +10,18 @@ type ReadTable<Row> = {
 export type Database = {
   public: {
     Tables: {
+      global_fact_versions: ReadTable<{ site_id: string; version: number; facts: Json; actor_id: string; preview_id: string; created_at: string }>;
+      global_fact_previews: ReadTable<{ id: string; site_id: string; actor_id: string; base_version: number; facts: Json; created_at: string; expires_at: string; confirmed_version: number | null; archived_at: string | null }>;
+      global_fact_audit: ReadTable<{ preview_id: string; site_id: string; actor_id: string; action: string; created_at: string }>;
       designer_sessions: ReadTable<{ id: string; site_id: string; actor_id: string; created_at: string; expires_at: string; revoked_at: string | null }>;
       designer_changes: ReadTable<{ id: string; site_id: string; actor_id: string; session_id: string; plan: Json; search_text: string; events: Json; created_at: string; expires_at: string }>;
-      cms_change_requests: ReadTable<{ reverts_request_id: string | null; id: string; scan_id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; changes: Json; status: string; cursor: number; total: number; dispatched: boolean; lease_token: string | null; lease_until: string | null; retry_at: string | null; results: Json; expires_at: string; created_at: string }>;
+      cms_change_requests: ReadTable<{ managed_value_id: string | null; managed_version: number | null; managed_after: Json | null; managed_baseline: Json | null; managed_resolution: Json | null; managed_before: Json | null; managed_snapshot: Json | null; reverts_request_id: string | null; id: string; scan_id: string | null; site_id: string; workspace_id: string; actor_id: string; connection_id: string; changes: Json; status: string; cursor: number; total: number; dispatched: boolean; lease_token: string | null; lease_until: string | null; retry_at: string | null; results: Json; expires_at: string; created_at: string }>;
       cms_scans: ReadTable<{ id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; plan: Json; status: string; collection_index: number; item_offset: number; revision: number; items_read: number; occurrences_count: number; truncated: boolean; skipped_fields: number; error_code: string | null; retry_at: string | null; expires_at: string; created_at: string; lease_token: string | null; lease_until: string | null }>;
       scan_occurrences: ReadTable<{ id: string; scan_id: string; site_id: string; workspace_id: string; collection_id: string; collection_name: string; item_id: string; item_name: string; locale: string; field_slug: string; field_name: string; field_type: string; source_value: string; raw_match: string; start_pos: number; end_pos: number; canonical: Json; source_key: string }>;
-      managed_values: ReadTable<{ id: string; site_id: string; workspace_id: string; name: string; canonical: Json; version: number; created_at: string }>;
+      managed_value_archives: ReadTable<{ id: string; managed_value_id: string; workspace_id: string; actor_id: string; version: number; snapshot: Json; created_at: string; expires_at: string; confirmed_at: string | null }>;
+      managed_values: ReadTable<{ archived_at: string | null; id: string; site_id: string; workspace_id: string; name: string; canonical: Json; version: number; created_at: string }>;
       managed_value_previews: ReadTable<{ id: string; scan_id: string; site_id: string; workspace_id: string; actor_id: string; name: string; canonical: Json; occurrence_ids: string[]; managed_value_id: string | null; expires_at: string }>;
-      managed_value_bindings: ReadTable<{ id: string; managed_value_id: string; site_id: string; workspace_id: string; source_key: string; collection_id: string; item_id: string; locale: string; field_slug: string; field_type: string; source_value: string; locations: Json }>;
+      managed_value_bindings: ReadTable<{ canonical: Json; uncertain: boolean; last_synced_at: string | null; id: string; managed_value_id: string; site_id: string; workspace_id: string; source_key: string; collection_id: string; item_id: string; locale: string; field_slug: string; field_type: string; source_value: string; locations: Json }>;
       webflow_connections: ReadTable<{ id: string; workspace_id: string; actor_id: string; state_hash: string; status: "pending" | "exchanging" | "ready"; created_at: string; expires_at: string }>;
       sites: ReadTable<{ id: string; workspace_id: string; connection_id: string; webflow_site_id: string; display_name: string; created_at: string }>;
       site_connection_previews: ReadTable<{ id: string; workspace_id: string; connection_id: string; actor_id: string; webflow_site_id: string; display_name: string; expires_at: string; site_id: string | null; expected_connection_id: string | null }>;
@@ -29,6 +33,13 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      preview_managed_value_resolution: { Args: { p_id: string; p_binding_id: string; p_scan_id: string; p_occurrence_ids: string[]; p_mode: string; p_version: number }; Returns: string };
+      preview_managed_value_archive: { Args: { p_id: string; p_value_id: string }; Returns: string };
+      confirm_managed_value_archive: { Args: { p_id: string }; Returns: string };
+      preview_managed_value_sync: { Args: { p_id: string; p_value_id: string; p_version: number; p_after: Json }; Returns: string };
+      preview_global_facts: { Args: { p_id: string; p_site_id: string; p_base_version: number; p_facts: Json }; Returns: string };
+      archive_global_fact_preview: { Args: { p_id: string }; Returns: string };
+      confirm_global_facts: { Args: { p_id: string }; Returns: number };
       authorize_designer_session: { Args: { p_id: string; p_site_id: string; p_token_hash: string }; Returns: string };
       revoke_designer_session: { Args: { p_id: string }; Returns: undefined };
       designer_gateway: { Args: { p_token_hash: string; p_webflow_site_id: string; p_action: string; p_payload: Json }; Returns: Json };

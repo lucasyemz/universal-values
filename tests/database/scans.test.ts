@@ -56,7 +56,7 @@ beforeAll(async()=>{
     grant usage on schema auth to anon,authenticated; grant execute on function auth.uid() to anon,authenticated;
     insert into auth.users values ('${alice}'),('${bob}');
   `);
-  for(const name of ["20260916000100_workspaces.sql","20260916000200_webflow_read_connection.sql","20260916000300_cms_scans_managed_values.sql","20260916000400_scan_links_images.sql","20260916000500_confirmed_cms_changes.sql","20260916000600_cms_change_reverts.sql","20260917000700_reviewed_scan_content.sql","20260917000800_text_removal_changes.sql"]){
+  for(const name of ["20260916000100_workspaces.sql","20260916000200_webflow_read_connection.sql","20260916000300_cms_scans_managed_values.sql","20260916000400_scan_links_images.sql","20260916000500_confirmed_cms_changes.sql","20260916000600_cms_change_reverts.sql","20260917000700_reviewed_scan_content.sql","20260917000800_text_removal_changes.sql","20260918001200_managed_value_sync.sql"]){
     await db.exec(readFileSync(new URL("../../supabase/migrations/"+name,import.meta.url),"utf8"));
   }
   await asUser(alice,async()=>{

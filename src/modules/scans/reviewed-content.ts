@@ -11,3 +11,9 @@ export function filterReviewedGroups(sections: ReturnType<typeof groupScanResult
     occurrences: group.occurrences.filter((o) => filter === "all" || reviewed.has(o.id) === (filter === "reviewed")),
   })).filter((group) => group.occurrences.length > 0) }));
 }
+
+export function countReviewedOccurrences(sections: ReturnType<typeof groupScanResults>, reviewedIds: string[]) {
+  const ids = new Set(sections.flatMap(section => section.duplicates.flatMap(group => group.occurrences.map(o => o.id))));
+  const reviewed = new Set(reviewedIds.filter(id => ids.has(id))).size;
+  return { pending: ids.size - reviewed, reviewed, all: ids.size };
+}

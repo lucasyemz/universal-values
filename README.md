@@ -6,12 +6,15 @@ Fundação do SaaS para descobrir informações repetidas em sites Webflow e ger
 
 Requer Node.js 22 ou superior e npm.
 
+- `nvm use` — seleciona a versão do Node definida em `.nvmrc` (use `nvm install` se necessário).
 - `npm ci` — instala as dependências fixadas no lockfile.
 - `npm run dev` — inicia em http://localhost:3000.
 - `npm run lint` — verifica qualidade.
 - `npm run typecheck` — verifica TypeScript estrito.
 - `npm test` — executa testes de domínio e banco PostgreSQL embutido.
 - `npm run build` — gera o build de produção.
+
+Se o Turbopack falhar neste ambiente ao abrir uma porta interna (`Operation not permitted`), use `npm run dev -- --webpack` e `npm run build -- --webpack`.
 
 A página inicial funciona sem credenciais. Sem configuração, o login mostra uma orientação e o dashboard redireciona para o login.
 
@@ -47,6 +50,8 @@ Moedas inicialmente aceitas: BRL, USD e EUR. O schema de telefone verifica o for
 
 ## Próximos passos
 
+Global Facts possui cadastro versionado por site, prévia/confirmação e histórico. Para ativar a primeira etapa, consulte [o guia de Global Facts](docs/global-facts.md) e a migration 010. A auditoria automática de páginas publicadas ainda não está disponível.
+
 O primeiro scan de CMS e a criação de Managed Values estão implementados. Consulte [o guia de scans](docs/scans.md) para aplicar a terceira migration, revisar a cobertura e executar o fluxo. O scan processa lotes enquanto a página está aberta e salva o progresso para retomada.
 
 A conexão Webflow com leitura e edição confirmada de CMS está implementada. Siga [o guia de configuração](docs/webflow.md) para aplicar a segunda migration, registrar um Webflow App e habilitar OAuth. O fluxo permite escolher um site, revisar o vínculo e explorar coleções, campos e itens. A validação OAuth real depende das credenciais do App.
@@ -72,3 +77,7 @@ Eventos de autenticação ficam no audit log nativo do Supabase Auth. Senhas e t
 Os testes de banco executam a migration em PostgreSQL embutido (PGlite), sem Docker ou rede, emulando apenas `auth.users`, `auth.uid()` e papéis do Supabase. Verificam isolamento, grants, idempotência, expiração e rollback se a auditoria falhar. Não substituem testes de Supabase Auth real, cookies SSR e concorrência entre conexões.
 
 O contrato em `src/connectors/supabase/types.ts` representa a migration inicial. Regenere os tipos pela CLI Supabase após alterações do esquema.
+
+## Edição central de Managed Values
+
+A edição central e sincronização dos campos CMS vinculados usam prévia, confirmação e verificação por fonte. Aplique a migration 012 e siga [o roteiro de teste](docs/managed-value-sync.md). Resultados parciais e incertos ficam registrados; não há publicação automática.

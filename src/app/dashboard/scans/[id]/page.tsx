@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { ManagedDivergence } from "@/components/scans/managed-divergence";
+import { CentralizeValue } from "@/components/scans/centralize-value";
 import { OccurrenceEditor } from "@/components/scans/occurrence-editor";
 import { occurrencePresentation } from "@/modules/scans/presentation";
 import Link from "next/link";
@@ -5,7 +8,7 @@ import { ScanProgress } from "@/components/scans/scan-progress";
 import { loadScanResults, scanProgress } from "@/modules/scans/service";
 import { cancelScan, confirmScan } from "@/modules/scans/actions";
 import { detectionLabels } from "@/modules/scans/schema";
-import { filterReviewedGroups, reviewFilterSchema, reviewFilterLabels } from "@/modules/scans/reviewed-content";
+import { countReviewedOccurrences, filterReviewedGroups, reviewFilterSchema, reviewFilterLabels } from "@/modules/scans/reviewed-content";
 import { ReviewFlag } from "@/components/scans/review-flag";
 import { resultsSearchSchema, searchResultGroups } from "@/modules/scans/search-results";
 import { PageHeader, Notice, StatusBadge, SectionHeader, Steps } from "@/components/ui";
@@ -18,7 +21,9 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const { error, filter: filterInput, q } = await searchParams;
   const query = resultsSearchSchema.parse(q ?? "");
   const filter = reviewFilterSchema.catch("pending").parse(filterInput);
-  const sections = searchResultGroups(filterReviewedGroups(view.sections, view.reviewedIds, filter), query);
+  const searched = searchResultGroups(view.sections, query);
+  const counts = countReviewedOccurrences(searched, view.reviewedIds);
+  const sections = filterReviewedGroups(searched, view.reviewedIds, filter);
   const { scan } = view;
   return <main className="ui-page">
     <SiteContext title="Scan do CMS" siteId={scan.site_id} workspaceId={scan.workspace_id} />
@@ -44,6 +49,11 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       <p role="status" className="mt-6">{scan.status === "cancelled" ? "Scan cancelado." : scan.status === "limited" ? "Scan finalizado com cobertura parcial." : "Scan concluído."} {scan.items_read} itens lidos · {scan.occurrences_count} ocorrências.</p>}
     {["running","paused"].includes(scan.status) && <details className="mt-6"><summary className="cursor-pointer text-sm">Cancelar este scan</summary><form action={cancelScan} className="mt-4 space-y-3"><input type="hidden" name="id" value={id} /><p>Os lotes salvos serão preservados, mas este scan não poderá criar novos Managed Values.</p><label className="flex gap-2"><input type="checkbox" name="confirmed" value="yes" required />Confirmo o cancelamento.</label><button className="ui-btn">Cancelar scan</button></form></details>}
     {["completed","limited"].includes(scan.status) && <section className="mt-10">
+      {view.divergences.length > 0 && <section aria-label="Divergências de Managed Values" className="mb-8">
+        <SectionHeader title="Verificar Managed Values" description="Comparação das fontes detectadas neste scan com o último registro dos vínculos. Não é monitoramento em tempo real; campos sem ocorrências detectadas não foram comparados aqui." />
+        <p className="mt-2 text-xs text-muted">Scan iniciado em {new Date(scan.created_at).toLocaleString("pt-BR", { timeZone: "UTC" })} UTC. As divergências aparecem mesmo que a ocorrência não seja repetida ou tenha sido marcada como revisada.</p>
+        {view.divergences.map(d => <ManagedDivergence key={d.binding.id} id={randomUUID()} scanId={scan.id} bindingId={d.binding.id} name={d.value.name} valueId={d.value.id} version={d.value.version} central={d.value.canonical} before={d.binding.source_value} observed={d.observed} rows={d.rows} stale={d.stale} uncertain={d.binding.uncertain} />)}
+      </section>}
       <p className="text-muted">Cada grupo reúne ocorrências com o mesmo valor. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.</p>
       <form method="get" className="mt-5 space-y-2">
         <input type="hidden" name="filter" value={filter} />
@@ -55,8 +65,8 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         </div>
         <p className="text-sm text-muted">Filtra valores e títulos já detectados, sem diferenciar maiúsculas e minúsculas. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.</p>
       </form>
-      <nav aria-label="Filtrar por revisão" className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={"/dashboard/scans/" + id + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{reviewFilterLabels[option]}</Link>)}</nav>
-      <p className="mt-3 text-sm text-muted">Revisados ficam fora de Pendentes, mas continuam editáveis nos filtros Revisados e Todos. Novas origens ou mudanças no conteúdo voltam como pendentes.</p>
+      <nav aria-label="Filtrar por revisão" className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={"/dashboard/scans/" + id + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{reviewFilterLabels[option]} ({counts[option]})</Link>)}</nav>
+      <p className="mt-3 text-sm text-muted">Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Mudanças no conteúdo voltam como pendentes.</p>
       {view.reviewsMissing && <p role="status" className="mt-3 text-sm text-amber-800">Aplique a sétima migration para habilitar as marcações de revisão.</p>}
       {scan.status === "limited" && <Notice tone="warning" title="Cobertura parcial">Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.</Notice>}
       {sections.map((section) => <section key={section.type} className="mt-8">
@@ -64,7 +74,8 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         {!section.duplicates.length && <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted">Nenhum grupo neste filtro. Experimente Todos ou limpe a pesquisa para conferir os demais resultados.</p>}
         {section.duplicates.map((group) => <div key={filter + query + group.label} className="ui-card mt-5 overflow-hidden p-5 md:p-6">
           {!view.reviewsMissing && <ReviewFlag scanId={id} pendingIds={group.occurrences.filter((o) => !view.reviewedIds.includes(o.id)).map((o) => o.id)} reviewedIds={group.occurrences.filter((o) => view.reviewedIds.includes(o.id)).map((o) => o.id)} />}
-          <OccurrenceEditor scanId={scan.id} rows={group.occurrences.map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
+          <CentralizeValue scanId={scan.id} occurrences={group.occurrences} linkedValues={view.linkedValues} />
+          <OccurrenceEditor scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
         </div>)}
       </section>)}
     </section>}

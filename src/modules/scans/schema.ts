@@ -40,7 +40,7 @@ export const valuePreviewSchema = z.object({
   id: z.uuid(), scan_id: z.uuid(), site_id: z.uuid(), name: z.string(),
   canonical: managedValueSchema, occurrence_ids: z.array(z.uuid()), managed_value_id: z.uuid().nullable(), expires_at: z.string(),
 });
-export const savedValueSchema = z.object({ id: z.uuid(), site_id: z.uuid(), name: z.string(), canonical: managedValueSchema, created_at: z.string() });
+export const savedValueSchema = z.object({ archived_at: z.string().nullable().optional(), version: z.number().int().positive().default(1), id: z.uuid(), site_id: z.uuid(), name: z.string(), canonical: managedValueSchema, created_at: z.string() });
 export function valueLabel(value: z.infer<typeof managedValueSchema>) {
   switch (value.type) {
     case "money": return value.currency + " " + value.amount;

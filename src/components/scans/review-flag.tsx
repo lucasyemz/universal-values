@@ -12,12 +12,12 @@ export function ReviewFlag({ scanId, pendingIds, reviewedIds }: { scanId: string
   const [error, setError] = useState("");
   return <section aria-label="Marcação de revisão" className="mb-4 border-b pb-4">
     <div className="flex flex-wrap gap-3">
-      {!!pendingIds.length && <button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: true, ids: pendingIds }); }} className="ui-btn ui-btn-ghost text-accent"><Flag size={14} aria-hidden="true" />Marcar como revisado</button>}
+      {!!pendingIds.length && <button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: true, ids: pendingIds }); }} className="ui-btn ui-btn-ghost text-accent"><Flag size={14} aria-hidden="true" />Marcar como conferido</button>}
       {!!reviewedIds.length && <><StatusBadge status="reviewed" label={`${reviewedIds.length} revisadas`} /><button type="button" disabled={busy} onClick={() => { setError(""); setPreview({ id: crypto.randomUUID(), reviewed: false, ids: reviewedIds }); }} className="ui-btn ui-btn-ghost">Voltar para pendentes</button></>}
     </div>
     {preview && <div className="mt-3 rounded bg-subtle p-4">
       <p className="text-sm">{preview.reviewed ? `Marcar ${preview.ids.length} ocorrências como revisadas? Elas sairão de Pendentes neste e nos próximos scans enquanto a origem, o valor e o conteúdo do campo permanecerem iguais. Você poderá encontrá-las em Revisados ou Todos.` : `Voltar ${preview.ids.length} ocorrências para Pendentes neste e nos próximos scans?`}</p>
-      <p className="mt-2 text-xs text-muted">A marcação não aplica nem salva edições digitadas nos campos. O Webflow não será alterado.</p>
+      <p className="mt-2 text-xs text-muted">Conferir apenas retira ocorrências dos pendentes. Não cria um valor centralizado nem salva edições digitadas; o Webflow não será alterado.</p>
       <div className="mt-3 flex gap-3"><button type="button" disabled={busy} className="rounded bg-accent px-3 py-2 text-sm text-white disabled:opacity-50" onClick={async () => {
         setBusy(true); setError("");
         try {

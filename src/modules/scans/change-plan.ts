@@ -3,7 +3,7 @@ import { type ManagedValue } from "@/modules/managed-values/schema";
 import { replacementSchema } from "./replacement-schema";
 import { type Occurrence } from "./schema";
 import { editableValue } from "./changes";
-import { detectTextMentions } from "./text-mentions";
+import { detectTextMentions, isRichTextRange } from "./text-mentions";
 
 export const changesSchema = z.array(z.strictObject({ occurrenceId: z.uuid(), after: replacementSchema })).min(1).max(1000)
   .refine((rows) => new Set(rows.map((r) => r.occurrenceId)).size === rows.length, "Ocorrências duplicadas.");
@@ -11,11 +11,12 @@ type FieldValue = z.infer<ReturnType<typeof z.json>>;
 export type FieldChange = { sourceKey: string; occurrence: Occurrence; before: FieldValue; after: FieldValue; occurrenceIds: string[] };
 const escapeAttribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
-function replacement(o: Occurrence, after: ManagedValue) {
+export function occurrenceReplacement(o: Occurrence, after: ManagedValue, allowEncodedText = false) {
   if (o.canonical.type !== after.type) throw new Error("O tipo do valor não pode mudar.");
   if (o.field_type === "RichText") {
     if (after.type === "text") {
-      if (!detectTextMentions(o.source_value, o.raw_match, true).some((m) => m.start === o.start_pos && m.end === o.end_pos)) throw new Error("Trecho de texto HTML inválido.");
+      const valid = allowEncodedText ? isRichTextRange(o.source_value, o.start_pos, o.end_pos) : detectTextMentions(o.source_value, o.raw_match, true).some((m) => m.start === o.start_pos && m.end === o.end_pos);
+      if (!valid) throw new Error("Trecho de texto HTML inválido.");
       return escapeAttribute(after.text);
     }
     if (after.type !== "link" && after.type !== "image") throw new Error("Tipo incompatível com HTML.");
@@ -36,7 +37,7 @@ function replacement(o: Occurrence, after: ManagedValue) {
   return editableValue(after);
 }
 
-export function buildFieldChanges(occurrences: Occurrence[], input: unknown): FieldChange[] {
+export function buildFieldChanges(occurrences: Occurrence[], input: unknown, options: { allowEncodedText?: boolean } = {}): FieldChange[] {
   const changes = changesSchema.parse(input);
   const byId = new Map(occurrences.map((o) => [o.id, o]));
   const groups = new Map<string, { o: Occurrence; after: ManagedValue }[]>();
@@ -53,7 +54,7 @@ export function buildFieldChanges(occurrences: Occurrence[], input: unknown): Fi
     let end = source.length;
     for (const { o, after } of entries.sort((a, b) => b.o.start_pos - a.o.start_pos)) {
       if (o.source_value !== occurrence.source_value || o.end_pos > end || source.slice(o.start_pos, o.end_pos).join("") !== o.raw_match) throw new Error("Trechos conflitantes. Execute outro scan.");
-      source.splice(o.start_pos, o.end_pos - o.start_pos, ...replacement(o, after)); end = o.start_pos;
+      source.splice(o.start_pos, o.end_pos - o.start_pos, ...occurrenceReplacement(o, after, options.allowEncodedText)); end = o.start_pos;
     }
     const text = source.join("");
     let before: FieldValue = occurrence.source_value;

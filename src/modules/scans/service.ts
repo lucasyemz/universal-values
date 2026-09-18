@@ -1,4 +1,6 @@
 import "server-only";
+import { bindingSchema } from "@/modules/managed-values/sync-plan";
+import { scanDivergences } from "@/modules/managed-values/divergence";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -51,7 +53,7 @@ export async function loadSiteScans(siteId: string) {
   const result = await client.from("cms_scans").select("*").eq("site_id", siteId).order("created_at", { ascending: false }).limit(20);
   if (result.error?.code === "PGRST205") return { site, scans: [], values: [], changes: [], missingMigration: true };
   if (result.error) throw new Error("Scans indisponíveis.");
-  const values = await client.from("managed_values").select("id,site_id,name,canonical,created_at").eq("site_id", siteId).order("created_at", { ascending: false }).limit(100);
+  const values = await client.from("managed_values").select("*").eq("site_id", siteId).order("created_at", { ascending: false }).limit(100);
   if (values.error) throw new Error("Managed Values indisponíveis.");
   const changes = await client.from("cms_change_requests").select("id,status,cursor,total,created_at").eq("site_id", siteId).order("created_at", { ascending: false }).limit(20);
   if (changes.error && !["PGRST205", "42P01"].includes(changes.error.code)) throw new Error("Histórico de alterações indisponível.");
@@ -64,15 +66,24 @@ export async function loadScanResults(id: string) {
   const result = await client.from("scan_occurrences").select("*").eq("scan_id", id).order("id").limit(1000);
   if (result.error) throw new Error("Resultados indisponíveis.");
   const occurrences = z.array(occurrenceSchema).parse(result.data);
-  const bindings = await client.from("managed_value_bindings").select("source_key").eq("site_id", scan.site_id).limit(1000);
+  const bindings = await client.from("managed_value_bindings").select("*").eq("site_id", scan.site_id).limit(1000);
   if (bindings.error) throw new Error("Vínculos indisponíveis.");
-  const bound = new Set(bindings.data.map((b) => b.source_key));
+  const linked = z.array(z.object({ source_key: z.string(), managed_value_id: z.uuid() })).parse(bindings.data);
+  const valueIds = [...new Set(linked.map(binding => binding.managed_value_id))];
+  const values = valueIds.length ? await client.from("managed_values").select("*").in("id", valueIds) : { data: [], error: null };
+  if (values.error) throw new Error("Valores vinculados indisponíveis.");
+  const managedValues = z.array(savedValueSchema).parse(values.data);
+  const names = new Map(managedValues.map(value => [value.id, value.name]));
+  const fullBindings = z.array(bindingSchema).safeParse(bindings.data);
+  const divergences = fullBindings.success ? scanDivergences(fullBindings.data, occurrences, scan.created_at).map(d => ({ ...d, value: managedValues.find(value => value.id === d.binding.managed_value_id)! })) : [];
+  const linkedValues = Object.fromEntries(linked.map(binding => [binding.source_key, { id: binding.managed_value_id, name: names.get(binding.managed_value_id) ?? "Valor centralizado", divergence: divergences.some(d => d.binding.source_key === binding.source_key && !d.stale), bindingId: fullBindings.success ? fullBindings.data.find(b => b.source_key === binding.source_key)?.id : undefined }]));
+  const bound = new Set(linked.map((b) => b.source_key));
   const available = occurrences.filter((o) => !bound.has(o.source_key));
   const reviews = await client.rpc("scan_reviewed_occurrences", { p_scan_id: id });
   const reviewsMissing = !!reviews.error && ["PGRST202", "42883"].includes(reviews.error.code);
   if (reviews.error && !reviewsMissing) throw new Error("Marcações de revisão indisponíveis.");
   const reviewedIds = z.array(z.object({ occurrence_id: z.uuid() })).parse(reviews.data ?? []).map((row) => row.occurrence_id);
-  return { scan, occurrences, reviewedIds, reviewsMissing, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
+  return { scan, occurrences, reviewedIds, reviewsMissing, linkedValues, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
 }
 export async function processBatch(id: string, revision: number) {
   const scan = await getScan(id);
@@ -117,7 +128,7 @@ export async function loadValuePreview(id: string) {
 export async function loadManagedValue(id: string) {
   if (!z.uuid().safeParse(id).success) notFound();
   const { client } = await requireUser();
-  const result = await client.from("managed_values").select("id,site_id,name,canonical,created_at").eq("id", id).maybeSingle();
+  const result = await client.from("managed_values").select("*").eq("id", id).maybeSingle();
   if (result.error) throw new Error("Managed Value indisponível.");
   if (!result.data) notFound();
   const value = savedValueSchema.parse(result.data);

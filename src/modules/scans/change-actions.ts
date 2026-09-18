@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { requireUser } from "@/modules/auth/service";
 import { loadScanResults } from "./service";
 import { buildFieldChanges, changesSchema } from "./change-plan";
@@ -16,6 +17,7 @@ export async function previewChanges(input: unknown) {
     const view = await loadScanResults(parsed.data.scanId);
     if (!["completed", "limited"].includes(view.scan.status)) return { ok: false as const, message: "Aguarde a conclusão do scan." };
     if (!isRepeatedGroupSelection(view.occurrences, parsed.data.changes.map((change) => change.occurrenceId))) return { ok: false as const, message: "Revise apenas ocorrências de um mesmo grupo de valores repetidos por vez." };
+    if (parsed.data.changes.some(change => { const source = view.occurrences.find(o => o.id === change.occurrenceId); return source && view.linkedValues[source.source_key]; })) return { ok: false as const, message: "Este campo pertence a um Managed Value. Abra o valor central para editar e sincronizar suas fontes." };
     const plan = buildFieldChanges(view.occurrences, parsed.data.changes);
     if (!plan.length) return { ok: false as const, message: "Nenhum valor foi alterado." };
     // Store only effective changes, keeping DB field counts identical to the execution plan.
@@ -33,9 +35,11 @@ export async function previewChanges(input: unknown) {
 export async function confirmChanges(form: FormData) {
   const parsed = z.object({ id: z.uuid(), confirmed: z.literal("yes") }).safeParse({ id: form.get("id"), confirmed: form.get("confirmed") });
   if (!parsed.success) redirect("/dashboard?error=confirmation");
-  await loadChangeRequest(parsed.data.id);
+  const { request } = await loadChangeRequest(parsed.data.id);
   const { client } = await requireUser();
   const result = await client.rpc("confirm_cms_changes", { p_id: parsed.data.id });
+  if (!result.error && request.managed_resolution) revalidatePath("/dashboard/scans/" + request.managed_resolution.scanId);
+  if (!result.error && request.managed_value_id) revalidatePath("/dashboard/managed-values/" + request.managed_value_id);
   redirect("/dashboard/changes/" + parsed.data.id + (result.error ? "?error=confirmation" : ""));
 }
 
@@ -44,6 +48,8 @@ export async function runChangeStep(input: unknown) {
   if (!parsed.success) return { ok: false as const, message: "Solicitação inválida." };
   try {
     const request = await processChangeStep(parsed.data.id, parsed.data.cursor);
+    if (request.managed_resolution) revalidatePath("/dashboard/scans/" + request.managed_resolution.scanId);
+    if (request.managed_value_id) revalidatePath("/dashboard/managed-values/" + request.managed_value_id);
     return { ok: true as const, progress: { id: request.id, cursor: request.cursor, total: request.total, status: request.status, results: request.results } };
   } catch { return { ok: false as const, message: "Processamento interrompido. Retome para consultar o resultado salvo sem reenviar alterações." }; }
 }
@@ -61,6 +67,7 @@ export async function retryFailedChanges(form: FormData) {
   if (!parsed.success) redirect("/dashboard?error=invalid");
   const { request, plan } = await loadChangeRequest(parsed.data.id);
   const back = "/dashboard/changes/" + request.id;
+  if (request.managed_value_id || !request.scan_id) redirect("/dashboard/managed-values/" + request.managed_value_id);
   if (!["completed", "cancelled"].includes(request.status)) redirect(back + "?error=retry_active");
   if (request.retry_at && new Date(request.retry_at).getTime() > Date.now()) redirect(back + "?error=retry_wait");
   const changes = failedChangesForRetry(request.changes, plan, request.results);
@@ -80,6 +87,7 @@ export async function previewRevert(form: FormData) {
   if (!parsed.success) redirect("/dashboard?error=invalid");
   const { request, revertCount } = await loadChangeRequest(parsed.data.id);
   const back = "/dashboard/changes/" + request.id;
+  if (request.managed_value_id) redirect("/dashboard/managed-values/" + request.managed_value_id);
   if (request.reverts_request_id || !revertCount || !["completed", "cancelled"].includes(request.status)) redirect(back + "?error=revert_unavailable");
   const { client } = await requireUser();
   const result = await client.rpc("preview_cms_revert", { p_id: parsed.data.revertId, p_original_id: request.id });

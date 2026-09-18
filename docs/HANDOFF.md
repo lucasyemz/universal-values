@@ -1,6 +1,6 @@
 # Universal Values — retomada em outra máquina
 
-Atualizado em 17/09/2026. Este documento registra o estado da implementação; propostas futuras estão identificadas separadamente.
+Atualizado em 18/09/2026. Este documento registra o estado da implementação; propostas futuras estão identificadas separadamente.
 
 ## 1. Ponto de partida
 
@@ -23,7 +23,7 @@ Atualizado em 17/09/2026. Este documento registra o estado da implementação; p
 - Contexto ao redor da menção, edição individual ou em grupo e remoção de trechos.
 - Prévia e confirmação de mudanças no CMS, verificação de conflitos, histórico, nova prévia para falhas elegíveis e reversão com validação.
 - Flags de conteúdo revisado, filtros e tags dos tipos pesquisados nos scans recentes.
-- Criação e consulta de Managed Values/vínculos. Edição central completa de um Managed Value com sincronização de todas as fontes ainda não está implementada.
+- Criação, consulta e edição central de Managed Values com sincronização das fontes CMS vinculadas implementadas localmente. O fluxo foi exercitado pelo usuário; confira as migrations do ambiente antes de validar em outro site de testes; consulte `docs/managed-value-sync.md`.
 - UI modernizada com sidebar, componentes compartilhados, tabelas e estados vazios.
 
 ### Páginas estáticas: extensão Webflow
@@ -50,7 +50,9 @@ Correções conhecidas do Designer:
 - Novas prévias e eventos persistidos no Supabase antes de enviar alterações ao Designer.
 - Histórico antigo do protótipo permanece local, exportável; não há importação automática.
 
-**Pendente de validação real:** não houve confirmação do usuário de aplicação da migration 009 nem teste completo da conexão v0.5. Não confundir a validação da escrita v0.4 com a validação da integração v0.5.
+**Validação na nova máquina:** Supabase Auth respondeu corretamente e o gateway da migration 009 rejeitou uma sessão inválida como esperado. O usuário confirmou o funcionamento do dashboard/CMS, conexão da extensão e persistência do histórico após o roteiro de aplicação/revogação. Essa aceitação é relatada pelo usuário, não um teste end-to-end automatizado ou uma verificação independente do conteúdo no Webflow.
+
+**Ambiente recuperado em 18/09:** Node 22 instalado, dependências instaladas e `.env.local` configurado privadamente. A chave de criptografia anterior foi perdida (sem máquina antiga ou backup); uma nova chave local foi gerada e o usuário reautorizou o Webflow. Os tokens antigos não podem ser descriptografados com a nova chave. Não recriar dados por esse motivo. Nesta máquina, usar `npm run dev -- --webpack` e `npm run build -- --webpack` quando o Turbopack falhar ao abrir sua porta interna. Os 214 testes anteriores passaram na preparação do ambiente.
 
 ## 3. Antes de sair da máquina antiga
 
@@ -113,7 +115,7 @@ Verifique se `20260917000900_designer_dashboard.sql` já foi aplicada. Se não f
 - `designer_changes`;
 - funções de autorização, revogação e gateway com controle de acesso.
 
-Para um banco novo, aplicar todas as migrations em ordem cronológica, de 001 a 009; isso não restaura os dados do projeto anterior.
+Para um banco novo, aplicar todas as migrations em ordem cronológica, de 001 a 012; isso não restaura os dados do projeto anterior.
 
 Inicie em dois terminais separados:
 
@@ -157,9 +159,11 @@ Erros comuns:
 - Scans sem prévia não são persistidos no histórico central.
 - Recarga perde a prévia em memória. Histórico salvo não significa que uma operação pode ser reenviada automaticamente.
 
-## 7. Próxima frente proposta: Global Facts e integridade
+## 7. Global Facts e integridade
 
-**Status: discutida, ainda não implementada.** O usuário pediu avaliar a complexidade; a recomendação foi um MVP de auditoria somente de leitura. Confirmar o recorte antes de iniciar uma implementação ampla.
+**Status: primeira etapa implementada localmente em 18/09, após autorização do usuário.** Cadastro versionado por site, prévia/confirmação, histórico imutável e regras determinísticas de comparação de evidências estão no código. O usuário confirmou a aplicação da migration `20260918001000_global_facts.sql` e testou o conflito entre prévias. Foi adicionado arquivamento manual com filtros Pendentes/Arquivadas e auditoria; o usuário confirmou o funcionamento após a migration `20260918001100_archive_global_fact_previews.sql`. Consulte `docs/global-facts.md` para ativação e limites.
+
+A coleta de páginas publicadas, extração/validação de JSON-LD, checagem HTTP de links, relatório de auditoria e exceções estruturadas ainda não foram implementados. O comparador é um módulo puro testado; não há execução automática de auditoria no dashboard nesta etapa. Exemplos abaixo não foram cadastrados nem aprovados automaticamente.
 
 Objetivo: permitir que o usuário aprove uma fonte de referência de fatos do negócio e compare esses fatos com o conteúdo do site, links e JSON-LD.
 
@@ -175,10 +179,14 @@ Exemplo fornecido pelo usuário, ainda não verificado externamente nem cadastra
 - Marca: Kona Law Firm, DBA de Eggert & Associates LLC.
 - Não mencionar a firma do continente, suas cidades ou seu website. **Ainda faltam os nomes, cidades e domínios específicos proibidos. Não inventar essa lista.**
 
-### Ordem recomendada
+### Prioridade atual: produto principal
 
-1. Validar a integração v0.5 antes de iniciar outra grande frente.
-2. Definir o cadastro versionado de Global Facts, regras, escopo e exceções. IA pode sugerir a estrutura; o usuário aprova.
+O usuário decidiu adiar a auditoria automática por sitemap e priorizar a edição central de Managed Values. O fluxo local inclui prévia imutável, confirmação, versão central, verificação por campo, histórico e reconciliação de resultados incertos. Próximo passo: conferir as migrations 012–014 no ambiente de destino e seguir `docs/managed-value-sync.md`. Não houve escrita em site de cliente durante a implementação.
+
+### Backlog de auditoria (adiado)
+
+1. Integração v0.5 validada manualmente pelo usuário na nova máquina.
+2. Aplicar a migration 010 e validar cadastro, prévia, confirmação, histórico e conflito de versões de Global Facts. Definir fatos e exceções com o usuário; o cadastro começa vazio.
 3. Auditar um conjunto explícito de páginas publicadas, somente leitura. Distinguir conteúdo publicado de rascunhos no CMS/Designer.
 4. Comparar telefone/e-mail, `tel:`/`mailto:`, URLs aprovadas e termos/domínios proibidos com regras determinísticas.
 5. Checar links com limites de tempo, quantidade, concorrência e redirecionamentos. Separar quebrado, redirecionado, destino incorreto e inconclusivo. Bloqueio/timeout não equivale a link quebrado.
@@ -213,4 +221,16 @@ Exemplo fornecido pelo usuário, ainda não verificado externamente nem cadastra
 
 ## 9. Prompt para retomar no Codex
 
-> Estamos continuando o Universal Values. Leia AGENTS.md e docs/HANDOFF.md. O código da integração Designer/dashboard v0.5 já está no GitHub. Primeiro confira o ambiente e se a migration 009 foi aplicada, sem recriar dados nem trocar a chave de criptografia. Valide a conexão temporária da extensão, os links para CMS e o histórico central. Depois apresente o recorte de implementação de Global Facts e auditoria de integridade descrito no guia. Essa frente ainda é uma proposta, não foi implementada. Preserve prévia, confirmação, idempotência e auditoria; não modifique diretamente sites de clientes.
+> Estamos continuando o Universal Values. Leia AGENTS.md, docs/HANDOFF.md e docs/managed-value-sync.md. O usuário validou Designer/dashboard v0.5, Global Facts e arquivamento de prévias. Auditoria por sitemap foi adiada. Edição central e sincronização CMS de Managed Values estão implementadas localmente; confira o Git, aplique a migration 012 se ainda pendente e valide em um site de testes. Preserve a chave de criptografia, prévia, confirmação, idempotência e auditoria. Não modifique diretamente sites de clientes.
+
+### Proteção dos vínculos e arquivamento
+
+Implementada a migration 013 (`managed_value_protection`); o usuário confirmou o funcionamento da proteção após a entrega. Ela bloqueia edições/reversões por scan nos campos vinculados, inclusive prévias antigas, e serializa criação de vínculos e despacho por site. A UI exclui fontes protegidas de edições em grupo. Arquivamento tem prévia, confirmação, auditoria, libera vínculos sem editar Webflow e preserva cadastro/histórico. Consulte `docs/managed-value-sync.md`. Divergências históricas não foram corrigidas automaticamente.
+
+### Resolução explícita de divergências externas
+
+Implementada localmente a migration 014 (`managed_value_resolution`); a aplicação remota desta migration não foi confirmada nesta conversa. O scan compara as fontes detectadas com os vínculos e mostra divergências inclusive fora dos grupos repetidos. A resolução permite selecionar trechos atuais e manter o valor central ou adotar o encontrado. Reutiliza a fila de sincronização com prévia, confirmação, snapshots originais/evidência, auditoria e releitura do CMS; nova edição externa permanece bloqueada. Não é monitoramento contínuo nem cobre campos sem ocorrências detectadas. Roteiro e limites em `docs/managed-value-sync.md`.
+
+### Última verificação de sincronização
+
+Na investigação da operação do usuário, o dashboard passou de 0/2 campos processados para 2/2 aplicados no campo Rich Text `more-details`. O executor exige releitura do CMS antes de registrar sucesso. A observação foi feita no histórico da aplicação, sem inspeção independente do CMS e sem publicação. O valor central é salvo na confirmação; o processamento dos campos depende da página da operação aberta. A UI agora distingue aplicação pendente, fontes verificadas e encerramento com pendências, com atalho para continuar. Testes de transporte usam mocks; testes de banco usam PGlite.
