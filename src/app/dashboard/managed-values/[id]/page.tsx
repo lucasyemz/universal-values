@@ -15,10 +15,10 @@ export default async function ManagedValuePage({ params }: { params: Promise<{ i
     <Link className="text-accent" href={"/dashboard/sites/" + value.site_id + "/scans"}>← Scans e valores</Link>
     <PageHeader eyebrow="Managed Value" title={value.name} description={`Versão ${value.version} · ${bindings.length} fontes vinculadas`} />
     <section aria-label="Valor centralizado" className="ui-card p-6"><p className="text-xs font-medium text-muted">Valor central desejado</p><p className="mt-2 break-words text-2xl font-semibold text-accent">{valueLabel(value.canonical)}</p><p className="mt-3 text-sm text-muted">Este é o valor salvo no cadastro. Sua alteração só chega ao CMS depois que a aplicação de cada fonte é concluída e verificada.</p></section>
-    {view.missingMigration ? <Notice tone="warning">Aplique a migration 012 para habilitar a edição e sincronização dos vínculos existentes.</Notice> : <>
+    {view.missingMigration ? <Notice tone="warning">Aplique as migrations até a 015 para habilitar a sincronização em segundo plano.</Notice> : <>
       {view.activeOperation && <Notice tone="warning" title="A aplicação no CMS ainda não terminou">
-        {view.activeOperation.outcome.verified} de {view.activeOperation.total} fontes verificadas nesta operação. Salvar o valor central não conclui a sincronização. O processamento acontece na página da operação e depende de ela permanecer aberta.
-        <Link className="ui-btn mt-3 inline-flex" href={"/dashboard/changes/" + view.activeOperation.id}>Continuar aplicação no CMS</Link>
+        {view.activeOperation.outcome.verified} de {view.activeOperation.total} fontes verificadas nesta operação. Salvar o valor central não conclui a sincronização. O worker continua no servidor mesmo com o navegador fechado. Confira o progresso e eventuais pausas na operação.
+        <Link className="ui-btn mt-3 inline-flex" href={"/dashboard/changes/" + view.activeOperation.id}>Acompanhar aplicação no CMS</Link>
       </Notice>}
       <Notice>{view.aligned} de {bindings.length} fontes têm o valor central registrado. {view.uncertain > 0 && `${view.uncertain} fontes possuem resultado incerto.`} O conteúdo é relido antes de cada aplicação. Os registros não garantem que ninguém editou o Webflow depois.</Notice>
       {value.archived_at ? <Notice>Valor arquivado. As fontes foram liberadas; o histórico permanece disponível.</Notice> : <ManagedValueEditor key={value.version} id={randomUUID()} valueId={value.id} version={value.version} canonical={value.canonical} disabled={!bindings.length || history.some(request => request.status === "confirmed")} />}

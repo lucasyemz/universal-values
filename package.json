@@ -13,7 +13,9 @@
     "setup:webflow": "node scripts/setup-webflow.mjs",
     "designer:build": "node scripts/designer-extension.mjs",
     "designer:dev": "node scripts/designer-extension.mjs serve",
-    "designer:bundle": "node scripts/designer-extension.mjs bundle"
+    "designer:bundle": "node scripts/designer-extension.mjs bundle",
+    "worker": "node scripts/cms-worker.mjs",
+    "worker:build": "node scripts/cms-worker.mjs --build"
   },
   "engines": {
     "node": ">=22.0.0"

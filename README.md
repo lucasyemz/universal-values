@@ -81,3 +81,7 @@ O contrato em `src/connectors/supabase/types.ts` representa a migration inicial.
 ## Edição central de Managed Values
 
 A edição central e sincronização dos campos CMS vinculados usam prévia, confirmação e verificação por fonte. Aplique a migration 012 e siga [o roteiro de teste](docs/managed-value-sync.md). Resultados parciais e incertos ficam registrados; não há publicação automática.
+
+## Worker CMS
+
+A sincronização confirmada agora roda em um processo independente do navegador. Aplique a migration 015, configure a credencial privada do servidor Supabase e execute `npm run worker` em outro terminal. O dashboard apenas acompanha o progresso. Veja [ativação, garantias e testes](docs/background-sync.md). Fechar o navegador é permitido; o processo do worker precisa permanecer ativo.

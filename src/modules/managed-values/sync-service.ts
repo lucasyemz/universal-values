@@ -11,7 +11,7 @@ export async function loadManagedSyncValue(id: string) {
   const { value, bindings } = await loadManagedValue(id);
   const site = await getScanSite(value.site_id);
   const { client } = await requireUser();
-  const result = await client.from("cms_change_requests").select("id,status,cursor,total,created_at,managed_after,results,expires_at,managed_version")
+  const result = await client.from("cms_change_requests").select("id,status,cursor,total,created_at,managed_after,results,expires_at,managed_version,background_paused")
     .eq("managed_value_id", id).order("created_at", { ascending: false }).limit(20);
   const missingMigration = !!result.error && ["42703", "PGRST204"].includes(result.error.code);
   if (result.error && !missingMigration) throw new Error("Histórico de sincronização indisponível.");
@@ -22,7 +22,7 @@ export async function loadManagedSyncValue(id: string) {
     if (archived.error) throw new Error("Histórico de arquivamento indisponível.");
     archivedBindings = z.array(bindingSchema).parse(archived.data[0]?.snapshot ?? []);
   }
-  const history = z.array(changeRequestSchema.pick({ id: true, status: true, cursor: true, total: true, managed_after: true, results: true, expires_at: true, managed_version: true }).extend({ created_at: z.string() })).parse(result.data ?? []).map(request => ({ ...request, outcome: syncOutcome(request) }));
+  const history = z.array(changeRequestSchema.pick({ id: true, status: true, cursor: true, total: true, managed_after: true, results: true, expires_at: true, managed_version: true, background_paused: true }).extend({ created_at: z.string() })).parse(result.data ?? []).map(request => ({ ...request, outcome: syncOutcome(request) }));
   return { value, site, missingMigration, bindings: parsed, archivedBindings, history, activeOperation: history.find(request => request.status === "confirmed"),
     aligned: parsed.filter(binding => !binding.uncertain && sameField(binding.canonical, value.canonical)).length,
     uncertain: parsed.filter(binding => binding.uncertain).length };

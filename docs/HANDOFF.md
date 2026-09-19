@@ -234,3 +234,7 @@ Implementada localmente a migration 014 (`managed_value_resolution`); a aplicaç
 ### Última verificação de sincronização
 
 Na investigação da operação do usuário, o dashboard passou de 0/2 campos processados para 2/2 aplicados no campo Rich Text `more-details`. O executor exige releitura do CMS antes de registrar sucesso. A observação foi feita no histórico da aplicação, sem inspeção independente do CMS e sem publicação. O valor central é salvo na confirmação; o processamento dos campos depende da página da operação aberta. A UI agora distingue aplicação pendente, fontes verificadas e encerramento com pendências, com atalho para continuar. Testes de transporte usam mocks; testes de banco usam PGlite.
+
+### Próxima entrega: execução CMS em segundo plano
+
+O usuário confirmou o ciclo principal e autorizou o processamento independente do navegador em 19/09. Implementada a migration 015, ainda não aplicada remotamente: fila durável nas operações confirmadas, gateway restrito a service_role, lease/dispatch existentes, pausa persistida e retomada explícita. O executor `npm run worker` é um processo Node separado; a UI somente consulta progresso/saúde. A chave privada `SUPABASE_SERVICE_ROLE_KEY` deve ser configurada no ambiente do worker, junto da chave de criptografia existente. Nenhuma sessão de usuário é persistida. Consulte `docs/background-sync.md`. A dependência da página aberta descrita na verificação anterior é substituída pelo worker após esta ativação. Não foi iniciado worker com credenciais reais durante a implementação.

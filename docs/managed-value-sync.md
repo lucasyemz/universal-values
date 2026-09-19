@@ -16,7 +16,7 @@ Nos resultados de um scan concluído, abra “Centralizar valor” no grupo dese
 
 1. Abra um Managed Value criado a partir de ocorrências CMS. Confira o valor, versão e fontes vinculadas.
 2. Informe outro valor e clique para revisar. A prévia mostra o valor central antes/depois e cada campo completo. Até aqui nada mudou no CMS nem no valor central.
-3. Confirme explicitamente. A versão central avança quando o valor muda; a página processa os campos e registra o resultado de cada um. Mantenha-a aberta ou retome pelo histórico.
+3. Confirme explicitamente. A versão central avança quando o valor muda; a página processa os campos e registra o resultado de cada um. Com a migration 015 e o worker ativo, você pode fechar a página; acompanhe pelo histórico. Consulte `docs/background-sync.md`.
 4. Confira os campos no CMS Webflow e volte ao Managed Value. Verifique o valor central, fontes observadas e histórico.
 5. Faça uma segunda edição, de preferência com texto de comprimento diferente. Apenas as ocorrências vinculadas devem mudar; suas posições são recalculadas após cada sucesso.
 6. Para testar conflito, altere manualmente um dos campos no Webflow após preparar a prévia. Confirme: esse campo deve ser preservado e sinalizado; outras fontes podem ter sucesso.
@@ -57,3 +57,7 @@ A prévia captura tanto os vínculos originais quanto a evidência selecionada. 
 **Cobertura:** a comparação abrange campos com ocorrências efetivamente armazenadas pelo scan. Campos ausentes, apagados, fora das coleções/tipos selecionados, acima dos limites ou cujo texto específico deixou de ser encontrado não são verificados aqui. Ausência de alerta não comprova alinhamento de todas as fontes. A sincronização normal continua relendo e protegendo cada fonte antes de qualquer escrita. Não há webhook, monitoramento contínuo nem publicação automática.
 
 **Teste:** edite um link vinculado diretamente no CMS, execute um scan de links e teste cada escolha em um site de testes. Na opção de adoção, confira a atualização central e das outras fontes; na opção de manutenção, confirme que só os trechos escolhidos são restaurados, preservando alterações no restante do campo. Para testar concorrência, edite novamente no Webflow após preparar a prévia: a fonte deverá terminar em conflito sem ser sobrescrita.
+
+## Execução em segundo plano (migration 015)
+
+A confirmação coloca a operação na fila durável. O worker avança os campos independentemente da página, pausando quando for necessária revisão. Execute `npm run worker` além do dashboard após seguir `docs/background-sync.md`. O navegador apenas consulta o progresso; ele não envia alterações. Se o worker parar, os registros ficam aguardando sua reinicialização.

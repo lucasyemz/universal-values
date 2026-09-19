@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/modules/auth/service";
 import { loadScanResults } from "./service";
 import { buildFieldChanges, changesSchema } from "./change-plan";
-import { loadChangeRequest, processChangeStep } from "./change-service";
+import { loadChangeRequest } from "./change-service";
 import { isRepeatedGroupSelection } from "./changes";
 import { failedChangesForRetry } from "./retry-changes";
 
@@ -43,15 +43,27 @@ export async function confirmChanges(form: FormData) {
   redirect("/dashboard/changes/" + parsed.data.id + (result.error ? "?error=confirmation" : ""));
 }
 
-export async function runChangeStep(input: unknown) {
-  const parsed = z.object({ id: z.uuid(), cursor: z.number().int().nonnegative() }).safeParse(input);
+export async function getChangeProgress(input: unknown) {
+  const parsed = z.object({ id: z.uuid() }).safeParse(input);
   if (!parsed.success) return { ok: false as const, message: "Solicitação inválida." };
   try {
-    const request = await processChangeStep(parsed.data.id, parsed.data.cursor);
-    if (request.managed_resolution) revalidatePath("/dashboard/scans/" + request.managed_resolution.scanId);
-    if (request.managed_value_id) revalidatePath("/dashboard/managed-values/" + request.managed_value_id);
-    return { ok: true as const, progress: { id: request.id, cursor: request.cursor, total: request.total, status: request.status, results: request.results } };
-  } catch { return { ok: false as const, message: "Processamento interrompido. Retome para consultar o resultado salvo sem reenviar alterações." }; }
+    const { request } = await loadChangeRequest(parsed.data.id);
+    const { client } = await requireUser();
+    const health = await client.rpc("cms_worker_last_seen", {});
+    if (health.error && !["PGRST202", "42883"].includes(health.error.code)) throw new Error("Worker health unavailable");
+    const worker = health.error ? "missing" as const : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" as const : "offline" as const;
+    return { ok: true as const, worker, progress: { cursor: request.cursor, total: request.total, status: request.status, paused: request.background_paused ?? false, error: request.worker_error } };
+  } catch { return { ok: false as const, message: "Não foi possível atualizar o progresso. O processamento no servidor independe desta tela." }; }
+}
+
+export async function resumeChanges(input: unknown) {
+  const parsed = z.object({ id: z.uuid(), cursor: z.number().int().nonnegative(), confirmed: z.literal(true) }).safeParse(input);
+  if (!parsed.success) return { ok: false as const, message: "Confirme a continuação da operação." };
+  const { client } = await requireUser();
+  const result = await client.rpc("resume_background_cms", { p_id: parsed.data.id, p_cursor: parsed.data.cursor });
+  if (result.error) return { ok: false as const, message: "Não foi possível retomar. Atualize o resultado, confira a migration 015 e aguarde o fim de qualquer etapa ativa." };
+  revalidatePath("/dashboard/changes/" + parsed.data.id);
+  return { ok: true as const };
 }
 
 export async function cancelChanges(form: FormData) {

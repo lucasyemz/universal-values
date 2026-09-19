@@ -1,31 +1,45 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { runChangeStep } from "@/modules/scans/change-actions";
+import { getChangeProgress, resumeChanges } from "@/modules/scans/change-actions";
 import { Progress, StatusBadge } from "@/components/ui";
 
 export function ChangeProgress({ id, cursor, total, paused }: { id: string; cursor: number; total: number; paused: boolean }) {
   const router = useRouter();
-  const [position, setPosition] = useState(cursor);
-  const [active, setActive] = useState(!paused);
   const [error, setError] = useState("");
+  const [worker, setWorker] = useState<"checking" | "missing" | "online" | "offline">("checking");
+  const [resuming, setResuming] = useState(false);
   useEffect(() => {
-    if (!active) return;
     let disposed = false;
-    const timer = setTimeout(async () => {
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
       try {
-        const result = await runChangeStep({ id, cursor: position });
+        const result = await getChangeProgress({ id });
         if (disposed) return;
-        if (!result.ok) { setActive(false); setError(result.message); return; }
-        setPosition(result.progress.cursor);
-        // Refresh also re-arms the timer if another tab currently owns the lease.
-        router.refresh();
-        if (["completed", "cancelled"].includes(result.progress.status)) setActive(false);
-        else if (result.progress.results.at(-1) && !["applied", "already_applied"].includes(result.progress.results.at(-1)!.status)) { setActive(false); setError("Confira o resultado abaixo antes de continuar com os demais campos."); }
-        else if (result.progress.cursor === position) { setActive(false); setError("Este lote está reservado por outra execução. Aguarde até 2 minutos e retome."); }
-      } catch { if (!disposed) { setActive(false); setError("Conexão interrompida. Retome para reconciliar o resultado."); } }
-    }, 5000);
+        if (!result.ok) setError(result.message);
+        else {
+          setError(""); setWorker(result.worker); router.refresh();
+          if (["completed", "cancelled"].includes(result.progress.status)) return;
+        }
+      } catch { if (!disposed) setError("Não foi possível consultar o progresso. O worker continua independente desta página."); }
+      if (!disposed) timer = setTimeout(poll, 5000);
+    };
+    void poll();
     return () => { disposed = true; clearTimeout(timer); };
-  }, [active, id, position, router]);
-  return <section className="ui-card my-6 p-5"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{position} de {total} campos processados</p><StatusBadge status={active ? "confirmed" : "paused"} /></div><Progress value={position} max={total} label="Campos processados" /><p className="mt-3 text-sm text-muted">Mantenha esta página aberta. Ao voltar, o processamento retoma dos resultados salvos.</p>{error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}{!active && position < total && <button onClick={() => { setError(""); setActive(true); }} className="mt-3 ui-btn">Retomar</button>}</section>;
+  }, [id, router]);
+  return <section className="ui-card my-6 p-5">
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{cursor} de {total} campos processados</p><StatusBadge status={paused ? "paused" : "confirmed"} label={paused ? "Aguardando revisão" : "Na fila do servidor"} /></div>
+    <Progress value={cursor} max={total} label="Campos processados" />
+    <p className="mt-3 text-sm text-muted">Você pode sair desta página ou fechar o navegador. O worker processa as fontes confirmadas e salva o progresso no banco.</p>
+    {worker === "missing" && <p role="alert" className="mt-3 text-amber-800">Aplique a migration 015 e configure o worker para habilitar o processamento em segundo plano.</p>}
+    {worker === "offline" && <p role="status" className="mt-3 text-amber-800">O executor não enviou sinal recente. A operação permanece salva na fila. Inicie o processo do worker no servidor para continuar.</p>}
+    {worker === "checking" && <p className="mt-2 text-sm text-muted">Verificando disponibilidade do executor…</p>}
+    {error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}
+    {paused && <><p className="mt-3 text-sm">Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.</p><button disabled={resuming || worker === "missing"} onClick={async () => {
+      setResuming(true);
+      try { const result = await resumeChanges({ id, cursor, confirmed: true }); if (!result.ok) setError(result.message); else router.refresh(); }
+      catch { setError("Não foi possível confirmar a retomada. Atualize o progresso antes de tentar novamente."); }
+      finally { setResuming(false); }
+    }} className="mt-3 ui-btn">{resuming ? "Confirmando…" : "Confirmar continuação das etapas pendentes"}</button></>}
+  </section>;
 }

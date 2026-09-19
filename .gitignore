@@ -8,3 +8,5 @@ coverage/
 next-env.d.ts
 extensions/webflow-designer/dist/
 extensions/webflow-designer/bundle.zip
+
+.worker/
