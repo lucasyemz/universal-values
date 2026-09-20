@@ -1,4 +1,5 @@
 import "server-only";
+import { isIndependentManagedText } from "./managed-protection";
 import { bindingSchema } from "@/modules/managed-values/sync-plan";
 import { scanDivergences } from "@/modules/managed-values/divergence";
 import { randomUUID } from "node:crypto";
@@ -77,13 +78,17 @@ export async function loadScanResults(id: string) {
   const fullBindings = z.array(bindingSchema).safeParse(bindings.data);
   const divergences = fullBindings.success ? scanDivergences(fullBindings.data, occurrences, scan.created_at).map(d => ({ ...d, value: managedValues.find(value => value.id === d.binding.managed_value_id)! })) : [];
   const linkedValues = Object.fromEntries(linked.map(binding => [binding.source_key, { id: binding.managed_value_id, name: names.get(binding.managed_value_id) ?? "Valor centralizado", divergence: divergences.some(d => d.binding.source_key === binding.source_key && !d.stale), bindingId: fullBindings.success ? fullBindings.data.find(b => b.source_key === binding.source_key)?.id : undefined }]));
+  const editableBoundOccurrenceIds = fullBindings.success ? occurrences.filter(o => {
+    const binding = fullBindings.data.find(b => b.source_key === o.source_key);
+    return binding && isIndependentManagedText(o, binding);
+  }).map(o => o.id) : [];
   const bound = new Set(linked.map((b) => b.source_key));
   const available = occurrences.filter((o) => !bound.has(o.source_key));
   const reviews = await client.rpc("scan_reviewed_occurrences", { p_scan_id: id });
   const reviewsMissing = !!reviews.error && ["PGRST202", "42883"].includes(reviews.error.code);
   if (reviews.error && !reviewsMissing) throw new Error("Marcações de revisão indisponíveis.");
   const reviewedIds = z.array(z.object({ occurrence_id: z.uuid() })).parse(reviews.data ?? []).map((row) => row.occurrence_id);
-  return { scan, occurrences, reviewedIds, reviewsMissing, linkedValues, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
+  return { scan, occurrences, reviewedIds, reviewsMissing, linkedValues, editableBoundOccurrenceIds, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
 }
 export async function processBatch(id: string, revision: number) {
   const scan = await getScan(id);

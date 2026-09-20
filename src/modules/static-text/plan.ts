@@ -1,3 +1,4 @@
+import { findTextMatches, searchOptionsSchema, type SearchOptions } from "../text-search/match";
 import { z } from "zod";
 
 export const nodeSchema = z.object({ id: z.string().min(1), text: z.string().max(10000) });
@@ -7,32 +8,27 @@ export type PageContext = z.infer<typeof contextSchema>;
 export const searchSchema = z.string().min(1).max(200).refine(value => value.trim().length > 0, "Informe um texto para buscar.");
 export const changeSchema = z.object({ id: z.string(), before: z.string().max(10000), after: z.string().max(10000) });
 export const planSchema = z.object({
-  id: z.uuid(), context: contextSchema, expiresAt: z.number(),
+  id: z.uuid(), context: contextSchema, expiresAt: z.number(), searchOptions: searchOptionsSchema.optional(),
   changes: z.array(changeSchema).min(1).max(100),
 }).refine(plan => new Set(plan.changes.map(change => change.id)).size === plan.changes.length);
 export type TextPlan = z.infer<typeof planSchema>;
 export type Mention = { key: string; nodeId: string; start: number; end: number; before: string; text: string; after: string };
 
-export function findMentions(nodes: TextNode[], input: string): Mention[] {
+export function findMentions(nodes: TextNode[], input: string, options?: SearchOptions): Mention[] {
   const search = searchSchema.parse(input);
   const result: Mention[] = [];
   for (const node of nodes) {
-    let offset = 0;
-    while (offset <= node.text.length) {
-      const start = node.text.indexOf(search, offset);
-      if (start < 0) break;
-      const end = start + search.length;
+    for (const { start, end, raw } of findTextMatches(node.text, search, options)) {
       result.push({ key: JSON.stringify([node.id, start]), nodeId: node.id, start, end,
-        before: node.text.slice(Math.max(0, start - 90), start), text: search, after: node.text.slice(end, end + 90) });
+        before: node.text.slice(Math.max(0, start - 90), start), text: raw, after: node.text.slice(end, end + 90) });
       if (result.length > 100) throw new Error("Mais de 100 menções. Use um texto mais específico.");
-      offset = end;
     }
   }
   return result;
 }
 
-export function preparePlan(context: PageContext, nodes: TextNode[], search: string, replacements: Record<string, string>, now = Date.now()): TextPlan {
-  const mentions = findMentions(nodes, search);
+export function preparePlan(context: PageContext, nodes: TextNode[], search: string, replacements: Record<string, string>, now = Date.now(), options?: SearchOptions): TextPlan {
+  const mentions = findMentions(nodes, search, options);
   if (Object.keys(replacements).some(key => !mentions.some(mention => mention.key === key))) throw new Error("Seleção inválida. Faça outra busca.");
   const changes = nodes.flatMap(node => {
     let after = node.text;
@@ -44,5 +40,5 @@ export function preparePlan(context: PageContext, nodes: TextNode[], search: str
     return after === node.text ? [] : [{ id: node.id, before: node.text, after }];
   });
   if (!changes.length) throw new Error("Nenhuma alteração selecionada.");
-  return planSchema.parse({ id: crypto.randomUUID(), context, changes, expiresAt: now + 15 * 60_000 });
+  return planSchema.parse({ id: crypto.randomUUID(), context, changes, ...(options ? { searchOptions: options } : {}), expiresAt: now + 15 * 60_000 });
 }

@@ -268,3 +268,21 @@ Validação visual da landing e login em desktop e 390px, build Next/TypeScript 
 ### Revisão UX/UI e marcação automática (20/09)
 
 Migration 019 aplicada remotamente; worker Edge atualizado. Retornos principais viraram botões de navegação com consulta nova ao servidor. Marcação manual em um clique, atalho de edição em grupo direto para prévia, confirmação CMS pelo botão explícito sem checkbox duplicado. Resultados bem-sucedidos marcam as ocorrências como revisadas e reconhecem conteúdo verificado nos próximos scans; falhas/conflitos/incertezas ficam pendentes. Histórico de sucesso conciliado sem sobrescrever decisões manuais. Detalhes em `docs/ux-review.md`. 332 testes, lint, build Next/TypeScript e smoke Edge aprovados. Mudanças desta etapa ainda sem commit/push.
+
+## URLs legíveis dos sites
+
+Migration 020 adiciona `sites.slug` persistente e único, derivado do nome com sufixos numéricos. O proxy redireciona URLs antigas por UUID e resolve slugs com RLS; IDs internos permanecem intactos. Detalhes e regras em `docs/site-urls.md`.
+
+## Namespace de conta nas URLs
+
+Migration 021 substitui unicidade global de site por `(account_id, slug)`. `account_routes` aloca prefixos de e-mail únicos e estáveis; URLs usam `/dashboard/{conta}/sites/{projeto}`. Os slugs globais anteriores ficam em `legacy_slug` para redirecionamentos. Consulte `docs/site-urls.md`.
+
+## Busca flexível
+
+CMS e Designer agora oferecem busca por texto com opções de caixa, acentos e palavra inteira, persistidas nos planos. O motor preserva posições e conteúdo original; substituições continuam exigindo prévia e confirmação. Resultados mostram origem/revisão e a pesquisa local cobre contexto e nomes de coleção/item/campo. Ver `docs/text-search.md`. Sem migration.
+
+### Proteção por trecho em campos gerenciados — 20/09
+
+Correção do bloqueio de “Maecenas” por um link “Buy it” em outro trecho do mesmo RichText. Editor e action liberam texto independente com snapshot válido; a migration 023 protege as faixas no banco e reposiciona os vínculos após aplicação verificada, mantendo prévia, confirmação, auditoria e idempotência. Testes incluem sobreposição, Unicode/HTML, remoção/reversão, múltiplos campos, vínculo criado após prévia e falhas/incerteza. Ver `docs/managed-value-sync.md`. Continua limitado a um Managed Value por campo para centralização. Sem escrita em sites de clientes durante a implementação.
+
+Migration 023 aplicada remotamente ao projeto Supabase conectado; existência da tabela/trigger e proteção de acesso verificadas. Testes locais, TypeScript, lint e build passaram. Validação de escrita real no CMS pendente do teste do usuário.

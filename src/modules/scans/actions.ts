@@ -13,7 +13,7 @@ export async function previewScan(form: FormData) {
   const searchText = form.get("searchText") ?? undefined;
   const selectedTypes = form.getAll("types");
   if (typeof searchText === "string" && searchText.trim() && !selectedTypes.includes("text")) selectedTypes.push("text");
-  const input = previewScanSchema.safeParse({ id: form.get("id"), siteId: form.get("siteId"), source: form.get("source"), collectionIds: form.getAll("collectionIds"), types: selectedTypes, searchText });
+  const input = previewScanSchema.safeParse({ id: form.get("id"), siteId: form.get("siteId"), source: form.get("source"), collectionIds: form.getAll("collectionIds"), types: selectedTypes, searchText, searchOptions: { ignoreCase: form.get("ignoreCase") === "on", ignoreAccents: form.get("ignoreAccents") === "on", wholeWord: form.get("wholeWord") === "on" } });
   if (!input.success) {
     const siteId = z.uuid().safeParse(form.get("siteId"));
     redirect(siteId.success ? "/dashboard/sites/" + siteId.data + "/scans?error=scope" : "/dashboard?error=invalid");
@@ -28,7 +28,7 @@ export async function previewScan(form: FormData) {
     const collections = (await reader.collections(site.webflow_site_id)).sort((a,b) => a.id.localeCompare(b.id));
     const selected = collections.filter((c) => input.data.collectionIds.includes(c.id));
     if (selected.length !== new Set(input.data.collectionIds).size) throw new Error("Invalid selection");
-    plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.searchText ? { searchText: input.data.searchText } : {}) })));
+    plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.searchText ? { searchText: input.data.searchText, searchOptions: input.data.searchOptions } : {}) })));
     truncated = false;
   } catch { redirect("/dashboard/sites/" + site.id + "/scans?error=provider"); }
   const { client } = await requireUser();

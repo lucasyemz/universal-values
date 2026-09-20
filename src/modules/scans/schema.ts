@@ -1,3 +1,4 @@
+import { searchOptionsSchema } from "@/modules/text-search/match";
 import { z } from "zod";
 import { managedValueSchema } from "@/modules/managed-values/schema";
 import { webflowIdSchema } from "@/connectors/webflow/schemas";
@@ -7,7 +8,7 @@ export const detectionTypes = ["money", "phone", "date", "number", "text", "link
 export const detectionLabels = { money: "Preços (R$)", phone: "Telefones", date: "Datas", number: "Números", text: "Textos repetidos", link: "Links", image: "Imagens e galerias" };
 const typesSchema = z.array(z.enum(detectionTypes)).min(1).max(detectionTypes.length);
 export const searchTextSchema = z.string().trim().max(200).regex(/^[^\p{Cc}]*$/u).optional();
-export const planSchema = z.array(z.object({ id: webflowIdSchema, name: z.string().max(255), types: typesSchema.optional(), searchText: searchTextSchema })).max(SCAN_LIMITS.collections);
+export const planSchema = z.array(z.object({ id: webflowIdSchema, name: z.string().max(255), types: typesSchema.optional(), searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() })).max(SCAN_LIMITS.collections);
 export const occurrenceInputSchema = z.object({
   collection_id: webflowIdSchema, collection_name: z.string().max(255),
   item_id: webflowIdSchema, item_name: z.string().max(255),
@@ -30,7 +31,7 @@ export const scanSchema = z.object({
   retry_at: z.string().nullable(), expires_at: z.string(), created_at: z.string(),
 });
 export type Scan = z.infer<typeof scanSchema>;
-export const previewScanSchema = z.strictObject({ id: z.uuid(), siteId: z.uuid(), source: z.literal("cms"), collectionIds: z.array(webflowIdSchema).min(1).max(SCAN_LIMITS.collections), types: typesSchema, searchText: searchTextSchema });
+export const previewScanSchema = z.strictObject({ id: z.uuid(), siteId: z.uuid(), source: z.literal("cms"), collectionIds: z.array(webflowIdSchema).min(1).max(SCAN_LIMITS.collections), types: typesSchema, searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() });
 export const confirmScanSchema = z.strictObject({ id: z.uuid(), confirmed: z.literal("yes") });
 export const processScanSchema = z.strictObject({ id: z.uuid(), revision: z.number().int().nonnegative() });
 export const valuePreviewInputSchema = z.strictObject({
@@ -52,7 +53,7 @@ export function valueLabel(value: z.infer<typeof managedValueSchema>) {
     case "link": case "image": return value.url;
   }
 }
-export function groupOccurrences(occurrences: Occurrence[], includeWithinField = false) {
+export function groupOccurrences(occurrences: Occurrence[], includeWithinField = false, includeSingles = false) {
   const groups = new Map<string, { label: string; type: string; occurrences: Occurrence[]; sourceCount: number }>();
   for (const occurrence of occurrences) {
     const key = JSON.stringify(occurrence.canonical);
@@ -61,7 +62,7 @@ export function groupOccurrences(occurrences: Occurrence[], includeWithinField =
     groups.set(key, group);
   }
   return [...groups.values()].map((group) => ({ ...group, sourceCount: new Set(group.occurrences.map((o) => o.source_key)).size }))
-    .filter((group) => includeWithinField ? group.occurrences.length >= 2 : group.sourceCount >= 2).sort((a, b) => b.sourceCount - a.sourceCount);
+    .filter((group) => includeSingles || (includeWithinField ? group.occurrences.length >= 2 : group.sourceCount >= 2)).sort((a, b) => b.sourceCount - a.sourceCount);
 }
 
 export function searchedScanTypes(scan: Pick<Scan, "plan">) {
@@ -76,7 +77,7 @@ export function groupScanResults(scan: Pick<Scan, "plan">, occurrences: Occurren
   return detectionTypes.filter((type) => selected.has(type)).map((type) => {
     const rows = occurrences.filter((o) => o.canonical.type === type);
     const eligible = available.filter((o) => o.canonical.type === type);
-    return { type, label: detectionLabels[type], occurrences: rows, duplicates: groupOccurrences(rows, true), groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
+    return { type, label: detectionLabels[type], occurrences: rows, duplicates: groupOccurrences(rows, true, type === "text" && scan.plan.some(entry => !!entry.searchText)), groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
   });
 }
 

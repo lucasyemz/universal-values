@@ -21,3 +21,9 @@ export async function designerDashboard(id: string) {
   if (changes.error || sessions.error) return { site, changes: [], sessions: [], unavailable: true };
   return { site, changes: changes.data, sessions: sessions.data, unavailable: false };
 }
+
+export async function designerChangeHistory(id: string) {
+  const { client } = await designerSite(id);
+  const result = await client.from("designer_changes").select("id,plan,search_text,events,created_at,expires_at").eq("site_id", id).order("created_at", { ascending: false }).limit(30);
+  return { changes: result.data ?? [], unavailable: !!result.error };
+}

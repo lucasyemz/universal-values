@@ -1,3 +1,5 @@
+import { textContext } from "./text-context";
+import { findTextMatches, hasWordBoundaries, type SearchOptions } from "@/modules/text-search/match";
 import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 
 // Persisted bindings can contain escaped text produced by a prior confirmed
@@ -26,15 +28,14 @@ export function isRichTextRange(source: string, start: number, end: number) {
 }
 
 // Match literal source text within text nodes, never HTML attributes or markup.
-export function detectTextMentions(source: string, term: string, richText = false) {
+export function detectTextMentions(source: string, term: string, richText = false, options?: SearchOptions) {
   const matches: { start: number; end: number; raw: string; canonical: { type: "text"; text: string } }[] = [];
   if (!term) return matches;
   const search = (start: number, end: number) => {
-    let index = source.indexOf(term, start);
-    while (index >= start && index + term.length <= end) {
-      matches.push({ start: [...source.slice(0, index)].length, end: [...source.slice(0, index + term.length)].length,
-        raw: term, canonical: { type: "text", text: term } });
-      index = source.indexOf(term, index + term.length);
+    for (const match of findTextMatches(source.slice(start, end), term, options)) {
+      const from = start + match.start, to = start + match.end;
+      matches.push({ start: [...source.slice(0, from)].length, end: [...source.slice(0, to)].length,
+        raw: match.raw, canonical: { type: "text", text: match.raw } });
     }
   };
   if (!richText) search(0, source.length);
@@ -56,5 +57,9 @@ export function detectTextMentions(source: string, term: string, richText = fals
     };
     visit(parseFragment(source, { sourceCodeLocationInfo: true }));
   }
+  if (richText && options?.wholeWord) return matches.filter(match => {
+    const context = textContext({ source_value: source, field_type: "RichText", start_pos: match.start, end_pos: match.end, raw_match: match.raw });
+    return context && hasWordBoundaries(context.before, context.after);
+  });
   return matches;
 }

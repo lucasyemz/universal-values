@@ -30,7 +30,8 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const routeWorkspace = pathname.match(/\/workspaces\/([^/]+)\/sites/)?.[1];
   const workspaceId = routeWorkspace ?? current?.workspaceId ?? (workspaces.length === 1 ? workspaces[0]?.id : undefined);
   const siteId = current?.siteId;
-  const siteBase = siteId ? "/dashboard/sites/" + siteId : null;
+  const visibleSiteBase = pathname.match(/^\/dashboard\/[^/]+\/sites\/[^/]+/)?.[0] ?? pathname.match(/^\/dashboard\/sites\/[^/]+/)?.[0];
+  const siteBase = siteId ? visibleSiteBase ?? "/dashboard/sites/" + siteId : null;
   const close = () => dialog.current?.close();
   const sidebar = <>
     <Link href="/dashboard" onClick={close} className="mb-8 inline-flex"><Brand /></Link>
@@ -41,7 +42,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
     </label>
     <nav aria-label="Navegação principal" className="space-y-1">
       <Link onClick={close} href="/dashboard" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />Visão geral</Link>
-      {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Sites</Link>}
+      {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Sites</Link>}
       {siteBase && <><p className="px-3 pb-1 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">Neste site</p>
         <Link onClick={close} href={siteBase} className="ui-nav-link" aria-current={pathname === siteBase ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Explorar CMS</Link>
         <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />Global Facts</Link>

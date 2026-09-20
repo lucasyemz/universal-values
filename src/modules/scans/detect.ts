@@ -1,3 +1,4 @@
+import type { SearchOptions } from "@/modules/text-search/match";
 import { z } from "zod";
 import { managedValueSchema, type ManagedValue } from "@/modules/managed-values/schema";
 import { collectionDetailsSchema, itemsSchema } from "@/connectors/webflow/schemas";
@@ -37,7 +38,7 @@ export function detectText(text: string): Match[] {
   }));
 }
 
-export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, page: z.infer<typeof itemsSchema>, types: readonly ManagedValue["type"][] = detectionTypes, searchText?: string) {
+export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, page: z.infer<typeof itemsSchema>, types: readonly ManagedValue["type"][] = detectionTypes, searchText?: string, searchOptions?: SearchOptions) {
   const rows: DetectedOccurrence[] = [];
   let skippedFields = 0;
   let truncated = false;
@@ -63,7 +64,7 @@ export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, 
       } else if (typeof value === "string") matches = detectText(value);
       else { skippedFields++; truncated = true; continue; }
       if (mentions) {
-        const found = detectTextMentions(source, searchText!, field.type === "RichText");
+        const found = detectTextMentions(source, searchText!, field.type === "RichText", searchOptions);
         matches = [...found, ...matches.filter((match) => match.canonical.type !== "text" && !found.some((m) => m.start < match.end && m.end > match.start))].sort((a, b) => a.start - b.start);
       }
       matches = matches.filter((match) => types.includes(match.canonical.type));

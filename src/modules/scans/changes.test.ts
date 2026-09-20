@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { detectPage } from "./detect";
 import { buildFieldChanges, sameField } from "./change-plan";
-import { fillOccurrenceValues, prepareOccurrenceChanges } from "./changes";
+import { fillOccurrenceValues, prepareOccurrenceChanges, isRepeatedGroupSelection } from "./changes";
 import { type Occurrence } from "./schema";
 
 const ids = ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"];
@@ -64,4 +64,11 @@ describe("individual and bulk changes", () => {
     expect(sameField({ alt: "A", url: "x" }, { url: "x", alt: "B" })).toBe(false);
     expect(sameField(["a", "b"], ["b", "a"])).toBe(false);
   });
+});
+
+it("allows a targeted singleton only when the scan explicitly searched for text", () => {
+  const rows = occurrences("PlainText", "Empresa");
+  expect(isRepeatedGroupSelection(rows, [rows[0]!.id])).toBe(false);
+  expect(isRepeatedGroupSelection(rows, [rows[0]!.id], true)).toBe(true);
+  expect(isRepeatedGroupSelection(rows, [rows[0]!.id, rows[0]!.id], true)).toBe(false);
 });

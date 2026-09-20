@@ -1,3 +1,4 @@
+import { searchOptionsLabel } from "@/modules/text-search/match";
 import { FreshLink } from "@/components/ui/fresh-link";
 import { randomUUID } from "node:crypto";
 import { ManagedDivergence } from "@/components/scans/managed-divergence";
@@ -30,7 +31,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
     <SiteContext title="Scan do CMS" siteId={scan.site_id} workspaceId={scan.workspace_id} />
     <FreshLink href={"/dashboard/sites/" + scan.site_id + "/scans"} >← Scans e valores</FreshLink>
     <PageHeader title={scan.status === "preview" ? "Revisar scan" : "Resultados do scan"} description={scan.status === "preview" ? "Confira o que será lido antes de iniciar." : "Revise as ocorrências e mantenha o foco no que precisa mudar."} status={<StatusBadge status={scan.status} />} />
-    {scan.plan[0]?.searchText && <p className="mt-3 break-words">Texto específico: <strong>“{scan.plan[0].searchText}”</strong> — busca literal, diferenciando maiúsculas e minúsculas.</p>}
+    {scan.plan[0]?.searchText && <p className="mt-3 break-words">Texto específico: <strong>“{scan.plan[0].searchText}”</strong> — {searchOptionsLabel(scan.plan[0].searchOptions)}.</p>}
     {error && <p role="alert" className="mt-5 rounded border bg-amber-50 p-4">{error === "name" ? "Use um nome de 2 a 80 caracteres, como Link de cadastro. Este campo dá um nome ao valor encontrado; ele não substitui a URL." : error === "invalid" ? "A solicitação de revisão é inválida. Atualize o scan e tente novamente." : error === "selection" ? "Selecione de 2 a 100 ocorrências do mesmo valor, em pelo menos dois campos de origem diferentes e ainda não gerenciados." : "Não foi possível concluir. A prévia pode ter expirado, a conexão mudou ou já existe um scan ativo para este site."}</p>}
     {scan.status === "preview" ? <section className="mt-8 ui-card p-6">
       <Steps steps={["Origem e coleções", "O que encontrar", "Revisar e iniciar"]} current={2} />
@@ -56,7 +57,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         {view.divergences.map(d => <ManagedDivergence key={d.binding.id} id={randomUUID()} scanId={scan.id} bindingId={d.binding.id} name={d.value.name} valueId={d.value.id} version={d.value.version} central={d.value.canonical} before={d.binding.source_value} observed={d.observed} rows={d.rows} stale={d.stale} uncertain={d.binding.uncertain} />)}
       </section>}
       <p className="mb-3 text-xs text-muted">Conteúdo registrado neste scan. Atualizar a página recarrega revisões e resultados; para buscar novas edições no Webflow, execute outro scan.</p>
-      <p className="text-muted">Cada grupo reúne ocorrências com o mesmo valor. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.</p>
+      <p className="text-muted">Cada grupo mantém o texto original encontrado. Variações de acentos e maiúsculas ficam em grupos separados para você revisar com precisão. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.</p>
       <form method="get" className="mt-5 space-y-2">
         <input type="hidden" name="filter" value={filter} />
         <label htmlFor="results-search" className="block font-medium">Pesquisar nos resultados</label>
@@ -65,7 +66,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
           <button className="ui-btn ui-btn-primary">Pesquisar</button>
           {query && <Link href={"/dashboard/scans/" + id + "?filter=" + filter} className="ui-btn">Limpar</Link>}
         </div>
-        <p className="text-sm text-muted">Filtra valores e títulos já detectados, sem diferenciar maiúsculas e minúsculas. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.</p>
+        <p className="text-sm text-muted">Filtra grupos pelo valor, trecho, coleção, item ou campo já registrado, ignorando maiúsculas/minúsculas e acentos. Mantém juntas as ocorrências de cada grupo e não faz novas consultas ao Webflow. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.</p>
       </form>
       <nav aria-label="Filtrar por revisão" className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={"/dashboard/scans/" + id + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{reviewFilterLabels[option]} ({counts[option]})</Link>)}</nav>
       <p className="mt-3 text-sm text-muted">Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Edições externas aparecem como pendentes em um novo scan.</p>
@@ -77,7 +78,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         {section.duplicates.map((group) => <div key={filter + query + group.label} className="ui-card mt-5 overflow-hidden p-5 md:p-6">
           {!view.reviewsMissing && <ReviewFlag scanId={id} pendingIds={group.occurrences.filter((o) => !view.reviewedIds.includes(o.id)).map((o) => o.id)} reviewedIds={group.occurrences.filter((o) => view.reviewedIds.includes(o.id)).map((o) => o.id)} />}
           <CentralizeValue scanId={scan.id} occurrences={group.occurrences} linkedValues={view.linkedValues} />
-          <OccurrenceEditor scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
+          <OccurrenceEditor editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
         </div>)}
       </section>)}
     </section>}

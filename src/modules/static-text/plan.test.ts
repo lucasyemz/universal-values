@@ -29,3 +29,13 @@ describe("static text plans", () => {
     expect(() => preparePlan(context, [{ id: "a", text: "X" }], "X", {})).toThrow();
   });
 });
+
+it("previews flexible matches using original offsets without rewriting neighboring text",()=>{
+ const options={ignoreCase:true,ignoreAccents:true,wholeWord:true};
+ const nodes=[{id:"a",text:"🎉 CAFÉ, Cafe\u0301 e cafeteria"}];
+ const mentions=findMentions(nodes,"cafe",options);
+ expect(mentions.map(m=>m.text)).toEqual(["CAFÉ","Cafe\u0301"]);
+ const plan=preparePlan(context,nodes,"cafe",{[mentions[1]!.key]:"Chá"},1000,options);
+ expect(plan.changes[0]?.after).toBe("🎉 CAFÉ, Chá e cafeteria");
+ expect(plan.searchOptions).toEqual(options);
+});

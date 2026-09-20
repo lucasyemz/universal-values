@@ -55,3 +55,28 @@ describe("specific text scans", () => {
     expect(detectPage(details, page, ["text"], "Acme").rows).toHaveLength(2);
   });
 });
+
+it("finds flexible Rich Text matches with original code-point positions and safe replacements", () => {
+  const source = '<p title="CAFÉ">🎉 CAFÉ e Cafe\u0301 &amp; cafe</p><script>cafe</script>';
+  const options = { ignoreCase: true, ignoreAccents: true, wholeWord: true };
+  const matches = detectTextMentions(source, "cafe", true, options);
+  expect(matches.map(m => m.raw)).toEqual(["CAFÉ", "Cafe\u0301", "cafe"]);
+  const match = matches[1]!;
+  expect([...source].slice(match.start,match.end).join("")).toBe("Cafe\u0301");
+  const occurrence = { id, source_key: "body", field_type: "RichText", source_value: source, raw_match: match.raw, start_pos: match.start, end_pos: match.end, canonical: match.canonical } as Occurrence;
+  expect(buildFieldChanges([occurrence], [{ occurrenceId:id,after:{type:"text",text:"Chá"} }])[0]?.after).toBe('<p title="CAFÉ">🎉 CAFÉ e Chá &amp; cafe</p><script>cafe</script>');
+});
+it("does not invent whole-word boundaries at inline tags or HTML entities",()=>{
+ const options={ignoreCase:false,ignoreAccents:false,wholeWord:true};
+ expect(detectTextMentions('<p>casa<b>mento</b> casa&eacute;</p>','casa',true,options)).toEqual([]);
+ expect(detectTextMentions('<p>casa</p><p>mento</p>','casa',true,options)).toHaveLength(1);
+});
+it("persists and applies the chosen search rules in CMS detection",()=>{
+ const searchOptions={ignoreCase:true,ignoreAccents:true,wholeWord:true};
+ const plan=planSchema.parse([{id:'a'.repeat(24),name:'CMS',searchText:'cafe',searchOptions}]);
+ expect(plan[0]?.searchOptions).toEqual(searchOptions);
+ const details={id:'a'.repeat(24),displayName:'CMS',slug:'cms',fields:[{id:'body',slug:'body',displayName:'Body',type:'PlainText'}]};
+ const page={items:[{id:'b'.repeat(24),isArchived:false,isDraft:false,fieldData:{body:'CAFÉ, café e cafeteria'}}],pagination:{offset:0,limit:25,total:1}};
+ expect(detectPage(details,page,['text'],'cafe',searchOptions).rows.map(r=>r.raw_match)).toEqual(['CAFÉ','café']);
+ expect(detectPage(details,page,['text'],'cafe').rows.map(r=>r.raw_match)).toEqual(['cafe']);
+});

@@ -1,0 +1,21 @@
+# Busca flexível e contexto
+
+O scan por texto específico no CMS e a extensão do Designer oferecem opções independentes:
+
+- Ignorar maiúsculas/minúsculas.
+- Ignorar acentos.
+- Palavra ou expressão inteira (fronteiras Unicode de letras, números, marcas e underscore).
+
+Todas ficam desligadas por padrão, mantendo a busca literal. Espaços não são flexibilizados e não há expressão regular nem correspondência aproximada. As opções ficam registradas no plano JSON do scan e nas prévias do Designer; registros antigos sem opções continuam exatos. Não é necessária migration.
+
+`src/modules/text-search/match.ts` normaliza somente a comparação. Mantém um mapa dos grafemas para intervalos do texto original, em UTF-16. O adaptador do CMS converte os intervalos para pontos Unicode, conforme PostgreSQL. Isso preserva emojis, acentos compostos/decompostos e os trechos usados na validação da escrita. A substituição é literal: não tenta adaptar automaticamente caixa ou acentos.
+
+Rich Text continua limitado a texto contínuo, sem atravessar tags ou entidades. Atributos e conteúdo de scripts/estilos/templates não são pesquisados. A opção de palavra inteira também verifica os caracteres visíveis ao redor de tags inline/entidades, para não confundir `casa<b>mento</b>` com a palavra inteira `casa`.
+
+No Designer, a busca considera cada nó de texto compatível. Trechos divididos entre elementos continuam fora da cobertura; a extensão não tenta inferir palavras entre nós. As opções são mantidas na preparação da prévia e mudar as opções invalida os resultados anteriores.
+
+Resultados do CMS mantêm variantes em grupos distintos pelo valor original, preservando os contratos de Managed Values. Uma busca específica também exibe ocorrências únicas; a detecção automática continua exibindo repetições. Centralizar ainda exige pelo menos dois campos com o mesmo valor.
+
+A pesquisa dentro de um scan filtra grupos por valor, contexto visível, coleção, item e campo, ignorando caixa e acentos. Não faz novas consultas ao Webflow, nem mistura valores diferentes. Cada ocorrência mostra sua origem, o trecho destacado, status de revisão e proteção de Managed Value.
+
+Teste manual: pesquisar `sao paulo` com as duas primeiras opções ligadas; conferir `São Paulo`, `SAO PAULO` e `sao paulo`. Pesquisar `casa` com palavra inteira para excluir `casamento`. Revisar apenas uma ocorrência e conferir que a prévia mantém o restante do campo. No Designer, recompilar/reabrir a extensão antes do teste.

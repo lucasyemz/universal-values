@@ -61,3 +61,13 @@ A prévia captura tanto os vínculos originais quanto a evidência selecionada. 
 ## Execução em segundo plano (migration 015)
 
 A confirmação coloca a operação na fila durável. O worker avança os campos independentemente da página, pausando quando for necessária revisão. Execute `npm run worker` além do dashboard após seguir `docs/background-sync.md`. O navegador apenas consulta o progresso; ele não envia alterações. Se o worker parar, os registros ficam aguardando sua reinicialização.
+
+## Edição de textos independentes no mesmo campo (migration 023)
+
+A proteção de edição do scan considera os intervalos do vínculo. Um texto de PlainText/RichText fora de todos os trechos gerenciados pode ser alterado, mesmo quando outro trecho do campo pertence a um Managed Value. Exemplo: editar “Maecenas” sem tocar no `href` gerenciado de “Buy it”. Sobreposição, snapshot divergente ou vínculo incerto continuam bloqueados.
+
+A migration `20260920002300_managed_text_ranges.sql` calcula no banco uma evidência privada e imutável por campo/prévia, revalida o vínculo na confirmação e no dispatch e, após resultado verificado, atualiza o snapshot e as posições em Unicode do vínculo. O valor central e sua versão permanecem iguais. A ação `managed_range_preserved` registra a atualização na auditoria. Remoções, HTML escapado, retries idempotentes, vários campos e reversão explícita são cobertos por testes; resultados incertos bloqueiam o vínculo para reconciliação.
+
+Esta liberação cobre edições de **texto**. Outros tipos seguem protegidos no campo vinculado. A centralização mantém a regra de um Managed Value por campo; criar outro vínculo independente no mesmo campo ainda não está disponível. A interface identifica quando o vínculo protege outro trecho e libera o editor de texto. Se o scan tiver conteúdo antigo, é necessário executar outro scan e resolver eventuais divergências.
+
+Teste manual: busque um texto antes/depois de um link gerenciado, substitua por um texto maior usando prévia e confirmação, confira o link intacto e depois prepare uma edição do Managed Value para verificar que ele ainda aponta para o link correto. Testar a aplicação real no CMS fica a cargo do usuário.

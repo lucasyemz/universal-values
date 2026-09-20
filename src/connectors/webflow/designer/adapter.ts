@@ -41,10 +41,10 @@ export class DesignerTextPort implements TextPort {
     if (pages && !listed) throw new Error(`A página aberta (${current.id}) não aparece na lista de páginas do Designer. Recarregue o Designer e reabra a extensão.`);
     const page = listed ?? current;
     if (await designerRead("getCurrentComponent", () => webflow.getCurrentComponent())) throw new Error("Saia da edição de componentes para testar uma página estática.");
-    // The Designer can reject getCollectionId on a static homepage instead of
-    // returning null. A positively identified homepage needs no CMS lookup.
-    const homepage = await designerRead("page.isHomepage", () => page.isHomepage());
-    if (!homepage && await designerRead("page.getCollectionId", () => page.getCollectionId())) throw new Error("Abra uma página estática, não um template do CMS.");
+    // Collection lookup can throw ResourceMissing on valid static pages.
+    // Classify positively instead of treating a failed CMS lookup as static.
+    const kind = await designerRead("page.getKind", () => page.getKind());
+    if (kind !== "static") throw new Error("Abra uma página estática, não um template do CMS ou uma página especial.");
     const root = await designerRead("getRootElement", () => webflow.getRootElement());
     if (!root) throw new Error("A página não está disponível no Designer.");
     const site = await designerRead("getSiteInfo", () => webflow.getSiteInfo());

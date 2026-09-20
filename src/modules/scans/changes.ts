@@ -48,9 +48,9 @@ export function fillOccurrenceValues(occurrences: Occurrence[], inputs: Record<s
   return { ...inputs, ...Object.fromEntries(occurrences.map((o) => [o.id, value])) };
 }
 
-export function isRepeatedGroupSelection(occurrences: Occurrence[], ids: string[]) {
+export function isRepeatedGroupSelection(occurrences: Occurrence[], ids: string[], includeSingles = false) {
   if (!ids.length || new Set(ids).size !== ids.length) return false;
-  return groupOccurrences(occurrences, true).some((group) => {
+  return groupOccurrences(occurrences, true, includeSingles).some((group) => {
     const allowed = new Set(group.occurrences.map((o) => o.id));
     return ids.every((id) => allowed.has(id));
   });

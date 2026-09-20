@@ -1,3 +1,4 @@
+import type { SearchOptions } from "../../../modules/text-search/match";
 import { DesignerTextPort } from "./adapter";
 import { DesignerDashboardClient } from "./dashboard-client";
 import { applyPlan } from "../../../modules/static-text/apply";
@@ -12,13 +13,13 @@ export class DesignerController {
     const page = await webflow.getCurrentPage();
     return { siteId: site.siteId, siteName: site.siteName, pageName: await page.getName() };
   }
-  async search(term: string) {
+  async search(term: string, options?: SearchOptions) {
     const scan = await this.port.scan();
-    await this.dashboard.home(scan.context.siteId);
-    return { scan, mentions: findMentions(scan.nodes, term) };
+    const home = await this.dashboard.home(scan.context.siteId);
+    return { scan, home, mentions: findMentions(scan.nodes, term, options) };
   }
-  async preview(scan: Awaited<ReturnType<DesignerTextPort["scan"]>>, term: string, replacements: Record<string, string>) {
-    const plan = preparePlan(scan.context, scan.nodes, term, replacements);
+  async preview(scan: Awaited<ReturnType<DesignerTextPort["scan"]>>, term: string, replacements: Record<string, string>, options?: SearchOptions) {
+    const plan = preparePlan(scan.context, scan.nodes, term, replacements, Date.now(), options);
     return this.dashboard.preview(plan, term);
   }
   async apply(plan: TextPlan, confirmed: boolean) {
