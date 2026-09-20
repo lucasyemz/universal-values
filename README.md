@@ -1,4 +1,4 @@
-# Universal Values
+# CopyReplace
 
 Fundação do SaaS para descobrir informações repetidas em sites Webflow e gerenciar fontes vinculadas.
 
@@ -89,3 +89,5 @@ A sincronização confirmada agora roda em um processo independente do navegador
 O executor CMS também está preparado para **Supabase Edge Functions + Cron**, dentro das cotas gratuitas. Compile com `npm run worker:edge:build` e siga [a ativação](docs/background-sync.md); o agendamento é instalado inicialmente desativado.
 
 Limites do plano gratuito e privilégios administrativos: [docs/free-plan.md](docs/free-plan.md).
+
+Identidade visual: [guia da marca](docs/brand-guide.md). Logos e fontes Geist locais em `public/brand`; licença OFL incluída com as fontes.

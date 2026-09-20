@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, copyFile } from "node:fs/promises";
+import { mkdir, copyFile, cp } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -13,6 +13,7 @@ if (dashboardUrl.username || dashboardUrl.password || dashboardUrl.pathname !== 
 await mkdir(out, { recursive: true });
 await build({ entryPoints: [path.join(root, "src/connectors/webflow/designer/extension.tsx")], bundle: true, outfile: path.join(out, "index.js"), platform: "browser", target: "es2022", jsx: "automatic", minify: true, define: { "process.env.NODE_ENV": '"production"', DESIGNER_DASHBOARD_URL: JSON.stringify(dashboardUrl.origin) } });
 await Promise.all(["index.html", "styles.css"].map(file => copyFile(path.join(extension, file), path.join(out, file))));
+await cp(path.join(root, "public/brand"), path.join(out, "brand"), { recursive: true });
 console.log("Extensão compilada em extensions/webflow-designer/dist.");
 const mode = process.argv[2];
 if (mode === "serve" || mode === "bundle") {

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element -- Standalone Designer extension bundles its local SVG; no Next.js runtime. */
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { LocalAuditStore } from "./audit-store";
@@ -43,7 +44,7 @@ function Extension() {
     finally { setBusy(false); }
   }
   return <main>
-    <header><span className="badge">UNIVERSAL VALUES · v0.5</span><h1>{view === "home" ? "Seu conteúdo, organizado" : "Textos da página"}</h1><p>{identity ? `${identity.siteName} · ${identity.pageName}` : "Abra esta extensão dentro do Webflow Designer."}</p>
+    <header><img className="brand-logo" src="./brand/logo-primary.svg" alt="CopyReplace" width="168" height="35" /><h1>{view === "home" ? "Seu conteúdo, organizado" : "Textos da página"}</h1><p>{identity ? `${identity.siteName} · ${identity.pageName}` : "Abra esta extensão dentro do Webflow Designer."}</p>
       {home && <nav className="lab-nav"><button disabled={busy} onClick={() => setView("home")}>Início</button><a href={dashboardUrl + "/dashboard/sites/" + home.siteId + "/static"} target="_blank" rel="noreferrer">Abrir dashboard ↗</a><button disabled={busy} onClick={() => void run(async () => { const info = await controller.identify(); setIdentity(info); setHome(await controller.dashboard.home(info.siteId)); })}>Atualizar atividade</button><button disabled={busy} onClick={() => { invalidate(); setHome(undefined); setView("home"); }}>Reconectar</button></nav>}
     </header>
     {!home && <section><h2>Conecte sua conta</h2><p>Autorize este site no dashboard e cole o código temporário aqui. Prévia, confirmação e resultado serão registrados no seu workspace.</p>

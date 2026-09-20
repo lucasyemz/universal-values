@@ -1,5 +1,5 @@
-import { Layers3 } from "lucide-react";
+import Image from "next/image";
 
 export function Brand() {
-  return <span className="inline-flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white"><Layers3 size={19} aria-hidden="true" /></span><span className="text-[15px] font-semibold tracking-tight">Universal Values<span className="ml-1 text-accent">.</span></span></span>;
+  return <Image src="/brand/logo-primary.svg" alt="CopyReplace" width={1371} height={288} priority unoptimized className="h-auto w-[168px] shrink-0" />;
 }

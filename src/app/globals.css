@@ -2,22 +2,23 @@
 
 :root {
   color-scheme: light;
-  --bg-app: #f7f8fb; --bg-surface: #fff; --bg-subtle: #f2f4f8;
-  --text-primary: #182230; --text-secondary: #596579; --text-tertiary: #717d90;
-  --border-default: #e3e7ef; --border-strong: #cbd3df;
-  --accent: #3568df; --accent-hover: #2855bd; --accent-soft: #edf2ff;
-  --success: #137854; --success-soft: #eaf7f0;
-  --warning: #946014; --warning-soft: #fff8e9;
-  --danger: #b92b2b; --danger-soft: #fff1ef;
+  --bg-app: #F7F9FC; --bg-surface: #fff; --bg-subtle: #EEF2F7;
+  --text-primary: #111827; --text-secondary: #667085; --text-tertiary: #667085;
+  --border-default: #D9E0EA; --border-strong: #D9E0EA;
+  --accent: #1557FF; --accent-hover: #0D47D9; --accent-soft: #EAF1FF;
+  --success-solid: #16A34A; --success: #15803D; --success-soft: #eaf7f0;
+  --warning-solid: #D97706; --warning: #92400E; --warning-soft: #fff8e9;
+  --danger: #DC2626; --danger-soft: #fff1ef;
 }
 @theme inline {
+  --font-sans: var(--font-geist), Arial, Helvetica, sans-serif;
   --color-app: var(--bg-app); --color-surface: var(--bg-surface); --color-subtle: var(--bg-subtle);
   --color-ink: var(--text-primary); --color-muted: var(--text-secondary); --color-faint: var(--text-tertiary);
   --color-line: var(--border-default); --color-accent: var(--accent); --color-accent-soft: var(--accent-soft);
 }
 @layer base {
   * { border-color: var(--border-default); }
-  body { margin: 0; background: var(--bg-app); color: var(--text-primary); font-family: "Segoe UI", Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--bg-app); color: var(--text-primary); font-family: var(--font-geist), Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
   button, a, summary { -webkit-tap-highlight-color: transparent; }
   button:not(:disabled), summary { cursor: pointer; }
@@ -48,7 +49,7 @@
   .ui-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
   .ui-table th { position: sticky; top: 0; background: var(--bg-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 600; padding: 12px 18px; white-space: nowrap; }
   .ui-table td { border-top: 1px solid var(--border-default); padding: 16px 18px; vertical-align: middle; }
-  .ui-table tbody tr:hover { background: #fafbfe; }
+  .ui-table tbody tr:hover { background: var(--bg-app); }
   .ui-table caption { text-align: left; padding: 16px 18px; font-weight: 600; }
   .ui-nav-link { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 12px; color: var(--text-secondary); font-weight: 500; font-size: 13px; }
   .ui-nav-link:hover { background: var(--bg-subtle); }
