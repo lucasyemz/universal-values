@@ -33,6 +33,6 @@ export function ManagedDivergence({ id,scanId,bindingId,name,valueId,version,cen
       {state.error && <p role="alert" className="text-sm text-amber-900">{state.error}</p>}
       <SubmitButton pendingLabel="Preparando prévia…">Revisar resolução</SubmitButton>
     </form>}
-    <Link className="mt-4 inline-block text-sm text-accent underline" href={"/dashboard/managed-values/"+valueId}>Abrir Managed Value</Link>
+    <Link className="ui-btn mt-4" href={"/dashboard/managed-values/"+valueId}>Abrir Managed Value</Link>
   </section>;
 }

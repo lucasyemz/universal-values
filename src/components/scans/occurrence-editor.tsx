@@ -22,6 +22,21 @@ export function OccurrenceEditor({ rows, scanId, linkedValues = {} }: { rows: Ro
   const [operation, setOperation] = useState<{ fingerprint: string; id: string } | null>(null);
   const occurrences = centralizationOptions(rows.map((row) => row.occurrence), linkedValues).available;
   const type = rows[0]?.occurrence.canonical.type;
+  async function reviewInputs(nextInputs: Record<string, string>) {
+    if (pending) return;
+    const prepared = prepareOccurrenceChanges(occurrences, nextInputs); setReview(prepared); setMessage("");
+    if (Object.keys(prepared.errors).length || !prepared.changes.length) return;
+    const changes = prepared.changes.map((change) => ({ occurrenceId: change.occurrenceId, after: change.after }));
+    const fingerprint = JSON.stringify(changes);
+    const id = operation?.fingerprint === fingerprint ? operation.id : crypto.randomUUID();
+    setOperation({ fingerprint, id }); setPending(true);
+    try {
+      const result = await previewChanges({ id, scanId, changes });
+      if (result.ok) router.push("/dashboard/changes/" + result.id);
+      else setMessage(result.message);
+    } catch { setMessage("A conexão foi interrompida. Tente novamente para recuperar a mesma prévia."); }
+    finally { setPending(false); }
+  }
   if (!type) return <p className="mt-4 text-muted">Nenhuma ocorrência encontrada para este tipo.</p>;
   return <div className="mt-5 space-y-5">
     <div className="rounded-xl bg-subtle p-5">
@@ -31,9 +46,9 @@ export function OccurrenceEditor({ rows, scanId, linkedValues = {} }: { rows: Ro
       {!!occurrences.length && <><label className="block font-medium">Novo valor para as {occurrences.length} ocorrências editáveis deste grupo
         <input disabled={!occurrences.length} value={bulk} onChange={(event) => setBulk(event.target.value)} placeholder={inputHints[type]} className="mt-2 block w-full rounded border bg-white p-3" />
       </label>
-      <button type="button" disabled={!bulk.trim() || !occurrences.length} onClick={() => { setInputs(fillOccurrenceValues(occurrences, inputs, bulk)); setReview(null); }} className="mt-3 ui-btn disabled:opacity-50">Preencher somente este grupo</button>
+      <button type="button" disabled={pending || !bulk.trim() || !occurrences.length} onClick={() => { const next = fillOccurrenceValues(occurrences, inputs, bulk); setInputs(next); void reviewInputs(next); }} className="mt-3 ui-btn disabled:opacity-50">Revisar grupo com este valor</button>
       {type === "text" && <button type="button" disabled={!occurrences.length} onClick={() => { setInputs(fillOccurrenceValues(occurrences, inputs, "")); setBulk(""); setReview(null); }} className="ml-2 mt-3 ui-btn ui-btn-danger">Remover texto deste grupo</button>}
-      <p className="mt-3 text-xs leading-6 text-muted">Campos vinculados a Managed Values estão protegidos; edite pelo link do valor central. Só as ocorrências livres serão preenchidas. Use Todos para incluir as revisadas. Ajuste cada caso abaixo antes de revisar.</p></>}
+      <p className="mt-3 text-xs leading-6 text-muted">Campos vinculados a Managed Values estão protegidos; edite pelo link do valor central. Revise o grupo com um único valor ou ajuste cada ocorrência abaixo e use Revisar alterações. Use Todos para incluir as revisadas.</p></>}
       {!occurrences.length && <p className="text-sm text-muted">Este grupo está protegido. Abra o Managed Value da origem para editar e revisar a sincronização.</p>}
     </div>
     {rows.map(({ occurrence: o, display }) => <div key={o.id} className={"grid gap-6 xl:grid-cols-[1fr_1fr] " + (linkedValues[o.source_key] ? "rounded-xl border border-accent/30 bg-accent/5 p-5" : "border-b py-5")}>
@@ -61,23 +76,12 @@ export function OccurrenceEditor({ rows, scanId, linkedValues = {} }: { rows: Ro
       {o.field_slug === "name" && o.field_type === "PlainText" && <p className="mt-2 text-sm text-accent">Nome do item CMS: na próxima etapa, também vamos sugerir e revisar o slug a partir do nome completo.</p>}
       <p id={"hint-" + o.id} className="mt-1 text-xs text-faint">{inputHints[type]}</p>
       {type === "text" && inputs[o.id] !== undefined && !inputs[o.id]!.trim() && <p className="mt-2 text-sm font-medium text-amber-800">Este trecho será removido após revisar e confirmar.</p>}
-      <button type="button" disabled={!!linkedValues[o.source_key]} onClick={() => { setInputs({ ...inputs, [o.id]: editableValue(o.canonical) }); setReview(null); }} className="mt-2 text-sm text-accent underline">Manter valor atual</button>
+      <button type="button" disabled={!!linkedValues[o.source_key]} onClick={() => { setInputs({ ...inputs, [o.id]: editableValue(o.canonical) }); setReview(null); }} className="ui-btn ui-btn-ghost mt-2">Manter valor atual</button>
       {review?.errors[o.id] && <p role="alert" className="mt-2 text-sm text-red-700">{review.errors[o.id]}</p>}</>}
       </div>
     </div>)}
     {!!occurrences.length && <div className="flex flex-wrap gap-3"><button type="button" disabled={pending || !occurrences.length} onClick={async () => {
-      const prepared = prepareOccurrenceChanges(occurrences, inputs); setReview(prepared); setMessage("");
-      if (Object.keys(prepared.errors).length || !prepared.changes.length) return;
-      const changes = prepared.changes.map((change) => ({ occurrenceId: change.occurrenceId, after: change.after }));
-      const fingerprint = JSON.stringify(changes);
-      const id = operation?.fingerprint === fingerprint ? operation.id : crypto.randomUUID();
-      setOperation({ fingerprint, id }); setPending(true);
-      try {
-        const result = await previewChanges({ id, scanId, changes });
-        if (result.ok) router.push("/dashboard/changes/" + result.id);
-        else setMessage(result.message);
-      } catch { setMessage("A conexão foi interrompida. Tente novamente para recuperar a mesma prévia."); }
-      finally { setPending(false); }
+      await reviewInputs(inputs);
     }} className="ui-btn ui-btn-primary disabled:opacity-50">{pending ? "Preparando prévia…" : "Revisar alterações"}</button><button type="button" onClick={() => { setInputs({}); setBulk(""); setReview(null); }} className="ui-btn">Manter este grupo como está</button></div>}
     {message && <p role="alert" className="text-amber-800">{message}</p>}
     {review && (Object.keys(review.errors).length > 0 || review.changes.length === 0) && <section aria-label="Prévia das alterações" className="rounded border bg-white p-5">

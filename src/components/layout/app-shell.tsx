@@ -19,6 +19,11 @@ export function SiteContext({ title, siteId, workspaceId }: Omit<Context, "pathn
 export function AppShell({ children, workspaces, email, workspaceError, plan }: { children: ReactNode; workspaces: { id: string; name: string }[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
   const pathname = usePathname();
   const router = useRouter();
+  useEffect(() => {
+    const restore = (event: PageTransitionEvent) => { if (event.persisted) router.refresh(); };
+    window.addEventListener("pageshow", restore);
+    return () => window.removeEventListener("pageshow", restore);
+  }, [router]);
   const [context, setContext] = useState<Context | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const current = context?.pathname === pathname ? context : null;

@@ -1,3 +1,4 @@
+import { FreshLink } from "@/components/ui/fresh-link";
 import Link from "next/link";
 import { SiteContext } from "@/components/layout/app-shell";
 import { Diff, Notice, PageHeader } from "@/components/ui";
@@ -13,7 +14,7 @@ export default async function FactsPreviewPage({ params, searchParams }: { param
   const base = `/dashboard/sites/${id}/facts`;
   return <main className="ui-page">
     <SiteContext title={site.display_name} siteId={id} workspaceId={site.workspace_id} />
-    <Link className="text-sm text-accent" href={base}>← Global Facts</Link>
+    <FreshLink href={base}>← Global Facts</FreshLink>
     <PageHeader title={`Revisar versão ${preview.base_version + 1}`} eyebrow={site.display_name} description="Confira a referência inteira. A confirmação registra uma nova versão, sem modificar o site." />
     {error && <Notice tone="danger">{error === "archive" ? "Não foi possível arquivar. Confira a migration 011 e se a prévia ainda não foi confirmada." : "Não foi possível confirmar. Confira se a prévia foi arquivada, expirou ou ficou desatualizada."}</Notice>}
     {factFields.map(field => <section className="mb-6" key={field.key}><h2 className="font-semibold">{field.label}</h2><Diff before={before ? factDisplay(before, field.key) : "Sem referência aprovada"} after={factDisplay(preview.facts, field.key)} /></section>)}

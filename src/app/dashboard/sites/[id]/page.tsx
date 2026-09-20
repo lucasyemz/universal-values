@@ -1,3 +1,4 @@
+import { FreshLink } from "@/components/ui/fresh-link";
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { loadSiteContent, webflowMessage } from "@/modules/sites/service";
@@ -15,12 +16,12 @@ export default async function SitePage({ params, searchParams }: {
   try { view = await loadSiteContent(id, query.collection, safeOffset(query.offset)); }
   catch (cause) {
     unstable_rethrow(cause);
-    return <main className="ui-page"><Link href="/dashboard" className="text-accent underline">Voltar aos workspaces</Link><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
+    return <main className="ui-page"><FreshLink href="/dashboard" >Voltar aos workspaces</FreshLink><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
   }
   const base = "/dashboard/sites/" + id;
   return <main className="ui-page">
     <SiteContext title={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
-    <Link href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} className="text-sm text-accent">← Sites do workspace</Link>
+    <FreshLink href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} >← Sites do workspace</FreshLink>
     <PageHeader title={view.site.display_name} eyebrow="Explorador do CMS" description="Explore as coleções e confira o conteúdo disponível antes de preparar um scan." actions={<Link href={base + "/scans"} className="ui-btn ui-btn-primary"><ScanLine size={16} />Scans e Managed Values</Link>} />
     <Notice>Conteúdo preparado no Webflow. Rascunhos e alterações ainda não publicadas podem aparecer aqui.</Notice>
     <section className="mt-8"><h2 className="text-xl font-semibold">Coleções</h2>
@@ -39,8 +40,8 @@ export default async function SitePage({ params, searchParams }: {
         <td className="min-w-64"><details><summary className="font-medium text-accent">Ver campos do item</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" ? value : <details><summary className="text-xs text-muted">Ver dados estruturados</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
       </tr>)}</tbody></DataTable></div>
       <nav aria-label="Paginação de itens" className="mt-6 flex gap-6">
-        {view.page.pagination.offset > 0 && <Link className="text-accent underline" href={base + "?collection=" + view.details.id + "&offset=" + Math.max(0, view.page.pagination.offset - 25)}>Anterior</Link>}
-        {view.page.pagination.offset + view.page.pagination.limit < view.page.pagination.total && <Link className="text-accent underline" href={base + "?collection=" + view.details.id + "&offset=" + (view.page.pagination.offset + view.page.pagination.limit)}>Próxima</Link>}
+        {view.page.pagination.offset > 0 && <Link className="ui-btn" href={base + "?collection=" + view.details.id + "&offset=" + Math.max(0, view.page.pagination.offset - 25)}>Anterior</Link>}
+        {view.page.pagination.offset + view.page.pagination.limit < view.page.pagination.total && <Link className="ui-btn" href={base + "?collection=" + view.details.id + "&offset=" + (view.page.pagination.offset + view.page.pagination.limit)}>Próxima</Link>}
       </nav>
     </section>}
   </main>;

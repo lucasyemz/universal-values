@@ -1,5 +1,5 @@
+import { FreshLink } from "@/components/ui/fresh-link";
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { loadAvailableSites, webflowMessage } from "@/modules/sites/service";
 import { previewSiteConnection } from "@/modules/sites/actions";
@@ -16,11 +16,11 @@ export default async function ConnectionPage({ params, searchParams }: {
   try { view = await loadAvailableSites(connectionId); }
   catch (cause) {
     unstable_rethrow(cause);
-    return <main className="ui-page"><Link href="/dashboard" className="text-accent underline">Voltar aos workspaces</Link><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
+    return <main className="ui-page"><FreshLink href="/dashboard" >Voltar aos workspaces</FreshLink><p role="alert" className="mt-6">{webflowMessage(cause)}</p></main>;
   }
   return <main className="ui-page">
     <SiteContext title="Conectar Webflow" workspaceId={view.connection.workspace_id} />
-    <Link href={"/dashboard/workspaces/" + view.connection.workspace_id + "/sites"} className="text-sm text-accent">← Sites do workspace</Link>
+    <FreshLink href={"/dashboard/workspaces/" + view.connection.workspace_id + "/sites"} >← Sites do workspace</FreshLink>
     <PageHeader title="Escolha um site" description="Selecione um dos sites disponíveis na sua autorização do Webflow." />
     <Steps steps={["Autorizar", "Escolher site", "Revisar vínculo"]} current={1} />
     {error && <p role="alert" className="mt-4 text-amber-800">Não foi possível preparar o vínculo. Atualize a lista e tente novamente.</p>}

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { FreshLink } from "@/components/ui/fresh-link";
 import { notFound } from "next/navigation";
 import { getWorkspacePreview } from "@/modules/workspaces/service";
 import { confirmWorkspace } from "@/modules/workspaces/actions";
@@ -9,7 +9,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const preview = await getWorkspacePreview((await params).id);
   if (!preview) notFound();
   return <main className="ui-page !max-w-2xl">
-    <Link href="/dashboard" className="text-sm text-accent">← Workspaces</Link>
+    <FreshLink href="/dashboard" >← Workspaces</FreshLink>
     <PageHeader title="Revisar workspace" description="Confira o nome. Você poderá conectar seus sites depois da criação." />
     <Steps steps={["Nomear workspace", "Revisar e criar"]} current={1} />
     <section className="mt-6 ui-card p-6">

@@ -19,7 +19,7 @@ export const changeRequestSchema = z.object({
   status: z.enum(["preview", "confirmed", "completed", "cancelled"]), cursor: z.number().int().nonnegative(), total: z.number().int().positive(),
   dispatched: z.boolean(), lease_until: z.string().nullable(), retry_at: z.string().nullable(), expires_at: z.string(),
   reverts_request_id: z.uuid().nullish().transform((value) => value ?? null),
-  results: z.array(z.object({ status: z.enum(["applied", "already_applied", "conflict", "failed", "uncertain"]), message: z.string(), sourceKey: z.string(), actual: z.json().optional(), slugActual: z.string().optional(), bindingSource: z.string().optional(), bindingLocations: locationsSchema.optional() })),
+  results: z.array(z.object({ status: z.enum(["applied", "already_applied", "conflict", "failed", "uncertain"]), message: z.string(), sourceKey: z.string(), actual: z.json().optional(), slugActual: z.string().optional(), reviewedSource: z.string().max(20000).optional(), bindingSource: z.string().optional(), bindingLocations: locationsSchema.optional() })),
 });
 
 export function buildRequestPlan(request: z.infer<typeof changeRequestSchema>, occurrences: Occurrence[] = [], original?: z.infer<typeof changeRequestSchema>) {

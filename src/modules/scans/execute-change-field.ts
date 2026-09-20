@@ -1,3 +1,4 @@
+import { successfulReviewSource } from "./successful-review";
 import type { z } from "zod";
 import { WebflowError, type WebflowReader } from "@/connectors/webflow/client";
 import type { WebflowWriter } from "@/connectors/webflow/writer";
@@ -59,6 +60,10 @@ export async function executeChangeField(input: { request: Request; field: Field
     if (rateLimit) wait = Math.min(86400, Math.max(5, Math.ceil(error.retryAfter ?? 60)));
     const knownRejected = sentThisAttempt && !writeCompleted && (permission || rateLimit);
     result = { sourceKey: field.sourceKey, status: dispatched && !knownRejected ? "uncertain" : "failed", message: permission ? "Reconecte o Webflow com cms:write, vincule o site novamente e prepare outra prévia." : rateLimit ? "O Webflow limitou as chamadas. Aguarde o período indicado pelo provedor antes de preparar outra prévia." : dispatched ? "Não foi possível confirmar a escrita. Confira o campo no Webflow antes de preparar uma nova prévia." : "A fonte ou conexão mudou, ou a leitura falhou. Nenhuma escrita foi enviada para este campo." };
+  }
+  if (["applied", "already_applied"].includes(result.status)) {
+    const reviewedSource = successfulReviewSource(field, result.actual);
+    if (reviewedSource !== undefined) result = { ...result, reviewedSource };
   }
   if (managedField && ["applied", "already_applied"].includes(result.status)) {
     result = { ...result, bindingSource: managedField.nextSource, bindingLocations: managedField.nextLocations };
