@@ -1,4 +1,4 @@
-import Link from "next/link";
+/* Landing is a standalone HTML document and requires full navigation. */
 import { redirect } from "next/navigation";
 import { getSupabaseConfig } from "@/connectors/supabase/config";
 import { createSupabaseServerClient } from "@/connectors/supabase/server";
@@ -20,9 +20,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   return (
     <main className="grid min-h-screen bg-surface lg:grid-cols-2">
-      <section className="hidden flex-col justify-between border-r bg-accent-soft p-12 lg:flex"><Link href="/"><Brand /></Link><div className="max-w-lg"><ShieldCheck size={40} className="mb-8 text-accent" /><h2 className="text-4xl font-semibold leading-tight tracking-tight">Encontre o que se repete.<br />Substitua com segurança.</h2><p className="mt-6 text-base leading-8 text-muted">Um espaço para encontrar, organizar e atualizar as informações que se repetem no seu CMS Webflow.</p></div><p className="text-xs text-muted">CopyReplace · Seu conteúdo, sob seu controle.</p></section>
+      <section className="hidden flex-col justify-between border-r bg-accent-soft p-12 lg:flex"><a href="/"><Brand /></a><div className="max-w-lg"><ShieldCheck size={40} className="mb-8 text-accent" /><h2 className="text-4xl font-semibold leading-tight tracking-tight">Encontre o que se repete.<br />Substitua com segurança.</h2><p className="mt-6 text-base leading-8 text-muted">Um espaço para encontrar, organizar e atualizar as informações que se repetem no seu CMS Webflow.</p></div><p className="text-xs text-muted">CopyReplace · Seu conteúdo, sob seu controle.</p></section>
       <section className="flex items-center justify-center px-6 py-16"><div className="w-full max-w-sm">
-      <Link href="/" className="mb-10 inline-flex lg:hidden"><Brand /></Link>
+      <a href="/" className="mb-10 inline-flex lg:hidden"><Brand /></a>
       <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-accent">Seu workspace espera por você</p><h1 className="text-[28px] font-semibold tracking-tight">Boas-vindas de volta</h1><p className="mt-3 text-sm text-muted">Entre para continuar de onde parou.</p>
       {!configured ? <Notice tone="warning" title="Configuração de acesso pendente">Configure as variáveis do Supabase para habilitar o login.</Notice> : (
         <form action={login} className="mt-8 space-y-5">
