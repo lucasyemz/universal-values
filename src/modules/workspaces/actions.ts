@@ -1,4 +1,5 @@
 "use server";
+import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -10,6 +11,7 @@ export async function previewWorkspace(form: FormData) {
   if (!input.success) redirect("/dashboard?error=invalid");
   const { client } = await requireUser();
   const { data, error } = await client.rpc("preview_workspace", { p_id: input.data.id, p_name: input.data.name });
+  if (quotaErrorCode(error)) redirect("/dashboard?error=" + quotaErrorCode(error));
   if (error || !data) redirect("/dashboard?error=preview");
   redirect("/dashboard/workspaces/preview/" + data);
 }

@@ -8,7 +8,7 @@ import { detectTextMentions, isRichTextRange } from "./text-mentions";
 export const changesSchema = z.array(z.strictObject({ occurrenceId: z.uuid(), after: replacementSchema })).min(1).max(1000)
   .refine((rows) => new Set(rows.map((r) => r.occurrenceId)).size === rows.length, "Ocorrências duplicadas.");
 type FieldValue = z.infer<ReturnType<typeof z.json>>;
-export type FieldChange = { sourceKey: string; occurrence: Occurrence; before: FieldValue; after: FieldValue; occurrenceIds: string[] };
+export type FieldChange = { sourceKey: string; occurrence: Occurrence; before: FieldValue; after: FieldValue; occurrenceIds: string[]; slug?: { before: string; after: string } };
 const escapeAttribute = (value: string) => value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
 export function occurrenceReplacement(o: Occurrence, after: ManagedValue, allowEncodedText = false) {

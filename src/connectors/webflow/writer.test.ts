@@ -31,3 +31,14 @@ describe("confirmed CMS writer connector", () => {
     expect(fetcher.mock.calls[0]?.[0]).toBe(`https://api.webflow.com/v2/collections/${collectionId}/items/${itemId}?cmsLocaleId=${locale}`);
   });
 });
+
+it('allows a reviewed slug only alongside the item name in the same staged PATCH',async()=>{
+  const fetcher=vi.fn<typeof fetch>().mockResolvedValue(Response.json({...item,fieldData:{name:'Novo nome',slug:'novo-nome'}}));
+  const writer=new WebflowWriter('token',fetcher);
+  await writer.updateField({collectionId,itemId,locale,field:'name',value:'Novo nome',slug:'novo-nome'});
+  expect(JSON.parse(fetcher.mock.calls[0]![1]!.body as string)).toEqual({cmsLocaleId:locale,fieldData:{name:'Novo nome',slug:'novo-nome'}});
+  await expect(writer.updateField({collectionId,itemId,locale,field:'description',value:'Novo nome',slug:'novo-nome'})).rejects.toThrow();
+  await expect(writer.updateField({collectionId,itemId,locale,field:'slug',value:'novo-nome'})).rejects.toThrow();
+  await expect(writer.updateField({collectionId,itemId,locale,field:'name',value:'',slug:'novo-nome'})).rejects.toThrow();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});

@@ -30,8 +30,12 @@ export function ActivityPanel({ userId }: { userId: string }) {
   const open = openOverride ?? storedOpen;
   useEffect(() => {
     let disposed = false;
+    let inFlight = false;
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
+      if (disposed || inFlight) return;
+      if (document.hidden || !navigator.onLine) { timer = setTimeout(poll, 60000); return; }
+      inFlight = true;
       try {
         const result = await getActivity(tracked.current);
         if (disposed) return;
@@ -40,16 +44,20 @@ export function ActivityPanel({ userId }: { userId: string }) {
           setWorker(result.worker); setLimited(result.limited); setError("");
         } else setError(result.message);
       } catch { if (!disposed) setError("A conexão foi interrompida. O progresso exibido pode estar desatualizado."); }
+      inFlight = false;
       if (!disposed) {
         visibility.current = updateActivityVisibility(visibility.current, visibility.current.items, Date.now());
         const visible = visibility.current.items;
         setItems(visible);
         tracked.current = { changes: visible.filter(i => i.kind === "change").map(i => i.id), scans: visible.filter(i => i.kind === "scan").map(i => i.id) };
-        timer = setTimeout(poll, 5000);
+        timer = setTimeout(poll, visible.length ? 15000 : 60000);
       }
     };
+    const wake = () => { clearTimeout(timer); void poll(); };
+    document.addEventListener("visibilitychange", wake);
+    window.addEventListener("online", wake);
     void poll();
-    return () => { disposed = true; clearTimeout(timer); };
+    return () => { disposed = true; clearTimeout(timer); document.removeEventListener("visibilitychange", wake); window.removeEventListener("online", wake); };
   }, [pathname]);
   function toggle(value: boolean) {
     setOpen(value);

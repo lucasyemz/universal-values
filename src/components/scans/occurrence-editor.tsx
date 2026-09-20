@@ -58,6 +58,7 @@ export function OccurrenceEditor({ rows, scanId, linkedValues = {} }: { rows: Ro
       </section> : <><label className="block text-sm font-medium">Novo valor
         <input disabled={!!linkedValues[o.source_key]} aria-describedby={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={(event) => { setInputs({ ...inputs, [o.id]: event.target.value }); setReview(null); }} className="mt-2 block w-full rounded border p-3" />
       </label>
+      {o.field_slug === "name" && o.field_type === "PlainText" && <p className="mt-2 text-sm text-accent">Nome do item CMS: na próxima etapa, também vamos sugerir e revisar o slug a partir do nome completo.</p>}
       <p id={"hint-" + o.id} className="mt-1 text-xs text-faint">{inputHints[type]}</p>
       {type === "text" && inputs[o.id] !== undefined && !inputs[o.id]!.trim() && <p className="mt-2 text-sm font-medium text-amber-800">Este trecho será removido após revisar e confirmar.</p>}
       <button type="button" disabled={!!linkedValues[o.source_key]} onClick={() => { setInputs({ ...inputs, [o.id]: editableValue(o.canonical) }); setReview(null); }} className="mt-2 text-sm text-accent underline">Manter valor atual</button>

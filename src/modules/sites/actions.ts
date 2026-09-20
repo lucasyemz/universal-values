@@ -1,4 +1,5 @@
 "use server";
+import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -23,6 +24,7 @@ export async function startWebflowConnection(form: FormData) {
   const result = await client.rpc("start_webflow_oauth", {
     p_id: input.data.id, p_workspace_id: input.data.workspaceId, p_state_hash: hashOAuthState(state),
   });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect(back + "?error=authorization");
   store.set(cookieName, state, {
     httpOnly: true, secure: new URL(config.redirectUri).protocol === "https:",
@@ -44,6 +46,7 @@ export async function previewSiteConnection(form: FormData) {
   const result = await client.rpc("preview_webflow_site", {
     p_id: input.data.id, p_connection_id: input.data.connectionId, p_site_id: site.id, p_name: site.displayName,
   });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect(back + "?error=preview");
   redirect("/dashboard/sites/preview/" + input.data.id);
 }
@@ -62,6 +65,7 @@ export async function confirmSiteConnection(form: FormData) {
   }
   const { client } = await requireUser();
   const result = await client.rpc("confirm_webflow_site", { p_id: input.data.id });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error || !result.data) redirect("/dashboard/sites/preview/" + input.data.id + "?error=confirmation");
   revalidatePath("/dashboard/workspaces/" + preview.workspace_id + "/sites");
   redirect("/dashboard/sites/" + result.data);

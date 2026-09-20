@@ -13,7 +13,7 @@ export async function readScanBatch(scan: Scan, siteId: string, reader: Pick<Web
   const [details, page] = await Promise.all([reader.collection(planned.id), reader.items(planned.id, scan.item_offset)]);
   if (details.id !== planned.id || page.pagination.offset !== scan.item_offset || page.items.length > 25 ||
       (page.items.length === 0 && page.pagination.offset < page.pagination.total)) throw new Error("invalid_page");
-  const remaining = SCAN_LIMITS.items - scan.items_read;
+  const remaining = (scan.item_limit ?? SCAN_LIMITS.items) - scan.items_read;
   const selectedPage = { ...page, items: page.items.slice(0, Math.max(0, remaining)) };
   const detected = detectPage(details, selectedPage, planned.types ?? ["money", "phone", "date", "number", "text"], planned.searchText);
   const hasMore = page.pagination.offset + selectedPage.items.length < page.pagination.total;

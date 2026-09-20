@@ -23,6 +23,7 @@ export type Occurrence = z.infer<typeof occurrenceSchema>;
 export const scanSchema = z.object({
   id: z.uuid(), site_id: z.uuid(), workspace_id: z.uuid(), actor_id: z.uuid(), connection_id: z.uuid(),
   status: z.enum(["preview", "running", "paused", "completed", "limited", "cancelled"]),
+  item_limit: z.number().int().min(1).max(500).optional(),
   plan: planSchema, collection_index: z.number().int(), item_offset: z.number().int(),
   revision: z.number().int(), items_read: z.number().int(), occurrences_count: z.number().int(),
   truncated: z.boolean(), skipped_fields: z.number().int(), error_code: z.string().nullable(),

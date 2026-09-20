@@ -13,6 +13,7 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
     let disposed = false;
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
+      if (document.hidden || !navigator.onLine) { timer = setTimeout(poll, 15000); return; }
       try {
         const result = await getChangeProgress({ id });
         if (disposed) return;
@@ -22,7 +23,7 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
           if (["completed", "cancelled"].includes(result.progress.status)) return;
         }
       } catch { if (!disposed) setError("Não foi possível consultar o progresso. O worker continua independente desta página."); }
-      if (!disposed) timer = setTimeout(poll, 5000);
+      if (!disposed) timer = setTimeout(poll, 15000);
     };
     void poll();
     return () => { disposed = true; clearTimeout(timer); };
@@ -32,7 +33,7 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
     <Progress value={cursor} max={total} label="Campos processados" />
     <p className="mt-3 text-sm text-muted">Você pode sair desta página ou fechar o navegador. O worker processa as fontes confirmadas e salva o progresso no banco.</p>
     {worker === "missing" && <p role="alert" className="mt-3 text-amber-800">Aplique a migration 015 e configure o worker para habilitar o processamento em segundo plano.</p>}
-    {worker === "offline" && <p role="status" className="mt-3 text-amber-800">O executor não enviou sinal recente. A operação permanece salva na fila. Inicie o processo do worker no servidor para continuar.</p>}
+    {worker === "offline" && <p role="status" className="mt-3 text-amber-800">O executor não enviou sinal recente. A operação permanece salva na fila. Confira se o agendamento do executor está ativo e se a conexão está disponível.</p>}
     {worker === "checking" && <p className="mt-2 text-sm text-muted">Verificando disponibilidade do executor…</p>}
     {error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}
     {paused && <><p className="mt-3 text-sm">Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.</p><button disabled={resuming || worker === "missing"} onClick={async () => {

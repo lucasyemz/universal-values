@@ -10,3 +10,6 @@ extensions/webflow-designer/dist/
 extensions/webflow-designer/bundle.zip
 
 .worker/
+
+supabase/functions/cms-worker/*.js
+supabase/.temp/

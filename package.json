@@ -15,7 +15,9 @@
     "designer:dev": "node scripts/designer-extension.mjs serve",
     "designer:bundle": "node scripts/designer-extension.mjs bundle",
     "worker": "node scripts/cms-worker.mjs",
-    "worker:build": "node scripts/cms-worker.mjs --build"
+    "worker:build": "node scripts/cms-worker.mjs --build",
+    "worker:start": "node .worker/cms.mjs",
+    "worker:edge:build": "node scripts/build-edge-worker.mjs"
   },
   "engines": {
     "node": ">=22.0.0"

@@ -1,0 +1,5 @@
+[functions.cms-worker]
+# The handler requires a private x-worker-secret before any database access.
+# JWT verification cannot authenticate this dedicated Cron credential.
+verify_jwt = false
+entrypoint = "./functions/cms-worker/index.js"

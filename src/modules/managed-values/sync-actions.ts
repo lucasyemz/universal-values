@@ -1,5 +1,7 @@
 "use server";
+import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 
+import { prepareItemSlugs } from "@/modules/scans/slug-service";
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
@@ -23,6 +25,8 @@ export async function previewManagedSync(_previous: { error?: string }, form: Fo
   catch (error) { return { error: error instanceof Error ? error.message : "Não foi possível preparar os vínculos." }; }
   const { client } = await requireUser();
   const result = await client.rpc("preview_managed_value_sync", { p_id: input.id, p_value_id: input.valueId, p_version: input.version, p_after: after.data });
+  if (quotaErrorCode(result.error)) return { error: quotaMessage(quotaErrorCode(result.error))! };
   if (result.error) return { error: result.error.code === "40001" ? "A versão mudou. Recarregue e revise novamente." : result.error.message === "Provider cooldown" ? "O Webflow pediu uma pausa. Aguarde o prazo indicado na operação anterior." : "Não foi possível salvar a prévia. Conclua ou cancele a operação ativa neste site e confira a conexão Webflow. Se já enviou esta prévia, consulte o histórico antes de tentar outro conteúdo." };
+  try { await prepareItemSlugs(input.id); } catch (error) { return { error: error instanceof Error ? error.message : "Não foi possível revisar o slug." }; }
   redirect("/dashboard/changes/" + input.id);
 }

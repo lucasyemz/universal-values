@@ -1,40 +1,148 @@
 # Sincronização CMS em segundo plano
 
-## Ativação local
+## Modelo de hospedagem: Supabase Free
 
-1. Aplique `supabase/migrations/20260919001500_background_cms_worker.sql` após as migrations 001–014. A migration mantém operações confirmadas na fila e pausa as que já tinham erro no último campo. Ela remove a permissão de executar etapas pelo navegador; atualize as abas antigas após aplicá-la.
-2. No `.env.local`, configure `SUPABASE_SERVICE_ROLE_KEY` com a credencial privada de servidor do mesmo projeto Supabase. Ela pertence somente ao ambiente do worker, nunca ao navegador, Git ou variáveis `NEXT_PUBLIC_*`. Mantenha a mesma `NEXT_PUBLIC_SUPABASE_URL` e `WEBFLOW_TOKEN_ENCRYPTION_KEY` do dashboard. Não crie outra chave de criptografia.
-3. Terminal do dashboard: `nvm use` e `npm run dev`.
-4. Outro terminal: `nvm use` e `npm run worker`. Mantenha esse processo ativo. Ele compila o executor em `.worker/` (ignorado pelo Git) e consulta a fila a cada cinco segundos. `npm run worker:build` apenas compila, sem executar operações.
+O executor de produção é uma Supabase Edge Function (`cms-worker`), acionada pelo Supabase Cron a cada minuto. Cada chamada processa no máximo **um campo** e encerra. Não exige Background Worker pago no Render nem computador ligado. O dashboard precisa de hospedagem própria; esta configuração resolve o executor CMS.
 
-Fechar a aba ou o navegador não para o worker. Fechar o terminal, desligar o computador ou encerrar o processo pausa a execução; a fila permanece no banco. Reinicie com `npm run worker` para recuperar as etapas pendentes. Não há daemon instalado automaticamente.
+A primeira etapa normalmente começa no próximo minuto; operações com vários campos avançam em chamadas posteriores. Cooldown, falhas, concorrência e limites do provedor podem aumentar essa espera. O perfil inicial prioriza simplicidade e limites previsíveis, não alto volume.
 
-## Funcionamento
+No Free, a documentação consultada informa 500 mil invocações incluídas e limite de 150 segundos por execução. Um agendamento por minuto consome cerca de 43.200 chamadas em 30 dias, mesmo sem operações. As cotas são compartilhadas com outras funções e recursos do projeto; não há garantia de gratuidade para qualquer volume. Projeto pausado, cotas esgotadas ou falhas do serviço interrompem o processamento até recuperação.
 
-A confirmação existente é o ponto de entrada na fila; uma prévia não é executada. O worker processa uma etapa de cada vez usando a identidade armazenada na operação, sem cookies ou sessão do navegador. Uma função restrita a `service_role` verifica autorização, conexão e status, reserva a etapa e fornece somente o contexto daquela operação. O gateway revalida proprietário e conexão antes de autorizar o envio.
+Fontes: [agendamento](https://supabase.com/docs/guides/functions/schedule-functions), [cotas](https://supabase.com/docs/guides/platform/billing-on-supabase), [limites](https://supabase.com/docs/guides/functions/limits).
 
-A escrita continua usando os mesmos planos imutáveis, leitura do conteúdo atual, marca de despacho durável e verificação após escrita de Managed Values. A marca impede reenvio se o processo morrer entre o PATCH e a persistência do resultado. Nesse caso, o novo worker relê: se o conteúdo corresponde, registra sucesso já aplicado; se não corresponde, registra resultado incerto sem reenviar.
+## O que já está preparado no repositório
 
-A fila persiste cursor, lease, pausa, prazo de retry e auditoria. Ela respeita o prazo solicitado pelo Webflow e mantém intervalo mínimo de cinco segundos entre etapas de uma operação. Uma falha, conflito ou resultado incerto pausa as etapas restantes para revisão. No dashboard, **Confirmar continuação das etapas pendentes** volta a colocá-las na fila; não refaz as etapas com resultado registrado. Erros de infraestrutura pausam o passo atual; a retomada reconcilia sua marca de despacho antes de qualquer novo envio.
+- `npm run worker:edge:build` gera `supabase/functions/cms-worker/index.js` e `worker.js`. O build usa as versões instaladas registradas no package-lock, não lê `.env.local` e não executa operações. Os arquivos gerados são ignorados pelo Git: sempre compile antes de publicar.
+- `supabase/config.toml` define a função e seu entrypoint.
+- `supabase/cron/cms-worker.sql` prepara a chamada via Vault + pg_net e um job inicialmente **desativado**. Reexecutar o script preserva a ativação existente e não duplica o job.
+- A função exige `x-worker-secret`, um segredo privado de 64 caracteres hexadecimais. Chaves públicas e sessões comuns não autorizam execução. `verify_jwt = false` desativa somente o verificador JWT do gateway: o handler faz sua própria autenticação antes de acessar o banco.
+- A fila da migration 015 continua sendo usada. Não há migration de tabelas nova nesta etapa; o SQL do Cron é uma configuração separada de infraestrutura.
 
-O painel apenas consulta progresso e sinal recente do worker. Ausência de sinal por três minutos mostra executor indisponível; isso é um diagnóstico de atividade, não garantia de que um passo específico está rodando. Uma operação cancelada não é coletada. Cancelar durante lease ativo ou despacho sem resultado continua bloqueado até reconciliação.
+## Ativação no Supabase
 
-## Hospedagem
+### 1. Conferir a fila e o banco
 
-O worker exige um processo Node.js 22+ persistente com acesso ao Supabase e à API Webflow. Publique o dashboard e o worker com a mesma versão do código/migrations. Em produção, use supervisão de processo com reinício automático, segredos privados e logs restritos. Hospedar apenas as rotas Next.js em funções efêmeras não inicia esse executor. O worker pode ficar em um serviço separado; nenhum endpoint público de execução foi criado.
+Mantenha as migrations 001–015 aplicadas. A migration 015 foi verificada no ambiente durante a ativação local; confira o estado do projeto de destino. Não recrie a chave `WEBFLOW_TOKEN_ENCRYPTION_KEY`: os tokens existentes dependem dela.
 
-O escopo desta etapa é a fila de alterações CMS (incluindo Managed Values, resolução e reversões). Scans de leitura e a extensão Designer mantêm seus fluxos anteriores. Não há publicação automática do site.
+Revise as operações confirmadas antes de ativar o Cron. A ativação permite processar as que já foram confirmadas e não estão pausadas. Prévias não são executadas.
 
-## Validação manual
+### 2. Configurar segredos da Edge Function
 
-Em um site de testes, prepare e confirme uma alteração com pelo menos dois campos. Feche a aba imediatamente; mantenha apenas o worker rodando. Depois reabra o dashboard e confira os resultados e o CMS. Repita interrompendo o worker entre etapas e reiniciando-o. Nunca use esse teste para autorizar uma nova escrita de resultado incerto: a reconciliação deve somente ler o campo.
+Em **Edge Functions → Secrets**, configure:
 
-Os testes automatizados exercitam o worker contra PostgreSQL embutido e um Webflow simulado, sem navegador: reserva exclusiva, recuperação antes/depois de despacho, perda da resposta após commit, pausa/retomada, cooldown, cancelamento, revogação de acesso e rollback de auditoria. A validação com credenciais reais depende da ativação acima.
+| Nome | Valor |
+| --- | --- |
+| `WEBFLOW_TOKEN_ENCRYPTION_KEY` | A mesma chave de criptografia do dashboard |
+| `CMS_WORKER_CRON_SECRET` | Novo segredo aleatório com 32 bytes, codificado em 64 caracteres hexadecimais minúsculos |
 
-## Painel flutuante de processos
+Gere o segredo em um terminal privado, por exemplo com `openssl rand -hex 32`, e guarde-o em seu gerenciador de senhas. Não cole segredos em chats ou arquivos versionados.
 
-O dashboard tem um botão **Processos** no canto inferior direito. Ele só aparece quando há processos ativos, pendências ou uma conclusão recente (por cerca de 15 segundos). Sem atividade, fica oculto e continua consultando a fila. Ele começa minimizado; a preferência de expandir/minimizar é salva neste navegador por usuário. O painel consulta a fila a cada cinco segundos, mostra operações do usuário autenticado e permite abrir os detalhes. Navegar entre páginas mantém o painel disponível.
+`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são fornecidos pelo ambiente hospedado do Supabase. Não tente cadastrar manualmente nomes com prefixo reservado `SUPABASE_`. A chave privada usada no worker local não precisa ser copiada para uma variável pública.
 
-São exibidas alterações confirmadas, scans em andamento ou pausados e os resultados das operações acompanhadas durante a sessão do painel. Resultados com conflitos ou incertezas aparecem como pendências. A consulta é somente leitura e usa a sessão normal e as políticas RLS, sem a chave do worker. O painel não executa nem retoma operações. Os scans ainda precisam da página de execução aberta; sincronizações confirmadas dependem do worker.
+### 3. Compilar e publicar a função
 
-Não é necessária uma migration adicional para este painel. Ele usa a migration 015 da fila em segundo plano.
+Com a CLI Supabase disponível, na raiz do projeto:
+
+```bash
+nvm use
+npm ci
+npm run worker:edge:build
+npx supabase login
+npx supabase functions deploy cms-worker --project-ref SEU_PROJECT_REF
+```
+
+Substitua `SEU_PROJECT_REF` pelo identificador do projeto existente. O deploy usa `supabase/config.toml`. Publicar a função não cria nem ativa o Cron.
+
+### 4. Configurar Vault e preparar o agendamento
+
+No Supabase Vault, cadastre (ou atualize pelos mesmos nomes, sem duplicatas):
+
+- `cms_worker_project_url`: `https://SEU_PROJECT_REF.supabase.co`, sem barra final.
+- `cms_worker_cron_secret`: exatamente o mesmo segredo cadastrado como `CMS_WORKER_CRON_SECRET` na função.
+
+Execute `supabase/cron/cms-worker.sql` no SQL Editor como administrador (`postgres`). Ele habilita pg_cron e pg_net. O Vault já deve estar disponível no projeto Supabase. O job criado chama uma função restrita ao administrador, sem colocar o segredo no texto do agendamento.
+
+Confira o job sem ativá-lo:
+
+```sql
+select jobid, jobname, schedule, active
+from cron.job where jobname = 'cms-worker-every-minute';
+```
+
+Na primeira instalação, `active` deve ser `false`.
+
+### 5. Testar configuração sem escrever no CMS
+
+```sql
+select public.invoke_cms_edge_worker('check');
+```
+
+Esse comando retorna o ID da requisição HTTP, não o resultado final. Consulte depois:
+
+```sql
+select id, status_code, timed_out, error_msg, content
+from net._http_response
+where id = ID_RETORNADO;
+```
+
+O esperado é HTTP 200 com `{"ok":true,"mode":"check"}`. O diagnóstico verifica autenticação, formato da chave de criptografia e permissão de acessar o gateway da migration 015. Ele usa uma lease nula que o banco rejeita antes de qualquer reserva ou heartbeat. Não verifica decriptação de cada conexão nem altera Webflow.
+
+401: confira os dois segredos do Cron. 503: confira os segredos da função, migration 015, permissões ou conexão. Erros não devolvem tokens nem o conteúdo das operações.
+
+### 6. Ativar explicitamente
+
+Após conferir o diagnóstico e a fila:
+
+```sql
+select cron.alter_job(jobid, active := true)
+from cron.job where jobname = 'cms-worker-every-minute';
+```
+
+Encerre o worker Node local para manter um único executor habitual. As leases existentes protegem a transição caso duas chamadas coincidam. No dashboard, confira o sinal recente e confirme uma alteração em um site de testes. Feche a aba e retorne após alguns minutos para conferir os resultados.
+
+Para pausar o agendador:
+
+```sql
+select cron.alter_job(jobid, active := false)
+from cron.job where jobname = 'cms-worker-every-minute';
+```
+
+Pausar impede novas chamadas agendadas; uma chamada já enviada pode terminar. A fila e o histórico permanecem no banco. Reative o mesmo job para continuar.
+
+## Segurança, limites e recuperação
+
+O executor compartilha o mesmo código do worker local. A identidade é obtida da operação armazenada; a chamada HTTP aceita apenas `{"mode":"run"}` ou `{"mode":"check"}`, sem IDs de usuários ou operações. A RPC restrita a service_role valida propriedade, conexão, status, lease e cursor.
+
+Cada invocação chama `processWorkerTurn` uma única vez. As chamadas de rede têm prazo compartilhado de 90 segundos e mantêm seus timeouts individuais. Isso deixa margem para o limite de 150 segundos, mas encerramentos por CPU, memória ou infraestrutura ainda são possíveis. Não há laço infinito nem tarefa desacoplada da resposta HTTP.
+
+A marca de despacho é persistida antes do PATCH. Se o processo morrer após o envio, a próxima chamada aguarda a lease expirar e reconcilia o estado por leitura, sem reenviar uma escrita de resultado incerto. Conflito, falha ou incerteza pausa as etapas restantes; a retomada exige a confirmação existente no dashboard. O histórico e a auditoria são os mesmos do executor Node. Nenhum site é publicado automaticamente.
+
+A confirmação de Managed Values salva o valor central desejado; somente a execução com verificação confirma a sincronização das fontes. A migração de hospedagem não muda essa distinção.
+
+## Monitoramento e painel
+
+O painel flutuante aparece quando há processos ativos, pendências ou conclusão recente. Pode ser minimizado e lembra a preferência neste navegador. Consulta a fila a cada 15 segundos com atividade e 60 segundos sem atividade; pausa as consultas quando a aba está oculta ou offline; isso não acelera o Cron, que executa a cada minuto.
+
+O heartbeat vem do gateway de reserva. Ausência de sinal por três minutos indica executor indisponível. Confira também os logs da Edge Function e `net._http_response`: sucesso do job Cron significa que a requisição HTTP foi enfileirada, não que o CMS foi atualizado. O modo `check` não atualiza heartbeat.
+
+Scans de leitura ainda dependem da página de execução aberta, e a extensão Designer mantém seu fluxo. Esta etapa cobre somente alterações CMS: scans confirmados para edição, Managed Values, resoluções e reversões.
+
+## Alternativa local
+
+Para desenvolvimento, mantenha `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e a chave de criptografia existente. Use `npm run dev` para o dashboard e `npm run worker` em outro terminal. Esse modo depende do computador ligado. `npm run worker:build` apenas compila e `npm run worker:start` roda o bundle Node já compilado com variáveis fornecidas pelo ambiente.
+
+## Validação
+
+O bundle também foi carregado em Deno com transporte simulado, validando autenticação privada e diagnóstico sem acesso ao CMS. Para repetir após compilar: `npx deno run --allow-env --config supabase/functions/cms-worker/deno.json scripts/edge-worker-smoke.mjs`.
+
+Os testes automatizados verificam autenticação HTTP, diagnóstico sem execução, limite de uma etapa, payload inválido e erros sem segredos; os testes do executor com PostgreSQL/PGlite cobrem reserva exclusiva, recuperação após despacho, perda de resposta após commit, pausa/retomada, cooldown, cancelamento e revogação. O teste SQL do agendamento usa substitutos locais para Vault/Cron/pg_net; a integração real depende da instalação acima.
+
+A preparação local não equivale à publicação ou ativação remota. O teste final deve ser feito com alteração explicitamente confirmada pelo usuário em um site de testes.
+
+## Implantação verificada em 20/09/2026
+
+No projeto `nxibjpprjorchjeoudss` (Universal Value), a função `cms-worker` foi publicada pela CLI, os dois segredos privados foram configurados e o Vault recebeu a URL do projeto e o segredo dedicado do Cron. O segredo dedicado também foi guardado no `.env.local` privado, ignorado pelo Git. A chave de criptografia existente foi preservada.
+
+O diagnóstico direto retornou 401 sem credencial e 200 no modo autenticado `check`. A chamada de diagnóstico por Vault + pg_net também retornou 200, sem timeout. O job `cms-worker-every-minute` (ID 1, usuário postgres) foi ativado somente após conferir a fila vazia. Nenhum worker Node local estava em execução. Não foram criadas ou confirmadas alterações CMS para validar a implantação.
+
+Primeira execução automática observada: 20/09/2026 18:55 UTC, Cron `succeeded`, resposta HTTP 200 `{"ok":true,"idle":true}`, heartbeat atualizado às 18:55:02 UTC e zero operações pendentes. Isso confirma a infraestrutura em fila vazia; a próxima alteração real deve ser preparada e confirmada pelo usuário pelo fluxo normal.

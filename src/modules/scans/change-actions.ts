@@ -1,5 +1,7 @@
 "use server";
+import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 
+import { prepareItemSlugs } from "./slug-service";
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -25,7 +27,9 @@ export async function previewChanges(input: unknown) {
     const changes = parsed.data.changes.filter((c) => effectiveIds.has(c.occurrenceId));
     const { client } = await requireUser();
     const result = await client.rpc("preview_cms_changes", { p_id: parsed.data.id, p_scan_id: parsed.data.scanId, p_changes: changes });
+    if (quotaErrorCode(result.error)) return { ok: false as const, message: quotaMessage(quotaErrorCode(result.error))! };
     if (result.error) return { ok: false as const, message: changes.some((c) => c.after.type === "text" && c.after.text === "") ? "Não foi possível salvar a remoção. Confira se a oitava migration foi aplicada e se a conexão do site está ativa." : "Não foi possível salvar a prévia. Confira a quinta migration e a conexão do site." };
+    await prepareItemSlugs(parsed.data.id);
     return { ok: true as const, id: parsed.data.id };
   } catch (error) {
     return { ok: false as const, message: error instanceof z.ZodError ? "Um dos valores é inválido." : "Não foi possível preparar as alterações. Confira os valores, atualize o scan e tente novamente." };
@@ -38,6 +42,7 @@ export async function confirmChanges(form: FormData) {
   const { request } = await loadChangeRequest(parsed.data.id);
   const { client } = await requireUser();
   const result = await client.rpc("confirm_cms_changes", { p_id: parsed.data.id });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (!result.error && request.managed_resolution) revalidatePath("/dashboard/scans/" + request.managed_resolution.scanId);
   if (!result.error && request.managed_value_id) revalidatePath("/dashboard/managed-values/" + request.managed_value_id);
   redirect("/dashboard/changes/" + parsed.data.id + (result.error ? "?error=confirmation" : ""));
@@ -91,6 +96,7 @@ export async function retryFailedChanges(form: FormData) {
     ? await client.rpc("preview_cms_revert", { p_id: parsed.data.retryId, p_original_id: request.reverts_request_id, p_sources: request.results.filter((r) => r.status === "failed").map((r) => r.sourceKey) })
     : await client.rpc("preview_cms_changes", { p_id: parsed.data.retryId, p_scan_id: request.scan_id, p_changes: changes });
   if (result.error) redirect(back + "?error=retry");
+  try { await prepareItemSlugs(parsed.data.retryId); } catch { redirect(back + "?error=slug_preview"); }
   redirect("/dashboard/changes/" + parsed.data.retryId);
 }
 
@@ -104,5 +110,15 @@ export async function previewRevert(form: FormData) {
   const { client } = await requireUser();
   const result = await client.rpc("preview_cms_revert", { p_id: parsed.data.revertId, p_original_id: request.id });
   if (result.error) redirect(back + "?error=revert");
+  try { await prepareItemSlugs(parsed.data.revertId); } catch { redirect(back + "?error=slug_preview"); }
   redirect("/dashboard/changes/" + parsed.data.revertId);
+}
+
+export async function reviewItemSlugs(form: FormData) {
+  const id = z.uuid().safeParse(form.get("id"));
+  if (!id.success) redirect("/dashboard?error=invalid");
+  try { await prepareItemSlugs(id.data); }
+  catch { redirect("/dashboard/changes/" + id.data + "?error=slug_preview"); }
+  revalidatePath("/dashboard/changes/" + id.data);
+  redirect("/dashboard/changes/" + id.data);
 }

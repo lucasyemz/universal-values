@@ -14,10 +14,10 @@ export const workerPayloadSchema = z.object({
   site: linkedSiteSchema, connection: z.object({ id: z.uuid(), workspace_id: z.uuid(), actor_id: z.uuid() }), credential: z.string().min(1),
 });
 type Payload = z.infer<typeof workerPayloadSchema>;
-export function workerConnection(payload: Payload, encryptionKey: string): Awaited<ReturnType<FieldDependencies["getConnection"]>> {
+export function workerConnection(payload: Payload, encryptionKey: string, fetcher: typeof fetch = fetch): Awaited<ReturnType<FieldDependencies["getConnection"]>> {
   const c = payload.connection;
   const token = decryptToken(payload.credential, ["webflow", c.id, c.workspace_id, c.actor_id].join(":"), encryptionKey);
-  return { connection: c, reader: new WebflowReader(token), writer: new WebflowWriter(token) };
+  return { connection: c, reader: new WebflowReader(token, fetcher), writer: new WebflowWriter(token, fetcher) };
 }
 export async function processWorkerTurn(database: WorkerDatabase, connect: (payload: Payload) => Awaited<ReturnType<FieldDependencies["getConnection"]>>) {
   const lease = randomUUID();

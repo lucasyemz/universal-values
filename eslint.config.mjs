@@ -6,5 +6,5 @@ export default defineConfig([
   ...nextVitals,
   ...nextTs,
   { rules: { "@typescript-eslint/no-explicit-any": "error" } },
-  globalIgnores([".worker/**",".next/**", "out/**", "coverage/**", "next-env.d.ts", "extensions/webflow-designer/dist/**"]),
+  globalIgnores(["supabase/functions/cms-worker/*.js",".worker/**",".next/**", "out/**", "coverage/**", "next-env.d.ts", "extensions/webflow-designer/dist/**"]),
 ]);

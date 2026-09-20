@@ -103,6 +103,11 @@ describe("bounded scan batches", () => {
   it("rejects an empty page claiming there are more items, avoiding an infinite loop", async () => {
     await expect(readScanBatch(scan,"site",reader([],100))).rejects.toThrow("invalid_page");
   });
+  it("uses the account-specific scan limit", async () => {
+    const result = await readScanBatch({...scan, item_limit:100, items_read:99},"site",reader([item,item],2));
+    expect(result.itemsRead).toBe(1);
+    expect(result.truncated).toBe(true);
+  });
   it("respects occurrence and item caps while reporting partial coverage", async () => {
     const result = await readScanBatch({...scan,occurrences_count:999,items_read:499},"site",reader([item,item],2));
     expect(result.rows).toHaveLength(1);

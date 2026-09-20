@@ -1,3 +1,5 @@
+import { PlanUsage } from "@/components/layout/plan-usage";
+import { quotaMessage } from "@/modules/plans/errors";
 import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { ArrowRight, Globe2, Plus, ShieldCheck } from "lucide-react";
@@ -12,8 +14,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const params = await searchParams;
   return <main className="ui-page">
     <PageHeader eyebrow="Seu centro de controle" title="Visão geral" description="Informações consistentes. Mudanças sob seu controle. Escolha um workspace para acessar seus sites." actions={<Link className="ui-btn ui-btn-primary" href="#create-workspace"><Plus size={16} />Criar workspace</Link>} />
-    {params.error && <Notice tone="danger" title="Não foi possível concluir">Confira os dados e gere uma nova prévia se necessário.</Notice>}
+    {params.error && <Notice tone="danger" title="Não foi possível concluir">{quotaMessage(params.error) ?? "Confira os dados e gere uma nova prévia se necessário."}</Notice>}
     {params.created && <Notice tone="success" title="Workspace criado">Agora você pode conectar seu site Webflow.</Notice>}
+    <PlanUsage />
     <div className="grid items-start gap-8 xl:grid-cols-[1fr_340px]">
       <section aria-label="Workspaces disponíveis"><SectionHeader title="Seus workspaces" description={`${workspaces.length} ${workspaces.length === 1 ? "workspace disponível" : "workspaces disponíveis"}`} />
         {!workspaces.length ? <EmptyState title="Seu primeiro workspace" description="Organize seus sites, scans e Managed Values em um só espaço. Comece criando um workspace." action={<Link href="#create-workspace" className="ui-btn ui-btn-primary">Criar workspace</Link>} /> :

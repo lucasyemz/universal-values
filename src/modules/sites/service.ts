@@ -1,4 +1,5 @@
 import "server-only";
+import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 import { WebflowWriter } from "@/connectors/webflow/writer";
 import { z } from "zod";
 import { notFound } from "next/navigation";
@@ -39,6 +40,7 @@ export async function getConnectionReader(id: string) {
   const config = getWebflowConfig();
   if (!config || connection.status !== "ready") throw new Error("Conexão indisponível.");
   const { data, error } = await client.rpc("read_webflow_credential", { p_id: id });
+  if (quotaErrorCode(error)) throw new Error(quotaMessage(quotaErrorCode(error)));
   if (error || !data) throw new Error("Credencial indisponível.");
   const token = decryptToken(data, credentialContext(connection), config.encryptionKey);
   return { connection, reader: new WebflowReader(token), writer: new WebflowWriter(token) };

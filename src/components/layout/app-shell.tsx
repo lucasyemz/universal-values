@@ -16,7 +16,7 @@ export function SiteContext({ title, siteId, workspaceId }: Omit<Context, "pathn
   useEffect(() => { set({ title, siteId, workspaceId, pathname }); return () => set(null); }, [set, title, siteId, workspaceId, pathname]);
   return null;
 }
-export function AppShell({ children, workspaces, email, workspaceError }: { children: ReactNode; workspaces: { id: string; name: string }[]; email?: string; workspaceError?: boolean }) {
+export function AppShell({ children, workspaces, email, workspaceError, plan }: { children: ReactNode; workspaces: { id: string; name: string }[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
   const pathname = usePathname();
   const router = useRouter();
   const [context, setContext] = useState<Context | null>(null);
@@ -48,6 +48,7 @@ export function AppShell({ children, workspaces, email, workspaceError }: { chil
     </nav>
     <div className="mt-auto pt-8">
       <details className="mb-5 rounded-lg bg-subtle p-3 text-xs text-muted"><summary className="font-medium"><BookOpen size={14} className="mr-2 inline" aria-hidden="true" />Como funciona</summary><p className="mt-3 leading-6">Conecte um site, prepare um scan e revise as ocorrências. Toda alteração no CMS exige sua confirmação. O site não é publicado automaticamente.</p></details>
+      <Link onClick={close} href="/dashboard/plan" aria-current={pathname === "/dashboard/plan" ? "page" : undefined} className="ui-nav-link mb-4"><ShieldCheck size={17} aria-hidden="true" /><span>Plano e consumo<span className="block text-xs text-muted">{plan === "admin" ? "Administrador" : "Free"} · Gerenciar plano</span></span></Link>
       <details className="border-t pt-4"><summary className="cursor-pointer truncate text-xs text-muted">{email ?? "Minha conta"}</summary><form action={logout} className="mt-3 space-y-3"><p className="text-xs text-muted">Sair desta sessão neste navegador?</p><SubmitButton variant="secondary" pendingLabel="Saindo…">Confirmar saída</SubmitButton></form></details>
     </div>
   </>;
@@ -57,7 +58,7 @@ export function AppShell({ children, workspaces, email, workspaceError }: { chil
     <dialog ref={dialog} className="ui-mobile-dialog" aria-label="Menu de navegação"><button type="button" onClick={close} className="ui-btn ui-btn-ghost mb-4" aria-label="Fechar menu"><X size={18} aria-hidden="true" /></button><div className="flex min-h-[80dvh] flex-col">{sidebar}</div></dialog>
     <div className="min-h-screen lg:pl-60">
       <div className="flex min-h-16 items-center justify-between gap-3 border-b bg-surface px-4 md:px-8">
-        <div className="flex min-w-0 items-center gap-3"><button type="button" className="ui-btn ui-btn-ghost lg:hidden" aria-label="Abrir menu" onClick={() => dialog.current?.showModal()}><Menu size={19} /></button><Link href="/dashboard" className="shrink-0 text-xs text-muted">Workspace</Link><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span className="truncate text-xs font-medium">{current?.title ?? (routeWorkspace ? workspaces.find((w) => w.id === routeWorkspace)?.name : pathname === "/dashboard" ? "Visão geral" : "Revisão")}</span></div>
+        <div className="flex min-w-0 items-center gap-3"><button type="button" className="ui-btn ui-btn-ghost lg:hidden" aria-label="Abrir menu" onClick={() => dialog.current?.showModal()}><Menu size={19} /></button><Link href="/dashboard" className="shrink-0 text-xs text-muted">Workspace</Link><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span className="truncate text-xs font-medium">{current?.title ?? (routeWorkspace ? workspaces.find((w) => w.id === routeWorkspace)?.name : pathname === "/dashboard" ? "Visão geral" : pathname === "/dashboard/plan" ? "Plano e consumo" : "Revisão")}</span></div>
         <span className="hidden items-center gap-2 text-xs text-muted sm:flex"><ShieldCheck size={15} className="text-accent" aria-hidden="true" />Alterações sob seu controle</span>
       </div>
       <div id="page-content" tabIndex={-1}>{children}</div>

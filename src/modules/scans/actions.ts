@@ -1,4 +1,5 @@
 "use server";
+import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -32,6 +33,7 @@ export async function previewScan(form: FormData) {
   } catch { redirect("/dashboard/sites/" + site.id + "/scans?error=provider"); }
   const { client } = await requireUser();
   const result = await client.rpc("preview_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/sites/" + site.id + "/scans?error=preview");
   redirect("/dashboard/scans/" + input.data.id);
 }
@@ -41,6 +43,7 @@ export async function confirmScan(form: FormData) {
   await getScan(input.data.id);
   const { client } = await requireUser();
   const result = await client.rpc("confirm_cms_scan", { p_id: input.data.id });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/scans/" + input.data.id + "?error=confirmation");
   revalidatePath("/dashboard/scans/" + input.data.id);
   redirect("/dashboard/scans/" + input.data.id);
@@ -50,6 +53,7 @@ export async function cancelScan(form: FormData) {
   if (!input.success) redirect("/dashboard?error=confirmation");
   const { client } = await requireUser();
   const result = await client.rpc("cancel_cms_scan", { p_id: input.data.id });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/scans/" + input.data.id + "?error=cancel");
   revalidatePath("/dashboard/scans/" + input.data.id);
   redirect("/dashboard/scans/" + input.data.id);
@@ -70,6 +74,7 @@ export async function previewManagedValue(form: FormData) {
   await getScan(input.data.scanId);
   const { client } = await requireUser();
   const result = await client.rpc("preview_managed_value", { p_id: input.data.id, p_scan_id: input.data.scanId, p_name: input.data.name, p_occurrence_ids: input.data.occurrenceIds });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/scans/" + input.data.scanId + "?error=selection");
   redirect("/dashboard/managed-values/preview/" + input.data.id);
 }
@@ -79,6 +84,7 @@ export async function confirmManagedValue(form: FormData) {
   const { preview } = await loadValuePreview(input.data.id);
   const { client } = await requireUser();
   const result = await client.rpc("confirm_managed_value", { p_id: input.data.id });
+  if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error || !result.data) redirect("/dashboard/managed-values/preview/" + input.data.id + "?error=confirmation");
   revalidatePath("/dashboard/scans/" + preview.scan_id);
   revalidatePath("/dashboard/sites/" + preview.site_id + "/scans");

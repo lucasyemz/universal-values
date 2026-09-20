@@ -1,4 +1,5 @@
 "use server";
+import { prepareItemSlugs } from "@/modules/scans/slug-service";
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
@@ -25,6 +26,7 @@ export async function previewResolution(_previous: { error?: string }, form: For
     const {client}=await requireUser();
     const result=await client.rpc("preview_managed_value_resolution",{p_id:data.id,p_binding_id:data.bindingId,p_scan_id:data.scanId,p_occurrence_ids:data.ids,p_mode:data.mode,p_version:data.version});
     if(result.error) return {error:"Não foi possível preparar a resolução. Confira a migration 014, conclua operações ativas e atualize o scan se a fonte foi sincronizada recentemente."};
+    await prepareItemSlugs(data.id);
   } catch(error) { return {error:error instanceof Error ? error.message : "Não foi possível preparar a resolução."}; }
   redirect("/dashboard/changes/"+data.id);
 }

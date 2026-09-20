@@ -85,3 +85,7 @@ A edição central e sincronização dos campos CMS vinculados usam prévia, con
 ## Worker CMS
 
 A sincronização confirmada agora roda em um processo independente do navegador. Aplique a migration 015, configure a credencial privada do servidor Supabase e execute `npm run worker` em outro terminal. O dashboard apenas acompanha o progresso. Veja [ativação, garantias e testes](docs/background-sync.md). Fechar o navegador é permitido; o processo do worker precisa permanecer ativo.
+
+O executor CMS também está preparado para **Supabase Edge Functions + Cron**, dentro das cotas gratuitas. Compile com `npm run worker:edge:build` e siga [a ativação](docs/background-sync.md); o agendamento é instalado inicialmente desativado.
+
+Limites do plano gratuito e privilégios administrativos: [docs/free-plan.md](docs/free-plan.md).

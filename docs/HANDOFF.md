@@ -238,3 +238,23 @@ Na investigação da operação do usuário, o dashboard passou de 0/2 campos pr
 ### Próxima entrega: execução CMS em segundo plano
 
 O usuário confirmou o ciclo principal e autorizou o processamento independente do navegador em 19/09. Implementada a migration 015, ainda não aplicada remotamente: fila durável nas operações confirmadas, gateway restrito a service_role, lease/dispatch existentes, pausa persistida e retomada explícita. O executor `npm run worker` é um processo Node separado; a UI somente consulta progresso/saúde. A chave privada `SUPABASE_SERVICE_ROLE_KEY` deve ser configurada no ambiente do worker, junto da chave de criptografia existente. Nenhuma sessão de usuário é persistida. Consulte `docs/background-sync.md`. A dependência da página aberta descrita na verificação anterior é substituída pelo worker após esta ativação. Não foi iniciado worker com credenciais reais durante a implementação.
+
+### Executor gratuito: Supabase Edge Functions + Cron
+
+Em 20/09, o usuário pediu substituir a hospedagem paga do worker por Supabase Free. A migration 015 e o worker local já haviam sido validados pelo usuário. A nova preparação usa `npm run worker:edge:build`, função `cms-worker` e SQL separado `supabase/cron/cms-worker.sql`. Uma etapa por chamada, Cron a cada minuto, segredo dedicado com comparação segura, diagnóstico sem reserva e deadline compartilhado de rede. O agendamento nasce desativado. Consulte `docs/background-sync.md` para segredos, deploy, diagnóstico e ativação. O worker Node permanece como alternativa local. Esta anotação não afirma deploy ou ativação remota da Edge Function.
+
+### Implantação remota da Edge Function — 20/09/2026
+
+Após login do usuário na CLI, `cms-worker` foi publicada no projeto Universal Value (`nxibjpprjorchjeoudss`). Segredos da função e Vault configurados sem exposição; a chave de criptografia original foi preservada. Diagnóstico direto e via pg_net: HTTP 200; chamada sem segredo: 401. Cron `cms-worker-every-minute`, ID 1, ativado com fila vazia. Não havia worker local rodando. Consulte `docs/background-sync.md` para operação e pausa. O deploy remoto não equivale a commit/push das alterações locais ainda pendentes.
+
+### Plano gratuito e isenção administrativa (20/09)
+
+Migration 016 aplicada remotamente e conta do proprietário verificada cadastrada na lista privada de administradores, com auditoria. RPC remota confirmou `plan: admin`; Cron continua ativo. Usuários free: 1 site por conta entre workspaces, 5 scans/mês, 100 itens/scan, 50 campos CMS/mês e uma operação ativa. Reservas transacionais/idempotentes, limites de preparações/acessos à integração, teto global e cartão de consumo no dashboard. Administrador isento de cotas comerciais, preservando limites técnicos/provedores. Detalhes e operação em `docs/free-plan.md`. Validação: 303 testes, lint, TypeScript, build Next webpack, build Edge e smoke Deno com transporte simulado. As alterações locais desta entrega ainda não foram commitadas. Não foi alterado conteúdo no Webflow durante a ativação.
+
+### Plano e consumo na barra lateral
+
+Migration 017 aplicada remotamente: seleção persistente de Free/Administrador apenas para contas habilitadas como administradoras. Nova página `/dashboard/plan`, acesso perto do email, limites/consumo/renovação e revisão com confirmação. Troca não zera cotas, não apaga histórico e exige ausência de operações ativas ao entrar no Free. Usuários comuns não podem se promover; não existe plano pago ou checkout. Preferência persistida por conta, auditoria e idempotência no banco. Validação: 307 testes, lint e build com TypeScript aprovados. A conta real permanece no plano Administrador até escolha explícita do usuário.
+
+### Nome do item CMS e slug (20/09)
+
+Migration 018 aplicada remotamente e worker Edge atualizado. Edições do campo de sistema `name` agora incluem snapshot do slug atual e sugestão pelo novo nome completo na revisão, com confirmação conjunta. Abrange scan, sincronização Managed Value e resolução; reversões restauram o slug anterior registrado. Snapshot imutável e auditado; comparação/releitura de nome e slug; resultado inesperado fica incerto e não é reenviado automaticamente. O slug alterado soma um campo na cota. Prévia antiga de nome deve preparar o slug antes de confirmar; operação já confirmada mantém escopo original. Não há publicação nem criação automática de redirects. 322 testes, lint, build/TypeScript, bundle Edge e smoke Deno aprovados. Testes CMS usaram transporte simulado; nenhum conteúdo Webflow foi editado diretamente. Roteiro em `docs/cms-changes.md`.

@@ -56,3 +56,15 @@ Referências: [Update Single Item](https://developers.webflow.com/data/reference
 Aplique `supabase/migrations/20260917000800_text_removal_changes.sql` para permitir substituições por texto vazio. Deixar o novo texto vazio remove apenas o intervalo da ocorrência; espaços, pontuação e HTML ao redor são preservados. O botão **Remover texto deste grupo** prepara a remoção das ocorrências exibidas. A prévia mostra **Remover este trecho (sem substituição)** e a aplicação exige confirmação. Campos obrigatórios podem ser rejeitados pelo Webflow se ficarem vazios.
 
 Texto vazio é permitido apenas em substituições, sem permitir Managed Values vazios ou remoção de links/imagens por esse mecanismo. O fluxo existente de auditoria, idempotência, nova tentativa e reversão continua sendo usado.
+
+## Nome e slug do item
+
+A migration 018 acrescenta uma revisão persistida para o campo de sistema `name` (`PlainText`). Campos personalizados com o rótulo “Nome” não acionam essa regra. O novo nome completo, inclusive quando apenas um trecho foi substituído, gera o slug em minúsculas, sem acentos e com separadores convertidos em hífens. Nomes vazios ou sem letras/números utilizáveis são bloqueados na preparação.
+
+Antes de confirmar, o aplicativo lê o slug atual do Webflow e registra o par anterior/novo em `slug_updates`, com auditoria. A página de revisão mostra nome completo e slug; prévias antigas de nome precisam preparar essa revisão. O snapshot é imutável. O executor envia nome e slug no mesmo PATCH ao item preparado, preservando locale; compara ambos antes da escrita e na resposta, e faz releitura. Se o Webflow retornar um slug diferente (por exemplo por conflito), registra incerteza, não sucesso, e não reenvia automaticamente. A sugestão não garante disponibilidade do endereço e não inventa um sufixo fora da revisão.
+
+Scans, Managed Values e resolução de divergências usam a mesma preparação. Reversões de operações novas restauram exatamente o slug anterior registrado, inclusive se era personalizado; reversões de operações antigas preservam o slug observado na nova prévia. Operações que já estavam confirmadas antes da migration conservam seu comportamento original, sem adicionar uma alteração não revisada.
+
+Cada slug efetivamente alterado conta como um campo adicional na cota mensal, embora nome+slug sejam uma única etapa de processamento. O slug deixa de corresponder à URL anterior após publicação; o aplicativo não publica nem cria redirecionamentos automaticamente. Consulte a documentação Webflow de [itens CMS](https://developers.webflow.com/data/docs/working-with-the-cms/manage-collections-and-items).
+
+Teste manual: altere uma ocorrência no campo `name` para “São Paulo Premium”, revise o nome completo e `sao-paulo-premium`, confirme e confira ambos no CMS preparado. Antes de confirmar outro teste, edite apenas o slug no Webflow: a aplicação deve registrar conflito e preservar a edição externa. Nenhum desses testes reais foi executado automaticamente em sites de clientes.
