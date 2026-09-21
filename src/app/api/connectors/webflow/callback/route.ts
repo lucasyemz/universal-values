@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   const parsed = connectionSchema.safeParse(result.data);
   if (result.error || !parsed.success || parsed.data.actor_id !== user.data.user.id) return done("/dashboard?error=authorization");
   const connection = parsed.data;
-  const back = "/dashboard/workspaces/" + connection.workspace_id + "/sites";
+  const back = "/dashboard/workspaces/" + connection.workspace_id + "/settings/webflow";
   if (request.nextUrl.searchParams.has("error")) return done(back + "?error=denied");
   const code = z.string().min(1).max(4096).safeParse(request.nextUrl.searchParams.get("code"));
   if (!code.success) return done(back + "?error=authorization");
@@ -57,5 +57,5 @@ export async function GET(request: NextRequest) {
     // No raw provider exceptions, OAuth query or credentials are logged.
     return done(back + "?error=authorization");
   }
-  return done("/dashboard/connections/" + id);
+  return done(back + "?sites=1");
 }

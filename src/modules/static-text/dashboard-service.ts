@@ -27,3 +27,9 @@ export async function designerChangeHistory(id: string) {
   const result = await client.from("designer_changes").select("id,plan,search_text,events,created_at,expires_at").eq("site_id", id).order("created_at", { ascending: false }).limit(30);
   return { changes: result.data ?? [], unavailable: !!result.error };
 }
+
+export async function designerSessions(id: string) {
+  const { client,site }=await designerSite(id);
+  const sessions=await client.from("designer_sessions").select("id,expires_at").eq("site_id",id).is("revoked_at",null).gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false});
+  return { site,sessions:sessions.data??[],unavailable:!!sessions.error };
+}

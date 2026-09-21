@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { scanEditingOptions } from "@/modules/scans/centralization";
 import { LockKeyhole, ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,8 +20,8 @@ export function OccurrenceEditor({ rows, scanId, reviewedIds = [], editableBound
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState("");
   const [operation, setOperation] = useState<{ fingerprint: string; id: string } | null>(null);
-  const protectedOccurrence = (o: Occurrence) => !!linkedValues[o.source_key] && !editableBoundOccurrenceIds.includes(o.id);
-  const occurrences = rows.map(row => row.occurrence).filter(o => !protectedOccurrence(o));
+  const { available: occurrences, protectedIds } = scanEditingOptions(rows.map(row => row.occurrence), linkedValues, editableBoundOccurrenceIds);
+  const protectedOccurrence = (o: Occurrence) => protectedIds.has(o.id);
   const type = rows[0]?.occurrence.canonical.type;
   async function reviewInputs(nextInputs: Record<string, string>) {
     if (pending) return;
@@ -48,7 +49,7 @@ export function OccurrenceEditor({ rows, scanId, reviewedIds = [], editableBound
       </label>
       <button type="button" disabled={pending || !bulk.trim() || !occurrences.length} onClick={() => { const next = fillOccurrenceValues(occurrences, inputs, bulk); setInputs(next); void reviewInputs(next); }} className="mt-3 ui-btn disabled:opacity-50">Revisar grupo com este valor</button>
       {type === "text" && <button type="button" disabled={!occurrences.length} onClick={() => { setInputs(fillOccurrenceValues(occurrences, inputs, "")); setBulk(""); setReview(null); }} className="ml-2 mt-3 ui-btn ui-btn-danger">Remover texto deste grupo</button>}
-      <p className="mt-3 text-xs leading-6 text-muted">Trechos gerenciados estão protegidos; outros textos do mesmo campo podem ser editados quando o vínculo está atualizado. Revise o grupo com um único valor ou ajuste cada ocorrência abaixo e use Revisar alterações. Use Todos para incluir as revisadas.</p></>}
+      <p className="mt-3 text-xs leading-6 text-muted">O novo valor será aplicado às ocorrências editáveis deste grupo. Trechos protegidos por Managed Values ficam de fora. Você também pode ajustar cada ocorrência abaixo e usar Revisar alterações. Use Todos para incluir as revisadas.</p></>}
       {!occurrences.length && <p className="text-sm text-muted">Este grupo está protegido. Abra o Managed Value da origem para editar e revisar a sincronização.</p>}
     </div>
     {rows.map(({ occurrence: o, display }) => <div key={o.id} className={"grid gap-6 xl:grid-cols-[1fr_1fr] " + (protectedOccurrence(o) ? "rounded-xl border border-accent/30 bg-accent/5 p-5" : "border-b py-5")}>
@@ -56,7 +57,7 @@ export function OccurrenceEditor({ rows, scanId, reviewedIds = [], editableBound
       {protectedOccurrence(o) && <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-accent/25 bg-white px-3 py-1 text-xs font-semibold text-accent"><LockKeyhole size={14} aria-hidden="true" />Managed Value · Trecho protegido</span>}
       {linkedValues[o.source_key]?.divergence && <a href={"#divergence-" + linkedValues[o.source_key]!.bindingId} className="mb-3 block text-sm font-semibold text-amber-800 underline">Alterado no Webflow · Resolver divergência</a>}
       <div className="flex items-center gap-3">{display.imageUrl && <ImageThumbnail url={display.imageUrl} alt={display.title} />}<div className="min-w-0"><h3 className="break-words font-semibold">{display.title}</h3>{display.subtitle && <p className="mt-1 break-all text-sm text-faint">{display.subtitle}</p>}</div></div>
-      {linkedValues[o.source_key] && <Link className="mt-2 block text-sm text-accent underline" href={"/dashboard/managed-values/" + linkedValues[o.source_key]!.id}>{protectedOccurrence(o) ? "Protegido por: " : "Outro trecho deste campo: "}{linkedValues[o.source_key]!.name}</Link>}
+      {protectedOccurrence(o) && <Link className="mt-2 block text-sm text-accent underline" href={"/dashboard/managed-values/" + linkedValues[o.source_key]!.id}>Protegido por: {linkedValues[o.source_key]!.name}</Link>}
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs"><dt className="text-muted">Coleção</dt><dd>{o.collection_name}</dd><dt className="text-muted">Item do CMS</dt><dd>{o.item_name}</dd><dt className="text-muted">Campo</dt><dd>{o.field_name}</dd></dl><span className="mt-3 inline-flex rounded-full border px-2 py-1 text-xs">{reviewedIds.includes(o.id) ? "Revisada" : "Pendente de revisão"}</span>
       <details className="mt-1 text-xs text-faint"><summary>Detalhes da origem</summary><p className="mt-1">Locale {o.locale || "padrão"} · posição {o.start_pos}</p></details>
       {display.context && <div className="mt-3 rounded border-l-4 border-accent bg-subtle p-3">
@@ -70,7 +71,7 @@ export function OccurrenceEditor({ rows, scanId, reviewedIds = [], editableBound
         <p className="mt-3 text-sm leading-6 text-muted">Esta ocorrência alcança um trecho gerenciado ou seu vínculo precisa ser atualizado. Abra o valor central para conferir a origem e revisar a sincronização.</p>
         <Link className="ui-btn mt-4 inline-flex items-center gap-2" href={"/dashboard/managed-values/" + linkedValues[o.source_key]!.id}>Abrir Managed Value<ArrowUpRight size={16} aria-hidden="true" /></Link>
         <p className="mt-3 text-xs text-muted">O conteúdo exibido corresponde ao registro deste scan.</p>
-      </section> : <>{linkedValues[o.source_key] && <p className="mb-3 rounded-lg bg-subtle p-3 text-sm text-muted">Este texto pode ser editado. O trecho do Managed Value será preservado e seu vínculo continuará atualizado.</p>}<label className="block text-sm font-medium">Novo valor
+      </section> : <><label className="block text-sm font-medium">Novo valor
         <input disabled={protectedOccurrence(o)} aria-describedby={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={(event) => { setInputs({ ...inputs, [o.id]: event.target.value }); setReview(null); }} className="mt-2 block w-full rounded border p-3" />
       </label>
       {o.field_slug === "name" && o.field_type === "PlainText" && <p className="mt-2 text-sm text-accent">Nome do item CMS: na próxima etapa, também vamos sugerir e revisar o slug a partir do nome completo.</p>}

@@ -286,3 +286,27 @@ CMS e Designer agora oferecem busca por texto com opções de caixa, acentos e p
 Correção do bloqueio de “Maecenas” por um link “Buy it” em outro trecho do mesmo RichText. Editor e action liberam texto independente com snapshot válido; a migration 023 protege as faixas no banco e reposiciona os vínculos após aplicação verificada, mantendo prévia, confirmação, auditoria e idempotência. Testes incluem sobreposição, Unicode/HTML, remoção/reversão, múltiplos campos, vínculo criado após prévia e falhas/incerteza. Ver `docs/managed-value-sync.md`. Continua limitado a um Managed Value por campo para centralização. Sem escrita em sites de clientes durante a implementação.
 
 Migration 023 aplicada remotamente ao projeto Supabase conectado; existência da tabela/trigger e proteção de acesso verificadas. Testes locais, TypeScript, lint e build passaram. Validação de escrita real no CMS pendente do teste do usuário.
+
+## Reorganização da área do site — 20/09
+
+A página longa foi dividida em Scans (cinco registros por página), Novo scan (duas etapas locais + a prévia persistida existente), Managed Values (pesquisa/filtros/fontes), Alterações (CMS/Designer unificados) e Visão geral opcional. A entrada do projeto continua indo diretamente a Scans conforme solicitação expressa anterior. Explorar CMS fica em `/cms`; Global Facts e conexão do Designer ficam em Avançado. Antes de editar o código foi criado `docs/site-page-refactor-inventory.md`, com fontes, contratos e destinos.
+
+Nenhuma migration ou escrita no Webflow. Mesmos limites, validação Zod, prévia, confirmação, RLS e processamento. Históricos antigos e links da extensão são encaminhados às novas páginas. O histórico não consulta a API Webflow. A confirmação do scan permanece na rota estável `/dashboard/scans/[id]`.
+
+Lint, TypeScript, suíte automatizada e build webpack passaram, assim como o build da extensão após atualizar o link de histórico. A inspeção visual autenticada não pôde ser concluída porque a janela do navegador ficou indisponível ao controle. Conferência visual desktop/mobile e o fluxo real de novo scan ficam para teste do usuário, sem executar escrita de cliente para validar layout.
+
+### Busca específica não herda revisão — migration 024
+
+Ocorrências de texto específico agora usam decisões manuais e auditoria de aplicação do próprio scan, ignorando revisões de outros scans. Scans automáticos/outros tipos mantêm a regra anterior. Histórico e RPCs de marcação preservados. Removido o aviso de proteção em trechos independentes do mesmo campo: edição em grupo inclui esses textos e exclui as ocorrências efetivamente protegidas (ou vínculos desatualizados/incertos, por segurança). Testes de banco cobrem nova busca pendente, confirmação manual, idempotência e aplicação no próprio scan; seleção de grupo cobre textos livres e protegidos no mesmo campo.
+
+Migration 024 aplicada ao Supabase conectado. Validação: 394 testes, TypeScript e lint aprovados. Nenhuma escrita em conteúdo Webflow durante a correção.
+
+## Configurações centralizadas do Webflow — migration 025
+
+`/dashboard/settings/webflow` leva às configurações do workspace. OAuth, seleção de sites autorizados (deduplicados por site), criação/troca de workspace, autorização e revogação do Designer ficam nessa área. As antigas rotas de conexão encaminham para lá; links antigos de histórico do Designer continuam abrindo a alteração correspondente. Coleções são carregadas no novo scan e não exigem autorização individual.
+
+Credenciais OAuth prontas não têm expiração local; os 15 minutos são somente para completar a autorização. Novas capacidades do Designer duram 30 dias e são armazenadas em localStorage com site e prazo validados. Conexões anteriores mantêm sua validade original; gere um novo código e recarregue a extensão compilada para usar a persistência. Prévias continuam expirando em 15 minutos. A geração usa HMAC com domínio/ator/site/operação para retries devolverem o mesmo código sem armazená-lo em claro no banco.
+
+Revogar CMS remove as credenciais locais da autorização confirmada, mantém sites/histórico, registra auditoria e bloqueia revogação durante operações CMS confirmadas. A confirmação de uma prévia antiga também exige conexão pronta, com o mesmo lock de site. Snapshot e ID de revogação são imutáveis; repetir não revoga autorizações posteriores. Revogar Designer é atômico para o conjunto confirmado, com auditoria por capacidade. A revogação local não desinstala o app Webflow; isso é explicitado na prévia. Nenhuma conexão real foi revogada nem conteúdo Webflow alterado durante a implementação.
+
+Migration 025 aplicada ao Supabase conectado; prazo padrão de 30 dias verificado por consulta de metadados. Validação local: 402 testes em 61 arquivos, TypeScript, lint, build webpack do app e build do Designer aprovados. Fluxo visual autenticado ainda requer conferência no navegador do usuário. Nenhum commit/push realizado nesta etapa.

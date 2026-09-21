@@ -20,8 +20,8 @@ export async function confirmWorkspace(form: FormData) {
   const input = workspaceConfirmationSchema.safeParse({ id: form.get("id"), confirmed: form.get("confirmed") });
   if (!input.success) redirect("/dashboard?error=confirmation");
   const { client } = await requireUser();
-  const { error } = await client.rpc("confirm_workspace", { p_id: input.data.id });
+  const { data, error } = await client.rpc("confirm_workspace", { p_id: input.data.id });
   if (error) redirect("/dashboard?error=confirmation");
   revalidatePath("/dashboard");
-  redirect("/dashboard?created=1");
+  redirect("/dashboard/workspaces/" + data + "/settings/webflow");
 }

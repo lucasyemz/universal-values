@@ -1,4 +1,5 @@
 "use server";
+import { parseScanSetup } from "./setup-form";
 import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { redirect } from "next/navigation";
@@ -6,17 +7,14 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
 import { getConnectionReader } from "@/modules/sites/service";
-import { confirmScanSchema, planSchema, previewScanSchema, processScanSchema, valuePreviewInputSchema, valuePreviewValidationError } from "./schema";
+import { confirmScanSchema, planSchema, processScanSchema, valuePreviewInputSchema, valuePreviewValidationError } from "./schema";
 import { getScan, getScanSite, loadValuePreview, processBatch } from "./service";
 
 export async function previewScan(form: FormData) {
-  const searchText = form.get("searchText") ?? undefined;
-  const selectedTypes = form.getAll("types");
-  if (typeof searchText === "string" && searchText.trim() && !selectedTypes.includes("text")) selectedTypes.push("text");
-  const input = previewScanSchema.safeParse({ id: form.get("id"), siteId: form.get("siteId"), source: form.get("source"), collectionIds: form.getAll("collectionIds"), types: selectedTypes, searchText, searchOptions: { ignoreCase: form.get("ignoreCase") === "on", ignoreAccents: form.get("ignoreAccents") === "on", wholeWord: form.get("wholeWord") === "on" } });
+  const input = parseScanSetup(form);
   if (!input.success) {
     const siteId = z.uuid().safeParse(form.get("siteId"));
-    redirect(siteId.success ? "/dashboard/sites/" + siteId.data + "/scans?error=scope" : "/dashboard?error=invalid");
+    redirect(siteId.success ? "/dashboard/sites/" + siteId.data + "/scans/new?error=scope" : "/dashboard?error=invalid");
   }
   const site = await getScanSite(input.data.siteId);
   const { reader, connection } = await getConnectionReader(site.connection_id);
@@ -30,11 +28,11 @@ export async function previewScan(form: FormData) {
     if (selected.length !== new Set(input.data.collectionIds).size) throw new Error("Invalid selection");
     plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.searchText ? { searchText: input.data.searchText, searchOptions: input.data.searchOptions } : {}) })));
     truncated = false;
-  } catch { redirect("/dashboard/sites/" + site.id + "/scans?error=provider"); }
+  } catch { redirect("/dashboard/sites/" + site.id + "/scans/new?error=provider"); }
   const { client } = await requireUser();
   const result = await client.rpc("preview_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
-  if (result.error) redirect("/dashboard/sites/" + site.id + "/scans?error=preview");
+  if (result.error) redirect("/dashboard/sites/" + site.id + "/scans/new?error=preview");
   redirect("/dashboard/scans/" + input.data.id);
 }
 export async function confirmScan(form: FormData) {

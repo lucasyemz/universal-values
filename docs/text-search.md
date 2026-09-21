@@ -19,3 +19,9 @@ Resultados do CMS mantêm variantes em grupos distintos pelo valor original, pre
 A pesquisa dentro de um scan filtra grupos por valor, contexto visível, coleção, item e campo, ignorando caixa e acentos. Não faz novas consultas ao Webflow, nem mistura valores diferentes. Cada ocorrência mostra sua origem, o trecho destacado, status de revisão e proteção de Managed Value.
 
 Teste manual: pesquisar `sao paulo` com as duas primeiras opções ligadas; conferir `São Paulo`, `SAO PAULO` e `sao paulo`. Pesquisar `casa` com palavra inteira para excluir `casamento`. Revisar apenas uma ocorrência e conferir que a prévia mantém o restante do campo. No Designer, recompilar/reabrir a extensão antes do teste.
+
+## Revisão independente para texto específico
+
+A migration 024 faz as ocorrências de texto de uma busca explícita começarem pendentes, mesmo quando o mesmo conteúdo foi revisado/aplicado em outro scan. Marcar manualmente ou aplicar com sucesso no próprio scan continua registrando a revisão. Scans automáticos e outros tipos preservam a memória de revisão anterior. Os registros históricos não são apagados.
+
+Managed Values são uma proteção de trechos, não uma marca de revisão. Na edição em grupo, textos independentes no mesmo campo entram normalmente; ocorrências protegidas ficam de fora e mostram o vínculo. Não há aviso de Managed Value nas ocorrências livres.

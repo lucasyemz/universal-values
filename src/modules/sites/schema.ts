@@ -6,7 +6,7 @@ export const sitePreviewInputSchema = z.strictObject({ id: z.uuid(), connectionI
 export const confirmSiteSchema = z.strictObject({ id: z.uuid(), confirmed: z.literal("yes") });
 export const connectionSchema = z.object({
   id: z.uuid(), workspace_id: z.uuid(), actor_id: z.uuid(),
-  status: z.enum(["pending", "exchanging", "ready"]), expires_at: z.string(),
+  status: z.enum(["pending", "exchanging", "ready", "revoked"]), expires_at: z.string(),
 });
 export const linkedSiteSchema = z.object({
   id: z.uuid(), workspace_id: z.uuid(), connection_id: z.uuid(),

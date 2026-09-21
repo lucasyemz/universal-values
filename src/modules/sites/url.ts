@@ -15,8 +15,10 @@ export function siteRoute(pathname: string) {
 export function siteRouteDestination(pathname: string, site: { id: string; slug: string; accountSlug: string }, method: string) {
   const route = siteRoute(pathname);
   if (!route) return null;
-  if (!route.account && (method === "GET" || method === "HEAD")) {
-    return { kind: "redirect" as const, pathname: `/dashboard/${site.accountSlug}/sites/${site.slug}${route.suffix}` };
+  const reading = method === "GET" || method === "HEAD";
+  const siteEntry = !route.suffix || route.suffix === "/";
+  if (reading && (!route.account || siteEntry)) {
+    return { kind: "redirect" as const, pathname: `/dashboard/${site.accountSlug}/sites/${site.slug}${siteEntry ? "/scans" : route.suffix}` };
   }
   if (!route.account && route.isId) return null;
   return { kind: "rewrite" as const, pathname: `/dashboard/sites/${site.id}${route.suffix}` };

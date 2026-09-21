@@ -22,7 +22,7 @@ export type Database = {
       managed_values: ReadTable<{ archived_at: string | null; id: string; site_id: string; workspace_id: string; name: string; canonical: Json; version: number; created_at: string }>;
       managed_value_previews: ReadTable<{ id: string; scan_id: string; site_id: string; workspace_id: string; actor_id: string; name: string; canonical: Json; occurrence_ids: string[]; managed_value_id: string | null; expires_at: string }>;
       managed_value_bindings: ReadTable<{ canonical: Json; uncertain: boolean; last_synced_at: string | null; id: string; managed_value_id: string; site_id: string; workspace_id: string; source_key: string; collection_id: string; item_id: string; locale: string; field_slug: string; field_type: string; source_value: string; locations: Json }>;
-      webflow_connections: ReadTable<{ id: string; workspace_id: string; actor_id: string; state_hash: string; status: "pending" | "exchanging" | "ready"; created_at: string; expires_at: string }>;
+      webflow_connections: ReadTable<{ id: string; workspace_id: string; actor_id: string; state_hash: string; status: "pending" | "exchanging" | "ready" | "revoked"; created_at: string; expires_at: string }>;
       workspace_routes: ReadTable<{ workspace_id: string; account_id: string; slug: string; is_primary: boolean }>;
       account_routes: ReadTable<{ user_id: string; slug: string }>;
       sites: ReadTable<{ account_id: string; legacy_slug: string | null; slug: string; id: string; workspace_id: string; connection_id: string; webflow_site_id: string; display_name: string; created_at: string }>;
@@ -50,6 +50,8 @@ export type Database = {
       archive_global_fact_preview: { Args: { p_id: string }; Returns: string };
       confirm_global_facts: { Args: { p_id: string }; Returns: number };
       authorize_designer_session: { Args: { p_id: string; p_site_id: string; p_token_hash: string }; Returns: string };
+      revoke_webflow_access: { Args: { p_id: string; p_workspace_id: string; p_connections: string[] }; Returns: undefined };
+      revoke_designer_access: { Args: { p_site_id: string; p_sessions: string[] }; Returns: undefined };
       revoke_designer_session: { Args: { p_id: string }; Returns: undefined };
       designer_gateway: { Args: { p_token_hash: string; p_webflow_site_id: string; p_action: string; p_payload: Json }; Returns: Json };
       set_scan_content_reviewed: { Args: { p_id: string; p_scan_id: string; p_occurrence_ids: string[]; p_reviewed: boolean }; Returns: string };

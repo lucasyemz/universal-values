@@ -15,17 +15,17 @@ async function rpc(actor:string,sql:string,args:unknown[]=[], worker=false) {
   try{await db.query("select set_config('request.jwt.claim.sub',$1,true)",[actor]);const result=await db.query(sql,args);await db.exec('commit');return result;}
   catch(error){await db.exec('rollback');throw error;}
 }
-async function fixture(managed=false) {
+async function fixture(managed=false,type:"link"|"text"="link") {
   const actor=randomUUID(),workspace=randomUUID(),connection=randomUUID(),site=randomUUID(),operation=randomUUID(),lease=randomUUID();
   await db.query('insert into auth.users values($1)',[actor]);
   await db.query("insert into public.workspaces(id,name) values($1,'Test')",[workspace]);
   await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspace,actor]);
   await db.query("insert into public.webflow_connections(id,workspace_id,actor_id,state_hash,status) values($1,$2,$3,$4,'ready')",[connection,workspace,actor,'a'.repeat(64)]);
   await db.query("insert into public.sites(id,workspace_id,connection_id,webflow_site_id,display_name) values($1,$2,$3,$4,'Site')",[site,workspace,connection,'c'.repeat(24)]);
-  async function scan(source='/old') {
+  async function scan(source='/old',targeted=false) {
     const id=randomUUID(),occurrence=randomUUID();
-    await db.query("insert into public.cms_scans(id,site_id,workspace_id,connection_id,actor_id,plan,status) values($1,$2,$3,$4,$5,'[]','completed')",[id,site,workspace,connection,actor]);
-    await db.query(`insert into public.scan_occurrences(id,scan_id,site_id,workspace_id,collection_id,collection_name,item_id,item_name,locale,field_slug,field_name,field_type,source_value,raw_match,start_pos,end_pos,canonical) values($1,$2,$3,$4,$5,'CMS',$6,'Item','','link','Link','Link',$7,$7,0,length($7),$8::jsonb)`,[occurrence,id,site,workspace,collection,item,source,JSON.stringify({type:'link',url:source})]);
+    await db.query("insert into public.cms_scans(id,site_id,workspace_id,connection_id,actor_id,plan,status) values($1,$2,$3,$4,$5,$6::jsonb,'completed')",[id,site,workspace,connection,actor,JSON.stringify(targeted?[{id:collection,name:'CMS',types:['text'],searchText:source}]:[])]);
+    await db.query(`insert into public.scan_occurrences(id,scan_id,site_id,workspace_id,collection_id,collection_name,item_id,item_name,locale,field_slug,field_name,field_type,source_value,raw_match,start_pos,end_pos,canonical) values($1,$2,$3,$4,$5,'CMS',$6,'Item','','link','Link',case when $9='text' then 'PlainText' else 'Link' end,$7,$7,0,length($7),$8::jsonb)`,[occurrence,id,site,workspace,collection,item,source,JSON.stringify(type==='text'?{type:'text',text:source}:{type:'link',url:source}),type]);
     return {id,occurrence};
   }
   const original=await scan();
@@ -34,7 +34,7 @@ async function fixture(managed=false) {
     await db.query("insert into public.managed_values(id,workspace_id,site_id,name,canonical) values($1,$2,$3,'Link central',$4::jsonb)",[value,workspace,site,JSON.stringify({type:'link',url:'/old'})]);
     await db.query(`insert into public.managed_value_bindings(managed_value_id,site_id,workspace_id,source_key,collection_id,item_id,locale,field_slug,field_type,source_value,locations) values($1,$2,$3,$4,$5,$6,'','link','Link','/old','[{"start":0,"end":4,"raw":"/old"}]')`,[value,site,workspace,key,collection,item]);
     await rpc(actor,'select public.preview_managed_value_sync($1,$2,1,$3::jsonb)',[operation,value,JSON.stringify({type:'link',url:'/new'})]);
-  } else await rpc(actor,'select public.preview_cms_changes($1,$2,$3::jsonb)',[operation,original.id,JSON.stringify([{occurrenceId:original.occurrence,after:{type:'link',url:'/new'}}])]);
+  } else await rpc(actor,'select public.preview_cms_changes($1,$2,$3::jsonb)',[operation,original.id,JSON.stringify([{occurrenceId:original.occurrence,after:type==='text'?{type:'text',text:'/new'}:{type:'link',url:'/new'}}])]);
   const reviewed=async(id:string)=> (await rpc(actor,'select * from public.scan_reviewed_occurrences($1)',[id])).rows;
   async function start(){await rpc(actor,'select public.confirm_cms_changes($1)',[operation]);await rpc(actor,'select public.claim_cms_change($1,0,$2)',[operation,lease],true);await rpc(actor,'select public.dispatch_cms_change($1,0,$2)',[operation,lease],true);}
   async function finish(status='applied',source='/new'){
@@ -82,4 +82,22 @@ it('reconciles historical results and keeps later manual pending decisions',asyn
   await db.query('select app_private.record_applied_review(r,r.results->0,0) from public.cms_change_requests r where id=$1',[f.operation]);
   expect(await f.reviewed(f.original.id)).toEqual([]);
   await expect(rpc(f.actor,'select app_private.record_applied_review(r,r.results->0,0) from public.cms_change_requests r where id=$1',[f.operation])).rejects.toThrow('permission denied');
+});
+it('starts an explicit text search pending even after the same content was applied elsewhere',async()=>{
+  const f=await fixture(false,'text');await f.start();await f.finish();
+  expect(await f.reviewed((await f.scan('/new')).id)).toHaveLength(1);
+  const targeted=await f.scan('/new',true);expect(await f.reviewed(targeted.id)).toEqual([]);
+  const operation=randomUUID();await rpc(f.actor,'select public.set_scan_content_reviewed($1,$2,$3,true)',[operation,targeted.id,[targeted.occurrence]]);
+  expect(await f.reviewed(targeted.id)).toHaveLength(1);
+  expect(await f.reviewed((await f.scan('/new',true)).id)).toEqual([]);
+  await rpc(f.actor,'select public.set_scan_content_reviewed($1,$2,$3,false)',[randomUUID(),targeted.id,[targeted.occurrence]]);
+  await rpc(f.actor,'select public.set_scan_content_reviewed($1,$2,$3,true)',[operation,targeted.id,[targeted.occurrence]]);
+  expect(await f.reviewed(targeted.id)).toEqual([]);
+});
+it('still marks verified edits within the current targeted scan as reviewed',async()=>{
+  const f=await fixture(false,'text');
+  await db.query('update public.cms_scans set plan=$2::jsonb where id=$1',[f.original.id,JSON.stringify([{id:collection,name:'CMS',types:['text'],searchText:'/old'}])]);
+  expect(await f.reviewed(f.original.id)).toEqual([]);await f.start();await f.finish();
+  expect(await f.reviewed(f.original.id)).toHaveLength(1);
+  expect(await f.reviewed((await f.scan('/new',true)).id)).toEqual([]);
 });

@@ -3,16 +3,16 @@ import { homeSchema, sessionCodeSchema, type GatewayInput } from "../../../modul
 import { auditSchema, type AuditEvent, type AuditStore } from "../../../modules/static-text/apply";
 import { planSchema, type TextPlan } from "../../../modules/static-text/plan";
 
+import { readDesignerSession, saveDesignerSession, clearDesignerSession } from "./session-storage";
+
 declare const DESIGNER_DASHBOARD_URL: string;
 export const dashboardUrl = DESIGNER_DASHBOARD_URL;
-const sessionKey = "universal-values:designer-session:v1";
-const savedSchema = z.object({ code: sessionCodeSchema, site: z.string() });
 
 export class DesignerDashboardClient {
   private code = "";
   private site = "";
   constructor() {
-    try { const saved = savedSchema.safeParse(JSON.parse(sessionStorage.getItem(sessionKey) ?? "null")); if (saved.success) { this.code = saved.data.code; this.site = saved.data.site; } } catch { /* Reconnect if storage is unavailable. */ }
+    try { const saved = readDesignerSession(localStorage); if (saved) { this.code = saved.code; this.site = saved.site; } } catch { /* Reconnect if storage is unavailable. */ }
   }
   hasSession() { return !!this.code; }
   async connect(code: string, site: string) {
@@ -21,11 +21,11 @@ export class DesignerDashboardClient {
     this.code = parsed; this.site = site;
     try {
       const home = await this.home(site);
-      sessionStorage.setItem(sessionKey, JSON.stringify({ code: parsed, site }));
+      saveDesignerSession(localStorage, { code: parsed, site, expiresAt: home.expiresAt });
       return home;
     } catch (error) { this.code = previous.code; this.site = previous.site; throw error; }
   }
-  disconnect() { this.code = ""; this.site = ""; sessionStorage.removeItem(sessionKey); }
+  disconnect() { this.code = ""; this.site = ""; try { clearDesignerSession(localStorage); sessionStorage.removeItem("universal-values:designer-session:v1"); } catch { /* Storage unavailable. */ } }
   private async request(input: GatewayInput): Promise<unknown> {
     if (!this.code || input.webflowSiteId !== this.site) throw new Error("Conecte sua conta para este site.");
     let response: Response;

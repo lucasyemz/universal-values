@@ -14,7 +14,7 @@ export async function startWebflowConnection(form: FormData) {
   const input = startConnectionSchema.safeParse({ id: form.get("id"), workspaceId: form.get("workspaceId"), confirmed: form.get("confirmed") });
   if (!input.success) redirect("/dashboard?error=confirmation");
   const { client } = await requireWorkspaceOwner(input.data.workspaceId);
-  const back = "/dashboard/workspaces/" + input.data.workspaceId + "/sites";
+  const back = "/dashboard/workspaces/" + input.data.workspaceId + "/settings/webflow";
   const config = getWebflowConfig();
   if (!config) redirect(back + "?error=configuration");
   const store = await cookies();
@@ -68,5 +68,18 @@ export async function confirmSiteConnection(form: FormData) {
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error || !result.data) redirect("/dashboard/sites/preview/" + input.data.id + "?error=confirmation");
   revalidatePath("/dashboard/workspaces/" + preview.workspace_id + "/sites");
-  redirect("/dashboard/sites/" + result.data);
+  redirect("/dashboard/sites/" + result.data + "/scans");
+}
+
+export async function revokeWebflowAccess(form: FormData) {
+  const { z } = await import("zod");
+  const input = z.object({ id: z.uuid(), workspaceId: z.uuid(), connections: z.array(z.uuid()).min(1).max(1000), confirmed: z.literal("yes") }).parse({
+    id: form.get("id"), workspaceId: form.get("workspaceId"), connections: form.getAll("connection"), confirmed: form.get("confirmed"),
+  });
+  const { client } = await requireWorkspaceOwner(input.workspaceId);
+  const result = await client.rpc("revoke_webflow_access", { p_id: input.id, p_workspace_id: input.workspaceId, p_connections: input.connections });
+  const back = "/dashboard/workspaces/" + input.workspaceId + "/settings/webflow";
+  if (result.error) redirect(back + "?error=revoke");
+  revalidatePath("/dashboard", "layout");
+  redirect(back + "?revoked=1");
 }

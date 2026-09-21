@@ -13,3 +13,7 @@ O proxy resolve conta + slug com a sessão do usuário e RLS, reescrevendo inter
 Aplicar as migrations antes de ativar a nova versão. Nenhum e-mail completo é incluído nas URLs, e nenhum nome é alterado no Webflow.
 
 Migration 022 adiciona `workspace_routes`: o primeiro workspace da conta usa `/dashboard/{conta}/sites`; outros usam `/dashboard/{conta}/workspaces/{workspace}/sites`. Os nomes são persistentes, com sufixos apenas dentro da conta. Links antigos de workspace continuam redirecionando para a mesma lista, sem juntar sites de workspaces diferentes. Novos vínculos de proprietário criam a rota automaticamente. As consultas respeitam RLS e o papel de proprietário.
+
+A entrada `/dashboard/{conta}/sites/{site}` abre diretamente `/scans`. GET/HEAD antigos por UUID ou slug também chegam a essa área. O explorador opcional do CMS fica em `/cms`; navegação entre coleções e paginação usam essa rota. A lista de projetos e a conclusão do vínculo apontam diretamente para scans. Sem migration adicional.
+
+Áreas do site: `/overview` (resumo opcional), `/scans`, `/scans/new`, `/managed-values`, `/changes`, `/changes/{id}` (detalhe estático) e `/cms`. Detalhes de scans, Managed Values e operações CMS mantêm suas rotas originais. Hashes antigos `scans#new-scan`, `scans#managed-values`, `scans#changes` e `static#{uuid}` encaminham ao destino equivalente após carregar a sessão.

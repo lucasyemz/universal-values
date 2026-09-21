@@ -2,7 +2,7 @@ import "server-only";
 import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 import { WebflowWriter } from "@/connectors/webflow/writer";
 import { z } from "zod";
-import { notFound } from "next/navigation";
+import { notFound, unstable_rethrow } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
 import { WebflowReader, WebflowError } from "@/connectors/webflow/client";
 import { getWebflowConfig } from "@/connectors/webflow/config";
@@ -105,4 +105,13 @@ export function webflowMessage(error: unknown) {
     return "O Webflow está indisponível ou retornou dados inesperados. Tente novamente.";
   }
   return "Não foi possível concluir a conexão. Confira a configuração e tente novamente.";
+}
+
+export async function settingsAvailableSites(connections: {id:string}[], requested:boolean) {
+ const available=new Map<string,{id:string;displayName:string;connectionId:string}>(); let failed=false;
+ if(requested) for(const connection of connections) {
+  try { for(const site of (await loadAvailableSites(connection.id)).sites) if(!available.has(site.id)) available.set(site.id,{...site,connectionId:connection.id}); }
+  catch(error) { unstable_rethrow(error); failed=true; }
+ }
+ return {available:[...available.values()],failed};
 }

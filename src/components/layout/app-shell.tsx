@@ -44,16 +44,19 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
       <Link onClick={close} href="/dashboard" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />Visão geral</Link>
       {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Sites</Link>}
       {siteBase && <><p className="px-3 pb-1 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">Neste site</p>
-        <Link onClick={close} href={siteBase} className="ui-nav-link" aria-current={pathname === siteBase ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Explorar CMS</Link>
-        <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />Global Facts</Link>
-        <Link onClick={close} href={siteBase + "/static"} className="ui-nav-link" aria-current={pathname === siteBase + "/static" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />Páginas estáticas</Link>
-        <Link onClick={close} href={siteBase + "/scans#recent-scans"} className="ui-nav-link" aria-current={pathname.startsWith("/dashboard/scans/") || pathname === siteBase + "/scans" ? "page" : undefined}><ScanLine size={17} aria-hidden="true" />Scans</Link>
-        <Link onClick={close} href={siteBase + "/scans#managed-values"} className="ui-nav-link" aria-current={pathname.includes("/managed-values/") ? "page" : undefined}><Layers3 size={17} aria-hidden="true" />Managed Values</Link>
-        <Link onClick={close} href={siteBase + "/scans#changes"} className="ui-nav-link" aria-current={pathname.includes("/changes/") ? "page" : undefined}><History size={17} aria-hidden="true" />Alterações</Link>
+        <Link onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={pathname === siteBase + "/overview" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />Visão geral do site</Link>
+        <Link onClick={close} href={siteBase + "/scans"} className="ui-nav-link" aria-current={pathname.startsWith("/dashboard/scans/") || pathname.startsWith(siteBase + "/scans") ? "page" : undefined}><ScanLine size={17} aria-hidden="true" />Scans</Link>
+        <Link onClick={close} href={siteBase + "/managed-values"} className="ui-nav-link" aria-current={pathname.startsWith("/dashboard/managed-values/") || pathname.startsWith(siteBase + "/managed-values") ? "page" : undefined}><Layers3 size={17} aria-hidden="true" />Managed Values</Link>
+        <Link onClick={close} href={siteBase + "/changes"} className="ui-nav-link" aria-current={pathname.startsWith("/dashboard/changes/") || pathname.startsWith(siteBase + "/changes") ? "page" : undefined}><History size={17} aria-hidden="true" />Alterações</Link>
+        <Link onClick={close} href={siteBase + "/cms"} className="ui-nav-link" aria-current={pathname === siteBase + "/cms" ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />Explorar CMS</Link>
+        <details className="pt-2" open={pathname.startsWith(siteBase + "/facts") || pathname === siteBase + "/static" || undefined}><summary className="px-3 py-2 text-xs font-medium text-muted">Avançado</summary>
+          <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />Global Facts</Link>
+        </details>
       </>}
     </nav>
     <div className="mt-auto pt-8">
       <details className="mb-5 rounded-lg bg-subtle p-3 text-xs text-muted"><summary className="font-medium"><BookOpen size={14} className="mr-2 inline" aria-hidden="true" />Como funciona</summary><p className="mt-3 leading-6">Conecte um site, prepare um scan e revise as ocorrências. Toda alteração no CMS exige sua confirmação. O site não é publicado automaticamente.</p></details>
+      <Link onClick={close} href={workspaceId ? "/dashboard/workspaces/" + workspaceId + "/settings/webflow" : "/dashboard/settings/webflow"} className="ui-nav-link mb-3"><Globe2 size={17} />Configurações do Webflow</Link>
       <Link onClick={close} href="/dashboard/plan" aria-current={pathname === "/dashboard/plan" ? "page" : undefined} className="ui-nav-link mb-4"><ShieldCheck size={17} aria-hidden="true" /><span>Plano e consumo<span className="block text-xs text-muted">{plan === "admin" ? "Administrador" : "Free"} · Gerenciar plano</span></span></Link>
       <details className="border-t pt-4"><summary className="cursor-pointer truncate text-xs text-muted">{email ?? "Minha conta"}</summary><form action={logout} className="mt-3 space-y-3"><p className="text-xs text-muted">Sair desta sessão neste navegador?</p><SubmitButton variant="secondary" pendingLabel="Saindo…">Confirmar saída</SubmitButton></form></details>
     </div>
