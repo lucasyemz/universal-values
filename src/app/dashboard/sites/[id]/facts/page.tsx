@@ -14,7 +14,7 @@ export default async function FactsPage({ params, searchParams }: { params: Prom
   const current = view.versions[0];
   const base = `/dashboard/sites/${id}/facts`;
   return <main className="ui-page">
-    <SiteContext title={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
+    <SiteContext title={view.site.display_name} siteName={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
     <PageHeader title="Global Facts" eyebrow={view.site.display_name} description="Uma referência aprovada e versionada para as informações do negócio." />
     <Notice title="Cadastro de referência">A auditoria automática de páginas, links e JSON-LD ainda não está disponível. Salvar fatos não altera o site nem sincroniza Managed Values.</Notice>
     {view.missingMigration ? <Notice tone="warning" title="Configuração do banco pendente">Aplique a migration {view.missingMigration} de Global Facts no projeto Supabase correto. Os dados existentes serão preservados.</Notice> : <>

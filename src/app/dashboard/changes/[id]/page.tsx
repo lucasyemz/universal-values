@@ -1,3 +1,4 @@
+import { getScanSite } from "@/modules/scans/service";
 import { FreshLink } from "@/components/ui/fresh-link";
 import { isItemName } from "@/modules/scans/item-slug";
 import Link from "next/link";
@@ -26,13 +27,14 @@ const retryErrors: Record<string, string> = {
 export default async function ChangePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string }> }) {
   const { id } = await params;
   const { request, occurrences, plan, expired, retryCount, revertCount } = await loadChangeRequest(id);
+  const site = await getScanSite(request.site_id);
   const { error } = await searchParams;
   const needsSlugReview = request.status === "preview" && !request.slug_updates && plan.some(isItemName);
   const fieldCount = request.total + plan.filter(field => field.slug && field.slug.before !== field.slug.after).length;
   const managed = !!request.managed_value_id;
   const back = managed ? "/dashboard/managed-values/" + request.managed_value_id : "/dashboard/scans/" + request.scan_id;
   return <main className="ui-page">
-    <SiteContext title={request.reverts_request_id ? "Reversão de alterações" : "Alterações no CMS"} siteId={request.site_id} workspaceId={request.workspace_id} />
+    <SiteContext siteName={site.display_name} title={request.reverts_request_id ? "Reversão de alterações" : "Alterações no CMS"} siteId={request.site_id} workspaceId={request.workspace_id} />
     <FreshLink href={back}>← {managed ? "Voltar ao Managed Value" : "Voltar ao scan"}</FreshLink>
     <PageHeader title={request.reverts_request_id ? (request.status === "preview" ? "Revisar reversão" : "Resultado da reversão") : request.status === "preview" ? "Revise antes de aplicar" : "Resultado das alterações"} description={`${request.changes.length} ocorrências em ${fieldCount} campos. Confira os valores e as origens abaixo.`} status={<StatusBadge status={request.status} />} />
     {request.reverts_request_id && <><Link href={"/dashboard/changes/" + request.reverts_request_id} className="mt-3 inline-block text-accent underline">Ver alteração original</Link><p className="mt-3 text-sm">Os campos abaixo voltarão ao conteúdo anterior à operação original. Se algum campo tiver sido editado depois, ele será bloqueado. O conteúdo será relido antes da aplicação.</p></>}

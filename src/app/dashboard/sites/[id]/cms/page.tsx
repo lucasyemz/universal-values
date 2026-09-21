@@ -21,7 +21,7 @@ export default async function SitePage({ params, searchParams }: {
   const siteBase = "/dashboard/sites/" + id;
   const base = siteBase + "/cms";
   return <main className="ui-page">
-    <SiteContext title={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
+    <SiteContext title={view.site.display_name} siteName={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
     <FreshLink href={"/dashboard/workspaces/" + view.site.workspace_id + "/sites"} >← Sites do workspace</FreshLink>
     <PageHeader title="Explorar CMS" eyebrow={view.site.display_name} description="Consulte as coleções e os itens do CMS quando precisar." actions={<Link href={siteBase + "/scans/new"} className="ui-btn ui-btn-primary"><ScanLine size={16} />Novo scan</Link>} />
     <Notice>Conteúdo preparado no Webflow. Rascunhos e alterações ainda não publicadas podem aparecer aqui.</Notice>

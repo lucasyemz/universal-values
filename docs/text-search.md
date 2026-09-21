@@ -25,3 +25,9 @@ Teste manual: pesquisar `sao paulo` com as duas primeiras opções ligadas; conf
 A migration 024 faz as ocorrências de texto de uma busca explícita começarem pendentes, mesmo quando o mesmo conteúdo foi revisado/aplicado em outro scan. Marcar manualmente ou aplicar com sucesso no próprio scan continua registrando a revisão. Scans automáticos e outros tipos preservam a memória de revisão anterior. Os registros históricos não são apagados.
 
 Managed Values são uma proteção de trechos, não uma marca de revisão. Na edição em grupo, textos independentes no mesmo campo entram normalmente; ocorrências protegidas ficam de fora e mostram o vínculo. Não há aviso de Managed Value nas ocorrências livres.
+
+## Busca específica em campos numéricos
+
+A mesma busca encontra valores completos em campos `Number` do CMS, mesmo sem marcar a detecção automática de Números. `2000` encontra o número 2000; não encontra 12000 nem um trecho de outro número. Decimais aceitam ponto ou vírgula, sem separadores de milhar ou expoentes, e valores que exigiriam arredondamento são recusados. Texto simples e Rich Text continuam usando as opções de busca textual.
+
+Resultados numéricos mantêm o tipo `number` na edição e no payload do CMS; não são convertidos em texto. A busca específica mostra também uma ocorrência única do número pesquisado. Marcar Números continua incluindo a detecção automática dos demais números. A migration 026 estende a regra de revisão por scan às correspondências numéricas explícitas, preservando a revisão automática normal dos números não pesquisados. Scans concluídos não são reprocessados: execute um novo scan para encontrar as novas ocorrências.

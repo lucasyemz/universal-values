@@ -3,7 +3,7 @@ import Link from "next/link";
 import { loadWorkspaceSites } from "@/modules/sites/service";
 import { PageHeader, StatusBadge, DataTable, EmptyState, SectionHeader } from "@/components/ui";
 import { SiteContext } from "@/components/layout/app-shell";
-import { Globe2, Plus, ScanLine } from "lucide-react";
+import { ArrowRight, Globe2, Plus } from "lucide-react";
 
 export default async function WorkspaceSitesPage({ params, searchParams }: {
   params: Promise<{ workspaceId: string }>; searchParams: Promise<{ error?: string }>;
@@ -20,7 +20,7 @@ export default async function WorkspaceSitesPage({ params, searchParams }: {
     {view.missingMigration ? <p role="status" className="mt-8 rounded border border-amber-200 bg-amber-50 p-5">A configuração de sites ainda está pendente. Aplique a migration Webflow indicada no README para continuar.</p> : <>
       <section aria-label="Sites conectados" className="mt-8">
         <SectionHeader title="Sites vinculados" description={`${view.sites.length} sites neste workspace`} />
-        {view.sites.length ? <DataTable label="Sites vinculados"><thead><tr><th>Site</th><th>Plataforma</th><th>Vínculo</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>{view.sites.map((site) => <tr key={site.id}><td><Link href={"/dashboard/sites/" + site.id + "/scans"} className="flex items-center gap-3 font-semibold"><Globe2 size={18} className="text-accent" />{site.display_name}</Link></td><td className="text-muted">Webflow</td><td><StatusBadge status={view.connections.some(c=>c.id===site.connection_id) ? "connected" : "disconnected"} /></td><td><Link className="ui-btn" href={"/dashboard/sites/" + site.id + "/scans"}><ScanLine size={15} />Scans</Link></td></tr>)}</tbody></DataTable> : <EmptyState title="Conecte seu primeiro site" description="Encontre informações repetidas no CMS e revise o que deseja atualizar." action={<Link href={settings} className="ui-btn ui-btn-primary">Conectar Webflow</Link>} />}
+        {view.sites.length ? <DataTable label="Sites vinculados"><thead><tr><th>Site</th><th>Plataforma</th><th>Vínculo</th><th><span className="sr-only">Ações</span></th></tr></thead><tbody>{view.sites.map((site) => <tr key={site.id}><td><Link href={"/dashboard/sites/" + site.id + "/overview"} className="flex items-center gap-3 font-semibold"><Globe2 size={18} className="text-accent" />{site.display_name}</Link></td><td className="text-muted">Webflow</td><td><StatusBadge status={view.connections.some(c=>c.id===site.connection_id) ? "connected" : "disconnected"} /></td><td><Link className="ui-btn" href={"/dashboard/sites/" + site.id + "/overview"}>Entrar no site<ArrowRight size={15} aria-hidden="true" /></Link></td></tr>)}</tbody></DataTable> : <EmptyState title="Conecte seu primeiro site" description="Encontre informações repetidas no CMS e revise o que deseja atualizar." action={<Link href={settings} className="ui-btn ui-btn-primary">Conectar Webflow</Link>} />}
       </section>
 
     </>}

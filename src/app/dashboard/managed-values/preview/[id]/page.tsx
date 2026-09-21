@@ -1,7 +1,7 @@
 import { FreshLink } from "@/components/ui/fresh-link";
 import { OccurrenceHeading } from "@/components/scans/occurrence-heading";
 import Link from "next/link";
-import { loadValuePreview } from "@/modules/scans/service";
+import { getScanSite, loadValuePreview } from "@/modules/scans/service";
 import { confirmManagedValue } from "@/modules/scans/actions";
 import { valueLabel } from "@/modules/scans/schema";
 import { PageHeader } from "@/components/ui";
@@ -12,8 +12,9 @@ export default async function ValuePreviewPage({ params, searchParams }: { param
   const { id } = await params;
   const { preview, occurrences, expired } = await loadValuePreview(id);
   const { error } = await searchParams;
+  const site = await getScanSite(preview.site_id);
   return <main className="ui-page">
-    <SiteContext title="Revisar centralização" siteId={preview.site_id} />
+    <SiteContext siteName={site.display_name} title="Revisar centralização" siteId={preview.site_id} workspaceId={site.workspace_id} />
     <FreshLink href={"/dashboard/scans/" + preview.scan_id}>← Sugestões do scan</FreshLink>
     <PageHeader title="Revisar centralização" description="Confira o valor e as origens que serão vinculadas." />
     <section className="mt-8 ui-card p-6">

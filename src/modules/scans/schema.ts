@@ -1,3 +1,4 @@
+import { numericSearchValue } from "./numeric-search";
 import { searchOptionsSchema } from "@/modules/text-search/match";
 import { z } from "zod";
 import { managedValueSchema } from "@/modules/managed-values/schema";
@@ -67,6 +68,7 @@ export function groupOccurrences(occurrences: Occurrence[], includeWithinField =
 
 export function searchedScanTypes(scan: Pick<Scan, "plan">) {
   const selected = new Set(scan.plan.flatMap((entry) => entry.types ?? ["money", "phone", "date", "number", "text"]));
+  if (scan.plan.some(entry => (entry.types ?? ["text"]).includes("text") && numericSearchValue(entry.searchText) !== null)) selected.add("number");
   return detectionTypes.filter((type) => selected.has(type));
 }
 
@@ -77,7 +79,10 @@ export function groupScanResults(scan: Pick<Scan, "plan">, occurrences: Occurren
   return detectionTypes.filter((type) => selected.has(type)).map((type) => {
     const rows = occurrences.filter((o) => o.canonical.type === type);
     const eligible = available.filter((o) => o.canonical.type === type);
-    return { type, label: detectionLabels[type], occurrences: rows, duplicates: groupOccurrences(rows, true, type === "text" && scan.plan.some(entry => !!entry.searchText)), groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
+    const duplicates = groupOccurrences(rows, true, true).filter(group => group.occurrences.length >= 2 ||
+      type === "text" && scan.plan.some(entry => !!entry.searchText) ||
+      type === "number" && group.occurrences.some(o => scan.plan.some(entry => entry.id === o.collection_id && numericSearchValue(entry.searchText) === group.label)));
+    return { type, label: detectionLabels[type], occurrences: rows, duplicates, groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
   });
 }
 

@@ -7,7 +7,7 @@ import { OccurrenceEditor } from "@/components/scans/occurrence-editor";
 import { occurrencePresentation } from "@/modules/scans/presentation";
 import Link from "next/link";
 import { ScanProgress } from "@/components/scans/scan-progress";
-import { loadScanResults, scanProgress } from "@/modules/scans/service";
+import { getScanSite, loadScanResults, scanProgress } from "@/modules/scans/service";
 import { cancelScan, confirmScan } from "@/modules/scans/actions";
 import { detectionLabels } from "@/modules/scans/schema";
 import { countReviewedOccurrences, filterReviewedGroups, reviewFilterSchema, reviewFilterLabels } from "@/modules/scans/reviewed-content";
@@ -27,11 +27,12 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const counts = countReviewedOccurrences(searched, view.reviewedIds);
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter);
   const { scan } = view;
+  const site = await getScanSite(scan.site_id);
   return <main className="ui-page">
-    <SiteContext title="Scan do CMS" siteId={scan.site_id} workspaceId={scan.workspace_id} />
+    <SiteContext siteName={site.display_name} title="Scan do CMS" siteId={scan.site_id} workspaceId={scan.workspace_id} />
     <FreshLink href={"/dashboard/sites/" + scan.site_id + "/scans"} >← Scans</FreshLink>
     <PageHeader title={scan.status === "preview" ? "Revisar scan" : "Resultados do scan"} description={scan.status === "preview" ? "Confira o que será lido antes de iniciar." : "Revise as ocorrências e mantenha o foco no que precisa mudar."} status={<StatusBadge status={scan.status} />} />
-    {scan.plan[0]?.searchText && <p className="mt-3 break-words">Texto específico: <strong>“{scan.plan[0].searchText}”</strong> — {searchOptionsLabel(scan.plan[0].searchOptions)}.</p>}
+    {scan.plan[0]?.searchText && <p className="mt-3 break-words">Busca específica: <strong>“{scan.plan[0].searchText}”</strong> — {searchOptionsLabel(scan.plan[0].searchOptions)}.</p>}
     {error && <p role="alert" className="mt-5 rounded border bg-amber-50 p-4">{error === "name" ? "Use um nome de 2 a 80 caracteres, como Link de cadastro. Este campo dá um nome ao valor encontrado; ele não substitui a URL." : error === "invalid" ? "A solicitação de revisão é inválida. Atualize o scan e tente novamente." : error === "selection" ? "Selecione de 2 a 100 ocorrências do mesmo valor, em pelo menos dois campos de origem diferentes e ainda não gerenciados." : "Não foi possível concluir. A prévia pode ter expirado, a conexão mudou ou já existe um scan ativo para este site."}</p>}
     {scan.status === "preview" ? <section className="mt-8 ui-card p-6">
       <Steps steps={["Origem e coleções", "O que encontrar", "Revisar e iniciar"]} current={2} />
@@ -69,7 +70,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         <p className="text-sm text-muted">Filtra grupos pelo valor, trecho, coleção, item ou campo já registrado, ignorando maiúsculas/minúsculas e acentos. Mantém juntas as ocorrências de cada grupo e não faz novas consultas ao Webflow. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.</p>
       </form>
       <nav aria-label="Filtrar por revisão" className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={"/dashboard/scans/" + id + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{reviewFilterLabels[option]} ({counts[option]})</Link>)}</nav>
-      <p className="mt-3 text-sm text-muted">Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Uma busca por texto específico começa com as ocorrências de texto pendentes, sem herdar revisões de outros scans. Trechos de Managed Values continuam protegidos. Edições externas aparecem como pendentes em um novo scan.</p>
+      <p className="mt-3 text-sm text-muted">Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Uma busca específica começa com os textos e números correspondentes pendentes, sem herdar revisões de outros scans. Trechos de Managed Values continuam protegidos. Edições externas aparecem como pendentes em um novo scan.</p>
       {view.reviewsMissing && <p role="status" className="mt-3 text-sm text-amber-800">Aplique a sétima migration para habilitar as marcações de revisão.</p>}
       {scan.status === "limited" && <Notice tone="warning" title="Cobertura parcial">Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.</Notice>}
       {sections.map((section) => <section key={section.type} className="mt-8">

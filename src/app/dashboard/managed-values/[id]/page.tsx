@@ -12,7 +12,7 @@ export default async function ManagedValuePage({ params }: { params: Promise<{ i
   const view = await loadManagedSyncValue((await params).id);
   const { value, bindings, site, history } = view;
   return <main className="ui-page">
-    <SiteContext title={value.name} siteId={value.site_id} workspaceId={site.workspace_id} />
+    <SiteContext title={value.name} siteName={site.display_name} siteId={value.site_id} workspaceId={site.workspace_id} />
     <FreshLink href={"/dashboard/sites/" + value.site_id + "/managed-values"}>← Managed Values</FreshLink>
     <PageHeader eyebrow="Managed Value" title={value.name} description={`Versão ${value.version} · ${bindings.length} fontes vinculadas`} />
     <section aria-label="Valor centralizado" className="ui-card p-6"><p className="text-xs font-medium text-muted">Valor central desejado</p><p className="mt-2 break-words text-2xl font-semibold text-accent">{valueLabel(value.canonical)}</p><p className="mt-3 text-sm text-muted">Este é o valor salvo no cadastro. Sua alteração só chega ao CMS depois que a aplicação de cada fonte é concluída e verificada.</p></section>

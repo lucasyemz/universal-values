@@ -13,7 +13,7 @@ export default async function FactsPreviewPage({ params, searchParams }: { param
   const { error } = await searchParams;
   const base = `/dashboard/sites/${id}/facts`;
   return <main className="ui-page">
-    <SiteContext title={site.display_name} siteId={id} workspaceId={site.workspace_id} />
+    <SiteContext title={site.display_name} siteName={site.display_name} siteId={id} workspaceId={site.workspace_id} />
     <FreshLink href={base}>← Global Facts</FreshLink>
     <PageHeader title={`Revisar versão ${preview.base_version + 1}`} eyebrow={site.display_name} description="Confira a referência inteira. A confirmação registra uma nova versão, sem modificar o site." />
     {error && <Notice tone="danger">{error === "archive" ? "Não foi possível arquivar. Confira a migration 011 e se a prévia ainda não foi confirmada." : "Não foi possível confirmar. Confira se a prévia foi arquivada, expirou ou ficou desatualizada."}</Notice>}

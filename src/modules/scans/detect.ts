@@ -1,3 +1,4 @@
+import { numericSearchValue } from "./numeric-search";
 import type { SearchOptions } from "@/modules/text-search/match";
 import { z } from "zod";
 import { managedValueSchema, type ManagedValue } from "@/modules/managed-values/schema";
@@ -40,6 +41,7 @@ export function detectText(text: string): Match[] {
 
 export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, page: z.infer<typeof itemsSchema>, types: readonly ManagedValue["type"][] = detectionTypes, searchText?: string, searchOptions?: SearchOptions) {
   const rows: DetectedOccurrence[] = [];
+  const searchedNumber = types.includes("text") ? numericSearchValue(searchText) : null;
   let skippedFields = 0;
   let truncated = false;
   for (const item of page.items) {
@@ -67,7 +69,7 @@ export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, 
         const found = detectTextMentions(source, searchText!, field.type === "RichText", searchOptions);
         matches = [...found, ...matches.filter((match) => match.canonical.type !== "text" && !found.some((m) => m.start < match.end && m.end > match.start))].sort((a, b) => a.start - b.start);
       }
-      matches = matches.filter((match) => types.includes(match.canonical.type));
+      matches = matches.filter((match) => types.includes(match.canonical.type) || (match.canonical.type === "number" && match.canonical.number === searchedNumber));
       if (matches.length > SCAN_LIMITS.matchesPerField) truncated = true;
       for (const match of matches.slice(0, SCAN_LIMITS.matchesPerField)) {
         if (rows.length >= SCAN_LIMITS.batchOccurrences) { truncated = true; break; }

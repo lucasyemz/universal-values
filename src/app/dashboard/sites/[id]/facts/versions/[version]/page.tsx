@@ -8,7 +8,7 @@ export default async function FactsVersionPage({ params }: { params: Promise<{ i
   const { id, version: number } = await params;
   const { site, version } = await loadFactsVersion(id, number);
   return <main className="ui-page">
-    <SiteContext title={site.display_name} siteId={id} workspaceId={site.workspace_id} />
+    <SiteContext title={site.display_name} siteName={site.display_name} siteId={id} workspaceId={site.workspace_id} />
     <FreshLink href={`/dashboard/sites/${id}/facts`}>← Global Facts</FreshLink>
     <PageHeader title={`Referência · versão ${version.version}`} eyebrow={site.display_name} description={`Aprovada em ${new Date(version.created_at).toLocaleString("pt-BR", { timeZone: "UTC" })} UTC.`} />
     <Notice>Este registro é imutável. Para atualizar a referência, volte ao cadastro e revise uma nova versão.</Notice>

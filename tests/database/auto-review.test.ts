@@ -101,3 +101,19 @@ it('still marks verified edits within the current targeted scan as reviewed',asy
   expect(await f.reviewed(f.original.id)).toHaveLength(1);
   expect(await f.reviewed((await f.scan('/new',true)).id)).toEqual([]);
 });
+it('keeps explicit numeric matches pending across scans while preserving normal numeric review',async()=>{
+ const f=await fixture();
+ const site=(await db.query<{workspace_id:string;connection_id:string}>('select workspace_id,connection_id from public.sites where id=$1',[f.site])).rows[0]!;
+ async function numericScan(searchText?:string){
+  const scan=randomUUID(),occurrence=randomUUID();
+  await db.query("insert into public.cms_scans(id,site_id,workspace_id,connection_id,actor_id,plan,status) values($1,$2,$3,$4,$5,$6::jsonb,'completed')",[scan,f.site,site.workspace_id,site.connection_id,f.actor,JSON.stringify([{id:collection,name:'CMS',types:['text','number'],...(searchText?{searchText}:{})}])]);
+  await db.query("insert into public.scan_occurrences(id,scan_id,site_id,workspace_id,collection_id,collection_name,item_id,item_name,locale,field_slug,field_name,field_type,source_value,raw_match,start_pos,end_pos,canonical) values($1,$2,$3,$4,$5,'CMS',$6,'Item','','qty','Quantity','Number','2000','2000',0,4,$7::jsonb)",[occurrence,scan,f.site,site.workspace_id,collection,item,JSON.stringify({type:'number',number:'2000'})]);
+  return {scan,occurrence};
+ }
+ const first=await numericScan('2000');
+ await rpc(f.actor,'select public.set_scan_content_reviewed($1,$2,$3,true)',[randomUUID(),first.scan,[first.occurrence]]);
+ expect(await f.reviewed(first.scan)).toEqual([{occurrence_id:first.occurrence}]);
+ const next=await numericScan('2000,00');expect(await f.reviewed(next.scan)).toEqual([]);
+ const automatic=await numericScan();expect(await f.reviewed(automatic.scan)).toEqual([{occurrence_id:automatic.occurrence}]);
+ const unrelated=await numericScan('Acme');expect(await f.reviewed(unrelated.scan)).toEqual([{occurrence_id:unrelated.occurrence}]);
+});
