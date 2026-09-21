@@ -35,6 +35,8 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      gemini_usage_status: { Args: Record<string, never>; Returns: Json };
+      gemini_connection: { Args: { p_action: string; p_id?: string; p_ciphertext?: string }; Returns: Json };
       select_account_plan: { Args: { p_id: string; p_plan: string; p_expected: string }; Returns: undefined };
       prepare_cms_item_slugs: { Args: { p_id: string; p_updates: Json }; Returns: undefined };
       account_plan_usage: { Args: Record<string, never>; Returns: Json };

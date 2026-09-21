@@ -316,3 +316,37 @@ Migration 025 aplicada ao Supabase conectado; prazo padrão de 30 dias verificad
 Corrigida a busca por `2000` em dois itens com campo `Number`. Antes, `searchText` só ativava menções em PlainText/RichText e o filtro descartava ocorrências numéricas quando apenas Texto estava selecionado. Agora a busca específica inclui correspondências numéricas completas, preserva canonical/payload numéricos e apresenta singles do número pesquisado. Não inclui correspondências parciais de Number; textos mantêm a semântica de menções. A migration 026 mantém correspondências numéricas explícitas pendentes em novos scans, mesmo se revisadas em outro. Sem alteração de conteúdo no Webflow. É necessário um novo scan para testar registros já concluídos.
 
 Migration 026 aplicada ao Supabase conectado. Validação: 424 testes em 62 arquivos, TypeScript e lint aprovados; inclui reprodução por batch reader, repetição em dois itens, valor único, preservação do tipo no payload de edição e isolamento de revisão entre scans. Nenhuma escrita em conteúdo Webflow.
+
+## Sugestões de IA com chave pessoal — 21/09
+
+Implementada a tela **Integrações** (`/dashboard/settings/integrations`) com Gemini pessoal e gerenciamento Webflow por workspace. Chaves Gemini com pontos e comprimento maior são aceitas, incluindo auth keys novas. Conexão validada por GET de metadados sem gerar texto, criptografada no servidor por 30 dias e vinculada ao usuário. Logout/recarga não desconectam; revogação explícita remove a credencial. Migration `20260921000100_gemini_connections.sql` aplicada ao projeto vinculado em 21/09/2026 via Management API (sem tabela de histórico de migrations no remoto); aplicar em novos ambientes e manter `WEBFLOW_TOKEN_ENCRYPTION_KEY` existente. Ver `docs/ai-suggestions.md`.
+
+Editor textual tem **Sugerir com IA**, leitura autenticada do item CMS, geração em um clique com base no texto atual e contexto do item, preenchendo diretamente o campo sem etapa intermediária. Nenhuma escrita automática no CMS. Chamadas Gemini no servidor usam apenas a chave pessoal; não há crédito compartilhado, fallback pago ou retry automático. Limite persistente de 20 solicitações/dia com 10 segundos entre pedidos. Conexão/revogação auditadas e idempotentes. Testes Google mockados; verificação real requer chave do usuário na interface.
+
+## Idioma do produto — 21/09/2026
+
+Inglês é o padrão do dashboard, login e extensão Designer. PT-BR segue disponível no seletor de idioma; o dashboard persiste por cookie de um ano e a extensão por local storage. Não altera conteúdo do CMS nem o idioma de geração do Gemini. Sem migration. Consulte `docs/internationalization.md`.
+
+### IA em lote — 21/09/2026
+
+Resultados oferecem preenchimento de até 20 textos de exemplo visíveis e pendentes por lote, preservando edições e Managed Values. Usa contexto individual, progresso e parada; CMS mantém prévia e confirmação. Contexto lê cada item/locale uma vez por lote; novas gerações revalidam o item. Metadata do site/coleção fica em cache autorizado de cinco minutos. Sem migration. Consulte `docs/ai-suggestions.md`.
+
+### Rascunhos do scan
+
+Edições individuais e sugestões de IA são salvas no navegador por 30 dias, isoladas por usuário/scan/ocorrência. Restauradas ao reabrir, sem nova geração. Origem alterada, revisão e proteção invalidam o rascunho. Sem migration.
+
+### Escopo e bloqueio da IA
+
+Preenchimento em lote agora é por grupo de valores repetidos. Geração individual e lote compartilham bloqueio no scan: demais campos e ações ficam desativados/esmaecidos até finalizar; o botão de parar do lote permanece ativo.
+
+### IA durante navegação
+
+Geração individual e em lote agora pertence ao layout autenticado do dashboard e continua ao trocar de tela. Central de processos acompanha e permite parar/minimizar. Resultados são gravados diretamente nos rascunhos e sincronizados com editores abertos. Recarregar/fechar a aba ainda interrompe o trabalho pendente; resultados concluídos persistem. Sem worker ou migration adicional.
+
+### Consumo Gemini
+
+Plano e consumo inclui seção separada para cota diária Gemini do app, restante, usado, renovação e conexão. Requer aplicar `20260921000200_gemini_usage_status.sql` no ambiente. RPC de leitura por usuário, sem chave e sem consumo. Não representa o saldo de tokens/cota do Google.
+
+### Scan de textos de exemplo
+
+Novo scan oferece “Lorem Ipsum and placeholder text”. O plano persiste `placeholders: true` e habilita detecção textual. Procura frases conhecidas (Lorem ipsum, dolor sit amet, consectetur adipiscing, sample/placeholder/dummy text, texto de exemplo/de teste/fictício), incluindo ocorrências únicas. Texto simples retorna o campo; Rich Text retorna o nó textual correspondente e preserva as tags ao redor, ignorando atributos/scripts. Frases divididas entre tags não são unidas. Limites existentes de leitura e tamanho continuam valendo. A detecção não usa IA. Managed Values e prévia/confirmação de escrita permanecem. Sem migration; execute um novo scan para cobrir campos não registrados antes.

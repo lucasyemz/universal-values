@@ -1,4 +1,5 @@
 import "server-only";
+import { webflowSiteUrl } from "@/connectors/webflow/site-url";
 import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 import { WebflowWriter } from "@/connectors/webflow/writer";
 import { z } from "zod";
@@ -114,4 +115,23 @@ export async function settingsAvailableSites(connections: {id:string}[], request
   catch(error) { unstable_rethrow(error); failed=true; }
  }
  return {available:[...available.values()],failed};
+}
+
+export async function loadWorkspaceSiteUrls(sites: z.infer<typeof linkedSiteSchema>[], connections: {id:string}[]) {
+  const active = new Set(connections.map(connection => connection.id));
+  const ids = [...new Set(sites.map(site => site.connection_id))].filter(id => active.has(id));
+  // One read per linked authorization, not one read per site or historical grant.
+  const results = await Promise.allSettled(ids.map(async id => {
+    const { reader } = await getConnectionReader(id);
+    return { id, sites: await reader.sites() };
+  }));
+  const urls: Record<string, string | null> = {};
+  for (const result of results) {
+    if (result.status === "rejected") { unstable_rethrow(result.reason); continue; }
+    for (const site of sites.filter(site => site.connection_id === result.value.id)) {
+      const remote = result.value.sites.find(remote => remote.id === site.webflow_site_id);
+      if (remote) urls[site.id] = webflowSiteUrl(remote);
+    }
+  }
+  return urls;
 }

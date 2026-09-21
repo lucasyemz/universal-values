@@ -1,3 +1,6 @@
+import { NextIntlClientProvider } from "next-intl";
+import { getText } from "@/i18n/server";
+import { getLocale } from "next-intl/server";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
@@ -12,13 +15,17 @@ const geist = localFont({
   variable: "--font-geist", display: "swap",
 });
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getText();
+  return {
   title: { default: "CopyReplace", template: "%s · CopyReplace" },
   applicationName: "CopyReplace",
   icons: { icon: { url: "/brand/icon-blue.svg", type: "image/svg+xml" } },
-  description: "Encontre conteúdo repetido no Webflow. Revise cada ocorrência e substitua com segurança.",
+  description: t("Encontre conteúdo repetido no Webflow. Revise cada ocorrência e substitua com segurança."),
 };
+}
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR" className={geist.variable}><body>{children}</body></html>;
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
+  return <html lang={locale} className={geist.variable}><body><NextIntlClientProvider>{children}</NextIntlClientProvider></body></html>;
 }

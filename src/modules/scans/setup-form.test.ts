@@ -11,3 +11,8 @@ it('preserves no-selection validation and collection limits',()=>{
   form.delete('collectionIds');expect(scanCollectionsValid(form)).toBe(false);
   for(let i=0;i<21;i++)form.append('collectionIds','a'.repeat(24));expect(scanCollectionsValid(form)).toBe(false);
 });
+it('allows a standalone placeholder scan and preserves its mode',()=>{
+ const form=setup();form.set('placeholders','on');
+ const parsed=parseScanSetup(form);expect(parsed.success).toBe(true);
+ if(parsed.success){expect(parsed.data.placeholders).toBe(true);expect(parsed.data.types).toEqual(['text']);}
+});

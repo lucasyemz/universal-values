@@ -26,7 +26,7 @@ export async function previewScan(form: FormData) {
     const collections = (await reader.collections(site.webflow_site_id)).sort((a,b) => a.id.localeCompare(b.id));
     const selected = collections.filter((c) => input.data.collectionIds.includes(c.id));
     if (selected.length !== new Set(input.data.collectionIds).size) throw new Error("Invalid selection");
-    plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.searchText ? { searchText: input.data.searchText, searchOptions: input.data.searchOptions } : {}) })));
+    plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.placeholders ? { placeholders: true } : {}), ...(input.data.searchText ? { searchText: input.data.searchText, searchOptions: input.data.searchOptions } : {}) })));
     truncated = false;
   } catch { redirect("/dashboard/sites/" + site.id + "/scans/new?error=provider"); }
   const { client } = await requireUser();

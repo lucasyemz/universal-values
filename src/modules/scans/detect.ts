@@ -1,3 +1,4 @@
+import { detectPlaceholders } from "./placeholders";
 import { numericSearchValue } from "./numeric-search";
 import type { SearchOptions } from "@/modules/text-search/match";
 import { z } from "zod";
@@ -39,7 +40,7 @@ export function detectText(text: string): Match[] {
   }));
 }
 
-export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, page: z.infer<typeof itemsSchema>, types: readonly ManagedValue["type"][] = detectionTypes, searchText?: string, searchOptions?: SearchOptions) {
+export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, page: z.infer<typeof itemsSchema>, types: readonly ManagedValue["type"][] = detectionTypes, searchText?: string, searchOptions?: SearchOptions, placeholders = false) {
   const rows: DetectedOccurrence[] = [];
   const searchedNumber = types.includes("text") ? numericSearchValue(searchText) : null;
   let skippedFields = 0;
@@ -49,8 +50,9 @@ export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, 
     for (const field of collection.fields) {
       if (!["PlainText", "Number", "Link", "RichText", "Image", "ImageRef", "MultiImage"].includes(field.type) || field.slug === "slug") continue;
       const isMedia = !["PlainText", "Number"].includes(field.type);
+      const findPlaceholders = placeholders && types.includes("text") && ["PlainText", "RichText"].includes(field.type);
       const mentions = !!searchText && types.includes("text") && ["PlainText", "RichText"].includes(field.type);
-      if (isMedia && !mentions && !types.some((t) => t === "image" || t === "link")) continue;
+      if (isMedia && !mentions && !findPlaceholders && !types.some((t) => t === "image" || t === "link")) continue;
       const value = item.fieldData[field.slug];
       if (value === undefined || value === null || value === "") continue;
       const media = isMedia ? detectMedia(field.type, value) : null;
@@ -68,6 +70,10 @@ export function detectPage(collection: z.infer<typeof collectionDetailsSchema>, 
       if (mentions) {
         const found = detectTextMentions(source, searchText!, field.type === "RichText", searchOptions);
         matches = [...found, ...matches.filter((match) => match.canonical.type !== "text" && !found.some((m) => m.start < match.end && m.end > match.start))].sort((a, b) => a.start - b.start);
+      }
+      if (findPlaceholders) {
+        const found = detectPlaceholders(source, field.type === "RichText");
+        matches = [...found, ...matches.filter(match => (match.canonical.type !== "text" || !!searchText) && !found.some(m => m.start < match.end && m.end > match.start))].sort((a,b) => a.start-b.start);
       }
       matches = matches.filter((match) => types.includes(match.canonical.type) || (match.canonical.type === "number" && match.canonical.number === searchedNumber));
       if (matches.length > SCAN_LIMITS.matchesPerField) truncated = true;

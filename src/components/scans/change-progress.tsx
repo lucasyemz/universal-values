@@ -1,10 +1,13 @@
 "use client";
+import { useText } from "@/i18n/use-text";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getChangeProgress, resumeChanges } from "@/modules/scans/change-actions";
 import { Progress, StatusBadge } from "@/components/ui";
 
 export function ChangeProgress({ id, cursor, total, paused }: { id: string; cursor: number; total: number; paused: boolean }) {
+  const t = useText();
+
   const router = useRouter();
   const [error, setError] = useState("");
   const [worker, setWorker] = useState<"checking" | "missing" | "online" | "offline">("checking");
@@ -29,18 +32,18 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
     return () => { disposed = true; clearTimeout(timer); };
   }, [id, router]);
   return <section className="ui-card my-6 p-5">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{cursor} de {total} campos processados</p><StatusBadge status={paused ? "paused" : "confirmed"} label={paused ? "Aguardando revisão" : "Na fila do servidor"} /></div>
-    <Progress value={cursor} max={total} label="Campos processados" />
-    <p className="mt-3 text-sm text-muted">Você pode sair desta página ou fechar o navegador. O worker processa as fontes confirmadas e salva o progresso no banco.</p>
-    {worker === "missing" && <p role="alert" className="mt-3 text-amber-800">Aplique a migration 015 e configure o worker para habilitar o processamento em segundo plano.</p>}
-    {worker === "offline" && <p role="status" className="mt-3 text-amber-800">O executor não enviou sinal recente. A operação permanece salva na fila. Confira se o agendamento do executor está ativo e se a conexão está disponível.</p>}
-    {worker === "checking" && <p className="mt-2 text-sm text-muted">Verificando disponibilidade do executor…</p>}
-    {error && <p role="alert" className="mt-3 text-amber-800">{error}</p>}
-    {paused && <><p className="mt-3 text-sm">Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.</p><button disabled={resuming || worker === "missing"} onClick={async () => {
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{cursor}  {t("de")} {total}  {t("campos processados")}</p><StatusBadge status={paused ? "paused" : "confirmed"} label={paused ? t("Aguardando revisão") : t("Na fila do servidor")} /></div>
+    <Progress value={cursor} max={total} label={t("Campos processados")} />
+    <p className="mt-3 text-sm text-muted">{t("Você pode sair desta página ou fechar o navegador. O worker processa as fontes confirmadas e salva o progresso no banco.")}</p>
+    {worker === "missing" && <p role="alert" className="mt-3 text-amber-800">{t("Aplique a migration 015 e configure o worker para habilitar o processamento em segundo plano.")}</p>}
+    {worker === "offline" && <p role="status" className="mt-3 text-amber-800">{t("O executor não enviou sinal recente. A operação permanece salva na fila. Confira se o agendamento do executor está ativo e se a conexão está disponível.")}</p>}
+    {worker === "checking" && <p className="mt-2 text-sm text-muted">{t("Verificando disponibilidade do executor…")}</p>}
+    {error && <p role="alert" className="mt-3 text-amber-800">{t(error)}</p>}
+    {paused && <><p className="mt-3 text-sm">{t("Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.")}</p><button disabled={resuming || worker === "missing"} onClick={async () => {
       setResuming(true);
       try { const result = await resumeChanges({ id, cursor, confirmed: true }); if (!result.ok) setError(result.message); else router.refresh(); }
-      catch { setError("Não foi possível confirmar a retomada. Atualize o progresso antes de tentar novamente."); }
+      catch { setError(t("Não foi possível confirmar a retomada. Atualize o progresso antes de tentar novamente.")); }
       finally { setResuming(false); }
-    }} className="mt-3 ui-btn">{resuming ? "Confirmando…" : "Confirmar continuação das etapas pendentes"}</button></>}
+    }} className="mt-3 ui-btn">{resuming ? t("Confirmando…") : t("Confirmar continuação das etapas pendentes")}</button></>}
   </section>;
 }

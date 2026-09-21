@@ -9,7 +9,7 @@ export const detectionTypes = ["money", "phone", "date", "number", "text", "link
 export const detectionLabels = { money: "Preços (R$)", phone: "Telefones", date: "Datas", number: "Números", text: "Textos repetidos", link: "Links", image: "Imagens e galerias" };
 const typesSchema = z.array(z.enum(detectionTypes)).min(1).max(detectionTypes.length);
 export const searchTextSchema = z.string().trim().max(200).regex(/^[^\p{Cc}]*$/u).optional();
-export const planSchema = z.array(z.object({ id: webflowIdSchema, name: z.string().max(255), types: typesSchema.optional(), searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() })).max(SCAN_LIMITS.collections);
+export const planSchema = z.array(z.object({ id: webflowIdSchema, name: z.string().max(255), types: typesSchema.optional(), placeholders: z.boolean().optional(), searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() })).max(SCAN_LIMITS.collections);
 export const occurrenceInputSchema = z.object({
   collection_id: webflowIdSchema, collection_name: z.string().max(255),
   item_id: webflowIdSchema, item_name: z.string().max(255),
@@ -32,7 +32,7 @@ export const scanSchema = z.object({
   retry_at: z.string().nullable(), expires_at: z.string(), created_at: z.string(),
 });
 export type Scan = z.infer<typeof scanSchema>;
-export const previewScanSchema = z.strictObject({ id: z.uuid(), siteId: z.uuid(), source: z.literal("cms"), collectionIds: z.array(webflowIdSchema).min(1).max(SCAN_LIMITS.collections), types: typesSchema, searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() });
+export const previewScanSchema = z.strictObject({ id: z.uuid(), siteId: z.uuid(), source: z.literal("cms"), collectionIds: z.array(webflowIdSchema).min(1).max(SCAN_LIMITS.collections), types: typesSchema, placeholders: z.boolean().optional(), searchText: searchTextSchema, searchOptions: searchOptionsSchema.optional() });
 export const confirmScanSchema = z.strictObject({ id: z.uuid(), confirmed: z.literal("yes") });
 export const processScanSchema = z.strictObject({ id: z.uuid(), revision: z.number().int().nonnegative() });
 export const valuePreviewInputSchema = z.strictObject({
@@ -80,9 +80,9 @@ export function groupScanResults(scan: Pick<Scan, "plan">, occurrences: Occurren
     const rows = occurrences.filter((o) => o.canonical.type === type);
     const eligible = available.filter((o) => o.canonical.type === type);
     const duplicates = groupOccurrences(rows, true, true).filter(group => group.occurrences.length >= 2 ||
-      type === "text" && scan.plan.some(entry => !!entry.searchText) ||
+      type === "text" && scan.plan.some(entry => !!entry.searchText || entry.placeholders) ||
       type === "number" && group.occurrences.some(o => scan.plan.some(entry => entry.id === o.collection_id && numericSearchValue(entry.searchText) === group.label)));
-    return { type, label: detectionLabels[type], occurrences: rows, duplicates, groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
+    return { type, label: type === "text" && scan.plan.some(entry => entry.placeholders) ? "Textos de exemplo" : detectionLabels[type], occurrences: rows, duplicates, groups: groupOccurrences(eligible), boundCount: rows.length - eligible.length };
   });
 }
 

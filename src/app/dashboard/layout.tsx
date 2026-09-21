@@ -1,3 +1,5 @@
+import { AiWork } from "@/components/ai/work";
+import { AiProvider } from "@/components/ai/provider";
 import { getPlanUsage } from "@/modules/plans/service";
 import { unstable_rethrow } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
@@ -11,5 +13,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let workspaces: Awaited<ReturnType<typeof getWorkspaceNavigation>> = [];
   let workspaceError = false;
   try { workspaces = await getWorkspaceNavigation(); } catch (error) { unstable_rethrow(error); workspaceError = true; }
-  return <AppShell plan={usage.plan} email={user.email} workspaces={workspaces} workspaceError={workspaceError}>{children}<ActivityPanel key={user.id} userId={user.id} /></AppShell>;
+  return <AiProvider key={user.id}><AiWork userId={user.id}><AppShell plan={usage.plan} email={user.email} workspaces={workspaces} workspaceError={workspaceError}>{children}<ActivityPanel key={user.id} userId={user.id} /></AppShell></AiWork></AiProvider>;
 }

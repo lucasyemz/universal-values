@@ -18,7 +18,7 @@ export async function previewChanges(input: unknown) {
   try {
     const view = await loadScanResults(parsed.data.scanId);
     if (!["completed", "limited"].includes(view.scan.status)) return { ok: false as const, message: "Aguarde a conclusão do scan." };
-    if (!isRepeatedGroupSelection(view.occurrences, parsed.data.changes.map((change) => change.occurrenceId), view.scan.plan.some(entry => !!entry.searchText))) return { ok: false as const, message: "Revise apenas ocorrências de um mesmo grupo de valores repetidos por vez." };
+    if (!isRepeatedGroupSelection(view.occurrences, parsed.data.changes.map((change) => change.occurrenceId), view.scan.plan.some(entry => !!entry.searchText || entry.placeholders))) return { ok: false as const, message: "Revise apenas ocorrências de um mesmo grupo de valores repetidos por vez." };
     if (parsed.data.changes.some(change => { const source = view.occurrences.find(o => o.id === change.occurrenceId); return source && view.linkedValues[source.source_key] && !view.editableBoundOccurrenceIds.includes(source.id); })) return { ok: false as const, message: "Este trecho está protegido ou seu vínculo está desatualizado. Abra o Managed Value ou execute um novo scan." };
     const plan = buildFieldChanges(view.occurrences, parsed.data.changes);
     if (!plan.length) return { ok: false as const, message: "Nenhum valor foi alterado." };

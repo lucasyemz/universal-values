@@ -1,3 +1,4 @@
+import { useText } from "@/i18n/use-text";
 import type { ReactNode, ComponentProps } from "react";
 import { ArrowRight, CheckCircle2, Circle, CircleAlert, Info, Layers3, PauseCircle } from "lucide-react";
 
@@ -20,9 +21,11 @@ const statuses: Record<string, { label: string; tone: "success" | "warning" | "d
 };
 const tones = { success: "bg-[var(--success-soft)] text-[var(--success)]", warning: "bg-[var(--warning-soft)] text-[var(--warning)]", danger: "bg-[var(--danger-soft)] text-[var(--danger)]", accent: "bg-accent-soft text-accent", muted: "bg-subtle text-muted" };
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
+ const t = useText();
+
   const state = statuses[status] ?? { label: status, tone: "muted" as const };
   const Icon = status === "paused" ? PauseCircle : state.tone === "success" ? CheckCircle2 : ["warning", "danger"].includes(state.tone) ? CircleAlert : Circle;
-  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${tones[state.tone]}`}><Icon size={13} aria-hidden="true" />{label ?? state.label}</span>;
+  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${tones[state.tone]}`}><Icon size={13} aria-hidden="true" />{t(label ?? state.label)}</span>;
 }
 export function Notice({ children, tone = "info", title }: { children: ReactNode; tone?: "info" | "success" | "warning" | "danger"; title?: string }) {
   const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : CircleAlert;
@@ -35,8 +38,12 @@ export function DataTable({ children, label }: { children: ReactNode; label: str
 export function Skeleton({ className = "" }: { className?: string }) { return <div aria-hidden="true" className={`ui-skeleton ${className}`} />; }
 export function Progress({ value, max, label }: { value: number; max: number; label: string }) { return <progress className="w-full" value={value} max={Math.max(1, max)} aria-label={label} />; }
 export function Steps({ steps, current }: { steps: string[]; current: number }) {
-  return <ol aria-label="Etapas" className="my-6 flex flex-wrap gap-4 border-b pb-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? "step" : undefined} className={`flex items-center gap-2 text-xs ${index === current ? "font-semibold text-accent" : "text-muted"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-full ${index === current ? "bg-accent text-white" : "bg-subtle"}`}>{index < current ? <CheckCircle2 size={13} aria-hidden="true" /> : index + 1}</span>{step}</li>)}</ol>;
+  const t = useText();
+
+  return <ol aria-label={t("Etapas")} className="my-6 flex flex-wrap gap-4 border-b pb-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? "step" : undefined} className={`flex items-center gap-2 text-xs ${index === current ? "font-semibold text-accent" : "text-muted"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-full ${index === current ? "bg-accent text-white" : "bg-subtle"}`}>{index < current ? <CheckCircle2 size={13} aria-hidden="true" /> : index + 1}</span>{t(step)}</li>)}</ol>;
 }
 export function Diff({ before, after }: { before: ReactNode; after: ReactNode }) {
-  return <div className="mt-4 grid items-start gap-3 rounded-lg border bg-subtle/50 p-4 sm:grid-cols-[1fr_auto_1fr]"><div className="min-w-0"><p className="mb-2 text-xs font-medium text-muted">Valor atual</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div><ArrowRight size={16} className="mt-1 text-faint sm:mt-8" aria-hidden="true" /><div className="min-w-0"><p className="mb-2 text-xs font-medium text-accent">Novo valor</p><div className="whitespace-pre-wrap break-words text-sm font-medium">{after}</div></div></div>;
+  const t = useText();
+
+  return <div className="mt-4 grid items-start gap-3 rounded-lg border bg-subtle/50 p-4 sm:grid-cols-[1fr_auto_1fr]"><div className="min-w-0"><p className="mb-2 text-xs font-medium text-muted">{t("Valor atual")}</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div><ArrowRight size={16} className="mt-1 text-faint sm:mt-8" aria-hidden="true" /><div className="min-w-0"><p className="mb-2 text-xs font-medium text-accent">{t("Novo valor")}</p><div className="whitespace-pre-wrap break-words text-sm font-medium">{after}</div></div></div>;
 }

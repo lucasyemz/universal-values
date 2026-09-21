@@ -5,7 +5,7 @@ export const PAGE_SIZE = 5;
 export const sitePageNumber = (input?: string) => z.coerce.number().int().min(1).max(200).catch(1).parse(input ?? 1);
 export const changeFilterSchema = z.enum(["all", "cms", "static", "attention"]);
 export const valueFilterSchema = z.enum(["active", "archived", "all"]);
-export const siteDate = (value: string) => new Date(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+export const siteDate = (value: string, locale = "en-US") => new Date(value).toLocaleString(locale, { timeZone: "America/Sao_Paulo", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 const fieldResultSchema = z.array(z.object({ status: z.string() }));
 export function cmsOperationSummary(input: { status: string; results: unknown; expires_at: string }, now = Date.now()) {
   const results = fieldResultSchema.parse(input.results);
