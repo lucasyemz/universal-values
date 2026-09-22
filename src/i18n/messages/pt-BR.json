@@ -1242,5 +1242,18 @@
   "Escolha outra coleção ou volte à primeira página.": "Escolha outra coleção ou volte à primeira página.",
   "Primeira página": "Primeira página",
   "Sim": "Sim",
-  "Não": "Não"
+  "Não": "Não",
+  "Informado pela extensão": "Informado pela extensão",
+  "Aplicação informada pela extensão · sem leitura registrada": "Aplicação informada pela extensão · sem leitura registrada",
+  "Este registro antigo contém o status enviado pela extensão, mas não guardou o texto relido. O valor abaixo é o solicitado na prévia; confira o resultado no Designer.": "Este registro antigo contém o status enviado pela extensão, mas não guardou o texto relido. O valor abaixo é o solicitado na prévia; confira o resultado no Designer.",
+  "Texto relido pela extensão:": "Texto relido pela extensão:",
+  "Não foi possível confirmar o resultado. Confira o Designer antes de continuar.": "Não foi possível confirmar o resultado. Confira o Designer antes de continuar.",
+  "Incluir componentes (Symbols) desta página": "Incluir componentes (Symbols) desta página",
+  "Inclui propriedades de texto estáticas expostas nas instâncias. A alteração vale só para a instância selecionada e cria uma personalização local. Textos internos não expostos, componentes aninhados e vínculos com CMS ficam fora.": "Inclui propriedades de texto estáticas expostas nas instâncias. A alteração vale só para a instância selecionada e cria uma personalização local. Textos internos não expostos, componentes aninhados e vínculos com CMS ficam fora.",
+  "Componente · somente esta instância": "Componente · somente esta instância",
+  ". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.": ". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.",
+  "Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.": "Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.",
+  "Componente compartilhado · {0} instâncias no site": "Componente compartilhado · {0} instâncias no site",
+  "Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada texto compartilhado será alterado uma única vez.": "Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada texto compartilhado será alterado uma única vez.",
+  "Componentes acima do limite de 2.000 elementos. Refine a busca.": "Componentes acima do limite de 2.000 elementos. Refine a busca."
 }

@@ -60,3 +60,29 @@ Referências oficiais:
 - https://developers.webflow.com/designer/reference/designer-api/getting-started
 - https://developers.webflow.com/designer/reference/string-element/setText
 - https://developers.webflow.com/apps/designer/guides/configuring-your-app
+
+## Verification hardening — 21 September 2026
+
+A user reported a Designer canvas retaining its old text while the dashboard showed Applied. The exact provider failure has not been reproduced; no customer page was edited during diagnosis.
+
+- Resolve each text node through its recorded ancestor path and independently through `getAllElements`; require matching String reads before allowing a write.
+- After the single write, check context and text twice, with a 500 ms interval. A changed/missing result remains uncertain; never retry the write automatically.
+- Persist `observed` with successful audit events. The detail view exposes that read-back text.
+- Legacy success events without observed text remain immutable, but the dashboard labels them Reported by extension, excludes them from verified counts, and includes them in Needs attention. This is not evidence that those older writes failed.
+- The Webflow API reads String nodes, not an independent visual/published rendering: https://developers.webflow.com/designer/reference/get-text-content . Repeated matching reads are a point-in-time check, not proof that another edit/undo cannot occur later.
+- Rebuild/restart `npm run designer:dev` and reopen the development extension to load the new code. Existing saved events require no migration and are not rewritten.
+
+## Optional page components (including shared internal text)
+
+The unchecked **Include components (Symbols) on this page** checkbox lives in **Search options**. Toggling it invalidates results, selection and preview. It includes two explicit scopes:
+
+- Exposed static text properties of a page instance: `setProps` writes a local override.
+- Unbound internal String nodes of native component definitions reachable from the page, including nested components: `setText` changes the shared definition. Results and saved previews show its name and site-wide instance count; the preview warns about effects on other pages. Shared definitions are scanned and written once, even when used repeatedly on the page.
+
+The adapter follows `component.getRootElement()` without unlinking components, creating properties, or changing focus. Each read re-resolves the page instance and the complete definition ancestry, verifies ownership, editability and binding status, and requires the same instance count. Changed ancestry, content, component identity or global footprint requires a fresh scan. The write rechecks the last read and uses the existing confirmation, persisted audit, idempotency and two read-back checks. If Webflow rejects a write or does not retain it, it remains uncertain; it is never retried automatically.
+
+CMS/conditional/property-bound definition branches, code/library components, Rich Text and embeds remain excluded. Ordinary DOM content tags (including nav, footer, a and button) are traversed after checking tag, attributes and settings for bindings. Script, style, iframe, SVG, template and custom tags remain excluded. Only String leaves are written; parent markup and attributes are preserved. Page-level exposed properties remain local. Static text properties on nested instances are edited in their containing shared definition; the source label names the containing component, nested component and property, and the impact count belongs to the containing component. Nested unbound definition text is also shared. There is a 2,000-element budget for component trees. Metadata is stored in existing preview/audit JSON; no migration is needed.
+
+References: https://developers.webflow.com/designer/reference/component-element/setProps (beta), https://developers.webflow.com/designer/reference/get-root-element . Tests use isolated Header/Footer and nested-component fixtures; no real Webflow component was modified during implementation. The user subsequently confirmed the component search worked in the Designer.
+
+Regression diagnosis: the user reported `DOM: unsupported type` and the live Designer showed a `Button Text` property on a nested button inside Navbar. Covered both DOM traversal and nested instance overrides with fixtures, including binding changes before dispatch. Native browser control failed before a fresh live search could run; the user then tested the updated extension and confirmed it worked. No actual Webflow writes were performed by the agent.

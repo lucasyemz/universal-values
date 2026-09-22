@@ -1,3 +1,4 @@
+import { componentLabel } from "../../../modules/static-text/component-label";
 import { DesignerLanguageProvider } from "@/i18n/designer-provider";
 import { useText } from "@/i18n/use-text";
 import { exactSearch, searchOptionsLabel, type SearchOptions } from "../../../modules/text-search/match";
@@ -22,6 +23,7 @@ function Extension() {
   const [home, setHome] = useState<DesignerHome>();
   const [code, setCode] = useState("");
   const [search, setSearch] = useState("");
+  const [includeComponents, setIncludeComponents] = useState(false);
   const [scannedTerm, setScannedTerm] = useState("");
   const [searchOptions, setSearchOptions] = useState<SearchOptions>(exactSearch);
   const [scannedOptions, setScannedOptions] = useState<SearchOptions>(exactSearch);
@@ -67,19 +69,21 @@ function Extension() {
     </>}
     <details className="legacy"><summary>{t("Histórico do protótipo anterior")}</summary><p>{t("Os registros antigos continuam neste navegador. Eles não foram importados para o dashboard.")}</p><button type="button" disabled={busy} onClick={() => void run(() => audit.export())}>{t("Exportar histórico local antigo")}</button></details>
     {home && view === "static" && <>
-    <aside>{t("Teste em um")} <strong>{t("site sem Localization")}</strong>{t(". Componentes, CMS, Rich Text, embeds e trechos divididos entre elementos ainda estão fora da busca. A extensão não publica o site.")}</aside>
+    <aside>{t("Teste em um")} <strong>{t("site sem Localization")}</strong>{t(". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.")}</aside>
     <form onSubmit={event => { event.preventDefault(); void run(async () => {
       invalidate(); setScan(undefined); setMentions([]); setReplacements({});
-      const { scan: result, mentions: found, home: activity } = await controller.search(search, searchOptions);
+      const { scan: result, mentions: found, home: activity } = await controller.search(search, searchOptions, includeComponents);
       setHome(activity);
       setScan(result); setScannedTerm(search); setScannedOptions(searchOptions); setMentions(found);
       setMessage(found.length ? t("{0} menções iguais encontradas.", found.length) : t("Nenhuma menção encontrada nos textos compatíveis."));
     }); }}>
       <label>{t("Texto para buscar")}<input required maxLength={200} value={search} disabled={busy} onChange={event => { setSearch(event.target.value); invalidate(); setScan(undefined); setMentions([]); }} placeholder={t("Nome da empresa")} /></label>
-      <fieldset><legend>{t("Opções de busca")}</legend>{([{ key: "ignoreCase", label: t("Ignorar maiúsculas e minúsculas") }, { key: "ignoreAccents", label: t("Ignorar acentos") }, { key: "wholeWord", label: t("Palavra ou expressão inteira") }] as const).map(option => <label className="check" key={option.key}><input type="checkbox" disabled={busy} checked={searchOptions[option.key]} onChange={event => { setSearchOptions({ ...searchOptions, [option.key]: event.target.checked }); invalidate(); setScan(undefined); setMentions([]); setReplacements({}); }} />{t(option.label)}</label>)}</fieldset><p className="muted">{t("Palavra inteira: “casa” não encontra “casamento” no mesmo nó de texto. Trechos divididos entre elementos continuam fora da busca. Não procura dentro de URLs ou atributos. A substituição usa exatamente o texto que você escrever.")}</p>
+      <fieldset><legend>{t("Opções de busca")}</legend><label className="check"><input type="checkbox" disabled={busy} checked={includeComponents} onChange={event => {setIncludeComponents(event.target.checked); invalidate(); setScan(undefined); setMentions([]); setReplacements({});}} />{t("Incluir componentes (Symbols) desta página")}</label>
+      <p className="muted">{t("Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.")}</p>{([{ key: "ignoreCase", label: t("Ignorar maiúsculas e minúsculas") }, { key: "ignoreAccents", label: t("Ignorar acentos") }, { key: "wholeWord", label: t("Palavra ou expressão inteira") }] as const).map(option => <label className="check" key={option.key}><input type="checkbox" disabled={busy} checked={searchOptions[option.key]} onChange={event => { setSearchOptions({ ...searchOptions, [option.key]: event.target.checked }); invalidate(); setScan(undefined); setMentions([]); setReplacements({}); }} />{t(option.label)}</label>)}</fieldset><p className="muted">{t("Palavra inteira: “casa” não encontra “casamento” no mesmo nó de texto. Trechos divididos entre elementos continuam fora da busca. Não procura dentro de URLs ou atributos. A substituição usa exatamente o texto que você escrever.")}</p>
       <button className="primary" disabled={busy || !search.trim()}>{busy ? t("Processando…") : t("Buscar nesta página")}</button>
     </form>
     {scan && <section><h2>{t("Resultado da busca")}</h2><p className="muted">{t(searchOptionsLabel(scannedOptions))}</p><p>{scan.nodes.length}  {t("nós de texto lidos ·")} {scan.skipped}  {t("elementos ou blocos ignorados")}</p></section>}
+    {scan && scan.componentDiagnostics.length > 0 && <details><summary>Component diagnostics</summary><pre>{scan.componentDiagnostics.join("\n")}</pre></details>}
     {scan && mentions.length > 0 && <section>
       <h2>{t("Menções de “")}{scannedTerm}”</h2>
       <label>{t("Novo valor para o grupo")}<input maxLength={2000} disabled={busy} value={bulk} onChange={event => setBulk(event.target.value)} placeholder={t("Vazio remove o trecho")} /></label>
@@ -90,13 +94,15 @@ function Extension() {
           if (event.target.checked) next[mention.key] = mention.text; else delete next[mention.key];
           setReplacements(next); invalidate();
         }} />  {t("Alterar ocorrência")} {index + 1}</label>
+        {mention.source && <p className="badge">{componentLabel(mention.source, t)}</p>}
         <p className="context">{mention.before}<mark>{mention.text}</mark>{mention.after}</p>
         {Object.hasOwn(replacements, mention.key) && <label>{t("Novo trecho")}<input maxLength={2000} disabled={busy} value={replacements[mention.key]} onChange={event => { setReplacements({ ...replacements, [mention.key]: event.target.value }); invalidate(); }} /><small>{t("Vazio remove somente o trecho destacado.")}</small></label>}
       </article>)}
       <button disabled={busy || !Object.keys(replacements).length} className="primary" onClick={() => void run(async () => { invalidate(); setPlan(await controller.preview(scan, scannedTerm, replacements, scannedOptions)); })}>{t("Salvar prévia e revisar")}</button>
     </section>}
     {plan && <section><h2>{t("Revisar")} {plan.changes.length}  {t("nós de texto")}</h2><p className="muted">{t(searchOptionsLabel(plan.searchOptions))}</p>
-      {plan.changes.map(change => <article key={change.id}><small>{t("Antes")}</small><pre>{change.before}</pre><small>{t("Depois")}</small><pre>{change.after || t("(texto removido)")}</pre></article>)}
+      {plan.changes.some(change => change.source?.kind === "component-definition") && <aside role="note">{t("Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada texto compartilhado será alterado uma única vez.")}</aside>}
+      {plan.changes.map(change => <article key={change.id}>{change.source && <p className="badge">{componentLabel(change.source, t)}</p>}<small>{t("Antes")}</small><pre>{change.before}</pre><small>{t("Depois")}</small><pre>{change.after || t("(texto removido)")}</pre></article>)}
       <label className="check"><input type="checkbox" checked={testSite} disabled={busy} onChange={event => setTestSite(event.target.checked)} />  {t("Estou em um site de teste sem Localization.")}</label>
       <label className="check"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)} />  {t("Revisei esta prévia e confirmo as alterações desta prévia.")}</label>
       <button className="primary" disabled={busy || !confirmed || !testSite} onClick={() => void run(async () => {

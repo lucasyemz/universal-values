@@ -1242,5 +1242,18 @@
   "Escolha outra coleção ou volte à primeira página.": "Choose another collection or return to the first page.",
   "Primeira página": "First page",
   "Sim": "Yes",
-  "Não": "No"
+  "Não": "No",
+  "Informado pela extensão": "Reported by extension",
+  "Aplicação informada pela extensão · sem leitura registrada": "Application reported by extension · no read-back recorded",
+  "Este registro antigo contém o status enviado pela extensão, mas não guardou o texto relido. O valor abaixo é o solicitado na prévia; confira o resultado no Designer.": "This older record contains the extension's status but no read-back text. The value below was requested in the preview; check the result in Designer.",
+  "Texto relido pela extensão:": "Text read back by the extension:",
+  "Não foi possível confirmar o resultado. Confira o Designer antes de continuar.": "The result could not be verified. Check Designer before continuing.",
+  "Incluir componentes (Symbols) desta página": "Include components (Symbols) on this page",
+  "Inclui propriedades de texto estáticas expostas nas instâncias. A alteração vale só para a instância selecionada e cria uma personalização local. Textos internos não expostos, componentes aninhados e vínculos com CMS ficam fora.": "Includes exposed static text properties on instances. Changes apply only to the selected instance and create a local override. Unexposed internal text, nested components and CMS bindings are excluded.",
+  "Componente · somente esta instância": "Component · this instance only",
+  ". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.": ". CMS, Rich Text, embeds and text split across elements are excluded. Components require the option below. The extension does not publish your site.",
+  "Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.": "Includes internal text and component properties. Shared text changes across all instances on the site; properties stay local. CMS bindings are excluded.",
+  "Componente compartilhado · {0} instâncias no site": "Shared component · {0} instances across the site",
+  "Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada texto compartilhado será alterado uma única vez.": "This preview includes shared components. Changes also affect other pages using these components. Each shared text is changed only once.",
+  "Componentes acima do limite de 2.000 elementos. Refine a busca.": "Components exceed the 2,000-element limit. Narrow your search."
 }

@@ -12,12 +12,34 @@ function install() {
   const text = leaf("text", "Minha EMPRESA!");
   const root = element("Body", "root", [text]);
   const api = { getCurrentComponent: async () => null, getCurrentPage: async () => ({ id: "page", getKind: async (): Promise<string> => "static", isHomepage: async () => false, getCollectionId: async (): Promise<string | null> => null, getName: async () => "Home" }),
-    getRootElement: async () => root, getSiteInfo: async () => ({ siteId: "site" }) };
+    getAllElements: async () => [root, text], getRootElement: async () => root, getSiteInfo: async () => ({ siteId: "site" }) };
   vi.stubGlobal("webflow", api);
   return { text, root, api };
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("Designer static text adapter", () => {
+  it("rejects a stale tree handle when the current page registry disagrees", async () => {
+    const f = install();
+    const registered = leaf("text", "Minha EMPRESA!");
+    f.api.getAllElements = async () => [f.root, registered];
+    const port = new DesignerTextPort();
+    const id = (await port.scan()).nodes[0]!.id;
+    expect(await port.read(id)).toBe("Minha EMPRESA!");
+    await port.write(id, "Minha PARCEIRA!");
+    expect(await port.read(id)).toBeNull();
+    await expect(port.write(id, "retry")).rejects.toThrow("indisponível");
+    expect(registered.setText).toHaveBeenCalledTimes(1);
+  });
+  it("blocks writes when the current page registry cannot find the node", async () => {
+    const f = install();
+    f.api.getAllElements = async () => [f.root];
+    const port = new DesignerTextPort();
+    const id = (await port.scan()).nodes[0]!.id;
+    expect(await port.read(id)).toBeNull();
+    await expect(port.write(id, "other")).rejects.toThrow();
+    expect(f.text.setText).not.toHaveBeenCalled();
+  });
+
   it("scans a static non-home page without calling the failing CMS lookup", async () => {
     const f = install();
     const page = await f.api.getCurrentPage();

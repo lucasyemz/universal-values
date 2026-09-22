@@ -13,8 +13,8 @@ export class DesignerController {
     const page = await webflow.getCurrentPage();
     return { siteId: site.siteId, siteName: site.siteName, pageName: await page.getName() };
   }
-  async search(term: string, options?: SearchOptions) {
-    const scan = await this.port.scan();
+  async search(term: string, options?: SearchOptions, includeComponents = false) {
+    const scan = await this.port.scan(includeComponents);
     const home = await this.dashboard.home(scan.context.siteId);
     return { scan, home, mentions: findMentions(scan.nodes, term, options) };
   }

@@ -78,3 +78,16 @@ describe("confirmed Designer writes", () => {
     expect(f.port.write).not.toHaveBeenCalled();
   });
 });
+
+it("does not record success when an optimistic read rolls back before the second check", async () => {
+ const f = fixture();
+ await expect(applyPlan(f.plan, true, f.port, f.store, async () => {f.port.read = async () => "AAA";})).rejects.toThrow("confirmar o resultado");
+ expect(f.events.at(-1)?.status).toBe("uncertain");
+ expect(f.events.some(event => event.status === "applied")).toBe(false);
+ expect(f.port.write).toHaveBeenCalledTimes(1);
+});
+it("stores the observed text rather than just a success flag", async () => {
+ const f = fixture();
+ await applyPlan(f.plan, true, f.port, f.store, async () => {});
+ expect(f.events.at(-1)).toMatchObject({status:"applied", observed:"AAAA"});
+});

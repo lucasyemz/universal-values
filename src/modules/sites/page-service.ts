@@ -54,7 +54,7 @@ export async function siteChangesPage(id: string, page: number, filter: string) 
   const rows: SiteActivity[] = z.array(operationSchema).parse(cms?.data ?? []).map(row => ({ id: row.id, source: "cms", title: row.reverts_request_id ? "Reversão" : row.managed_value_id ? "Sincronização de valor" : "Edição de conteúdo", target: "CMS", ...cmsOperationSummary(row), total: row.total, createdAt: row.created_at, href: changeDestination(row.id,row.scan_id) }));
   for (const row of designer?.data ?? []) {
     const summary = summarizeDesignerChange(row);
-    const attention = summary.changes.some(c => ["conflict", "uncertain", "dispatching"].includes(c.status ?? ""));
+    const attention = summary.changes.some(c => ["conflict", "uncertain", "dispatching", "reported"].includes(c.status ?? ""));
     rows.push({ id: row.id, source: "static", title: "Edição de texto", target: summary.pageName || "Página estática", status: attention ? "uncertain" : summary.verified === summary.changes.length ? "applied" : "draft", label: summary.status, verified: summary.verified, total: summary.changes.length, createdAt: row.created_at, href: `/dashboard/sites/${id}/changes/${row.id}`, attention });
   }
   const sorted = rows.filter(row => filter !== "attention" || row.attention).sort((a,b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
