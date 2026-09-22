@@ -1,93 +1,240 @@
-# ReplaceAll
+<div align="center">
+  <img src="public/brand/logo-primary.svg" alt="ReplaceAll" width="300" />
+  <h1>Conteúdo consistente. Mudanças sob seu controle.</h1>
+  <p>Encontre e atualize textos, imagens, links e valores repetidos em sites Webflow.</p>
+  <p><strong>Prévia → Validação → Confirmação → Histórico</strong></p>
+  <p><a href="#funcionalidades">Funcionalidades</a> · <a href="#desenvolvimento-local">Começar</a> · <a href="#arquitetura">Arquitetura</a> · <a href="#documentação">Documentação</a></p>
+</div>
 
-Encontre e atualize textos, imagens e links em sites Webflow, com prévia, validação, confirmação explícita e histórico de alterações. Consulte o [guia da marca](docs/brand-guide.md) para a identidade ReplaceAll.
+---
 
-## Desenvolvimento
+## Sobre o projeto
 
-Requer Node.js 22 ou superior e npm.
+**ReplaceAll** é um SaaS em desenvolvimento para descobrir informações repetidas em sites Webflow, revisar cada ocorrência e manter valores de negócio consistentes a partir de um dashboard central.
 
-- `nvm use` — seleciona a versão do Node definida em `.nvmrc` (use `nvm install` se necessário).
-- `npm ci` — instala as dependências fixadas no lockfile.
-- `npm run dev` — inicia em http://localhost:3000.
-- `npm run lint` — verifica qualidade.
-- `npm run typecheck` — verifica TypeScript estrito.
-- `npm test` — executa testes de domínio e banco PostgreSQL embutido.
-- `npm run build` — gera o build de produção.
+O dashboard reúne o CMS, os Managed Values e o histórico. A extensão do **Webflow Designer** permite trabalhar com elementos de páginas estáticas no contexto do editor. Toda aplicação de alterações exige uma ação explícita do usuário; a publicação no Webflow permanece separada.
 
-Se o Turbopack falhar neste ambiente ao abrir uma porta interna (`Operation not permitted`), use `npm run dev -- --webpack` e `npm run build -- --webpack`.
+> O projeto começou como **Universal Values** e passou pela marca **CopyReplace**. O repositório e alguns identificadores internos mantêm esses nomes por compatibilidade; a marca atual é **ReplaceAll**.
 
-A página inicial funciona sem credenciais. Sem configuração, o login mostra uma orientação e o dashboard redireciona para o login.
+## Funcionalidades
 
-## Configurar Supabase
+| Área | Disponível no código |
+| --- | --- |
+| **Workspaces e sites** | Login com Supabase Auth, conexão OAuth com Webflow e seleção de sites por workspace. |
+| **Scans do CMS** | Pesquisa por tipos de conteúdo e termos específicos, progresso salvo e resultados agrupados por valores iguais. |
+| **Revisão e substituição** | Alteração individual ou em grupo, contexto do trecho encontrado, prévias e confirmação. Busca textual permite substituir ou remover apenas o trecho informado. |
+| **Links e imagens** | Revisão de URLs repetidas e imagens em campos suportados, incluindo miniaturas e ocorrências em galerias. |
+| **Managed Values** | Centralização de valores, fontes vinculadas e sincronização confirmada por fonte. |
+| **Histórico e controle** | Flags de revisão, acompanhamento das operações, novas tentativas e reversão nos fluxos suportados, com validação de conflitos. |
+| **Execução CMS** | Worker em segundo plano, fila de alterações confirmadas e tratamento de falhas, limites e resultados parciais. |
+| **Páginas estáticas** | Extensão do Designer para pesquisa e edição de textos, links e imagens suportados, com prévia e histórico central. |
+| **Global Facts** | Referência de negócio versionada por site, aprovação, histórico e comparação determinística de evidências fornecidas. |
+| **Sugestões com IA** | Integração pessoal com Gemini para preparar sugestões individuais ou em lote; aplicar o conteúdo continua exigindo revisão e confirmação. |
+| **Dashboard** | Busca em scans salvos, repetição de configuração, filtros preservados e edição contextual de Managed Values. |
+| **Idiomas e identidade** | Inglês e português, marca ReplaceAll e títulos/metadescrições específicos por página. |
 
-1. Crie um projeto Supabase de desenvolvimento.
-2. Copie `.env.example` para `.env.local` e preencha a URL e a chave publishable. Nunca use uma chave secret/service-role em variáveis públicas.
-3. Revise e aplique `supabase/migrations/20260916000100_workspaces.sql` no SQL Editor ou pela CLI. Nenhuma migration foi aplicada automaticamente em banco remoto.
-4. Crie um usuário de teste em Authentication → Users, com e-mail confirmado e senha. Cadastro público e recuperação de senha ainda não estão implementados.
-5. Reinicie o servidor, acesse `/login`, entre e crie um workspace pelo fluxo de revisão e confirmação.
+**Busca salva não é um novo scan:** usa resultados já persistidos e informa sua cobertura. A ausência de resultados não comprova que o conteúdo inexiste no site atual.
 
-A aplicação utiliza a chave pública e a sessão do usuário. Sem a migration, o dashboard apresenta um estado de erro recuperável.
+### Como funciona
 
-## Estrutura
+1. **Conecte:** autorize o Webflow e vincule um site ao workspace.
+2. **Pesquise:** escolha o escopo e os tipos ou termos que deseja encontrar.
+3. **Revise:** selecione as ocorrências que representam o mesmo dado de negócio.
+4. **Prepare:** defina substituições individuais, em grupo ou por Managed Value.
+5. **Confirme:** confira a prévia e autorize a operação.
+6. **Acompanhe:** consulte o resultado por fonte e o histórico da alteração.
 
-- `src/app`: páginas e endpoints.
-- `src/modules`: regras de negócio e schemas Zod.
-- `src/connectors`: integrações com plataformas.
-- `src/connectors/supabase`: cliente SSR, configuração e contrato do banco.
-- `src/proxy.ts`: renovação de sessão e cookies.
-- `supabase/migrations`: esquema, políticas e funções.
-- `tests/database`: testes da migration, RLS e transações.
+## Desenvolvimento local
 
-## Escopo entregue
+### Pré-requisitos
 
-- Next.js App Router, React, TypeScript estrito e Tailwind.
-- Página inicial com estado vazio real, sem dados fictícios.
-- Schemas de valores canônicos e testes: dinheiro, telefone, data e texto.
-- Login e logout com Supabase Auth, dashboard protegido e workspaces.
-- Criação de workspace com prévia persistida, confirmação, auditoria e idempotência transacional.
+- **Node.js 22 ou superior**; a versão de referência está em [.nvmrc](.nvmrc).
+- **npm**, usando o [package-lock.json](package-lock.json) do repositório.
+- Projeto **Supabase** e usuário de teste para acessar o dashboard.
+- App e site de teste **Webflow** para validar as integrações reais.
 
-Moedas inicialmente aceitas: BRL, USD e EUR. O schema de telefone verifica o formato internacional, não a existência do número. Datas representam dias civis, sem fuso horário.
+### 1. Instale as dependências
 
-## Próximos passos
+```bash
+git clone https://github.com/lucasyemz/universal-values.git
+cd universal-values
+npm ci
+```
 
-Global Facts possui cadastro versionado por site, prévia/confirmação e histórico. Para ativar a primeira etapa, consulte [o guia de Global Facts](docs/global-facts.md) e a migration 010. A auditoria automática de páginas publicadas ainda não está disponível.
+Se usa um gerenciador Node compatível com `.nvmrc`, selecione a versão indicada antes da instalação.
 
-O primeiro scan de CMS e a criação de Managed Values estão implementados. Consulte [o guia de scans](docs/scans.md) para aplicar a terceira migration, revisar a cobertura e executar o fluxo. O scan processa lotes enquanto a página está aberta e salva o progresso para retomada.
+### 2. Configure o ambiente
 
-A conexão Webflow com leitura e edição confirmada de CMS está implementada. Siga [o guia de configuração](docs/webflow.md) para aplicar a segunda migration, registrar um Webflow App e habilitar OAuth. O fluxo permite escolher um site, revisar o vínculo e explorar coleções, campos e itens. A validação OAuth real depende das credenciais do App.
+Copie [.env.example](.env.example) para `.env.local` e preencha os valores do seu ambiente.
 
-1. Validar login, refresh, logout e isolamento com duas contas em Supabase de desenvolvimento.
-2. Validar confirmações concorrentes com conexões reais de banco.
-3. Validar OAuth Webflow e leitura em site de testes com o App configurado.
-4. Validar scan, revisão de sugestões e criação de Managed Values com dados reais.
-5. Validar a escrita autorizada no CMS com conflitos, retomada e verificação em um site de testes.
+| Variável | Uso |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Chave pública do mesmo projeto. |
+| `WEBFLOW_CLIENT_ID` / `WEBFLOW_CLIENT_SECRET` | Credenciais privadas do App Webflow. |
+| `WEBFLOW_REDIRECT_URI` | Callback OAuth; localmente, `http://localhost:3000/api/connectors/webflow/callback`. |
+| `WEBFLOW_TOKEN_ENCRYPTION_KEY` | Chave estável de 32 bytes representada por 64 caracteres hexadecimais. |
+| `DESIGNER_ALLOWED_ORIGINS` | Origens exatas autorizadas para a extensão do Designer. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Credencial privada para o worker CMS local. |
 
-Edição individual e em conjunto usa prévia persistida e confirmação, com auditoria e proteção contra envios repetidos. Aplique a quinta migration e reconecte com `cms:write`, conforme [o guia de alterações](docs/cms-changes.md). A publicação do site permanece separada. Conteúdo estático no idioma principal não deve ser tratado como editável pela Data API sem comprovação de suporte. Consulte `AGENTS.md` antes de contribuir.
+**Ao trocar de máquina, preserve a chave de criptografia vigente.** Os tokens já armazenados dependem dela. Não versione `.env.local` e nunca coloque credenciais privadas em variáveis `NEXT_PUBLIC_*`.
 
-## Garantias e limites
+Gemini é conectado pelo próprio usuário na área de integrações. A chave não precisa ser adicionada ao ambiente público da aplicação.
 
-As tabelas de negócio permitem apenas leitura via RLS. RPCs restritas verificam a identidade no banco e concentram as escritas. Usuários veem seus workspaces, suas próprias memberships e prévias; convites e gestão de membros ficam para outra etapa.
+### 3. Prepare o Supabase
 
-A prévia salva o nome imutável e o autor por 15 minutos. A confirmação aceita apenas seu ID e cria workspace, membership e auditoria em uma única transação. Repetir a confirmação retorna o mesmo resultado, inclusive após expirar uma prévia já confirmada. Reutilizar a chave com outro conteúdo é rejeitado. A chamada autenticada à RPC de confirmação representa autorização; clientes podem chamá-la diretamente, mas não podem modificar o conteúdo revisado nem confirmar a prévia de outra pessoa.
+1. Revise as migrations em [supabase/migrations](supabase/migrations).
+2. Em um banco novo, aplique **todas em ordem de nome**. Em um projeto existente, confira o histórico e aplique apenas as pendentes.
+3. Crie um usuário de teste em **Authentication → Users**, com e-mail confirmado e senha.
+4. Use a URL e a chave pública desse projeto em `.env.local`.
 
-O evento de prévia é registrado ao clicar em “Revisar criação”; o workspace só é criado após confirmação. Prévias expiradas são mantidas para auditoria nesta etapa; uma política de retenção será necessária antes de produção.
+Instalar dependências, iniciar o app e executar os testes **não aplica migrations remotas**. Os guias de funcionalidades registram etapas históricas; não configure um banco novo aplicando somente a migration citada em um guia antigo.
 
-Eventos de autenticação ficam no audit log nativo do Supabase Auth. Senhas e tokens não são registrados no histórico de negócio. Renovação e emissão de tokens seguem o protocolo do provedor; a idempotência transacional descrita aqui aplica-se às mutações de negócio.
+> **Atualizações do executor:** mudanças de banco e worker devem ser implantadas de forma compatível. A migration `20260922000400_applied_scan_sources.sql` exige atualizar também o worker CMS ativo. Veja [edições sequenciais](docs/sequential-scan-edits.md).
 
-Os testes de banco executam a migration em PostgreSQL embutido (PGlite), sem Docker ou rede, emulando apenas `auth.users`, `auth.uid()` e papéis do Supabase. Verificam isolamento, grants, idempotência, expiração e rollback se a auditoria falhar. Não substituem testes de Supabase Auth real, cookies SSR e concorrência entre conexões.
+### 4. Inicie o dashboard
 
-O contrato em `src/connectors/supabase/types.ts` representa a migration inicial. Regenere os tipos pela CLI Supabase após alterações do esquema.
+```bash
+npm run dev
+```
 
-## Edição central de Managed Values
+Abra [localhost:3000](http://localhost:3000), acesse `/login` e crie ou selecione um workspace. A landing page funciona sem credenciais; o dashboard exige autenticação e banco configurado.
 
-A edição central e sincronização dos campos CMS vinculados usam prévia, confirmação e verificação por fonte. Aplique a migration 012 e siga [o roteiro de teste](docs/managed-value-sync.md). Resultados parciais e incertos ficam registrados; não há publicação automática.
+Se o Turbopack falhar ao abrir uma porta interna neste ambiente, use:
+
+```bash
+npm run dev -- --webpack
+npm run build -- --webpack
+```
+
+### 5. Conecte o Webflow
+
+Configure um App com **Data Client**, os escopos `sites:read`, `cms:read` e `cms:write` e o callback exato do seu ambiente. O comando abaixo prepara as variáveis locais e gera a chave de criptografia apenas se estiver ausente:
+
+```bash
+npm run setup:webflow
+```
+
+Preencha as credenciais, reinicie o servidor e conclua a autorização e o vínculo do site pelo dashboard. Autorizações antigas precisam ser refeitas para incorporar novas permissões. Consulte [configuração Webflow](docs/webflow.md).
+
+## Extensão do Webflow Designer
+
+Com o dashboard rodando, abra outro terminal:
+
+```bash
+npm run designer:dev
+```
+
+No Webflow Designer, abra uma página e inicie o App por **Launch development app**, usando o servidor local da extensão em `http://localhost:1337`. Autorize o site no dashboard e conclua a conexão na extensão.
+
+- `npm run designer:build` recompila a extensão; recarregue-a no Designer após alterações.
+- `npm run designer:bundle` gera `extensions/webflow-designer/bundle.zip` para instalação manual.
+- Para um bundle de produção, defina `DESIGNER_DASHBOARD_URL` no ambiente do terminal **antes do build**. O script não carrega essa variável de `.env.local`.
+
+Abrir a extensão fora do Designer não dá acesso ao site. A sessão autorizada é restrita ao site e pode ser revogada no dashboard. Consulte [conexão e histórico central](docs/designer-dashboard.md) e [escopo técnico do Designer](docs/static-text-designer-poc.md), incluindo as atualizações ao final do documento.
 
 ## Worker CMS
 
-A sincronização confirmada agora roda em um processo independente do navegador. Aplique a migration 015, configure a credencial privada do servidor Supabase e execute `npm run worker` em outro terminal. O dashboard apenas acompanha o progresso. Veja [ativação, garantias e testes](docs/background-sync.md). Fechar o navegador é permitido; o processo do worker precisa permanecer ativo.
+Operações CMS confirmadas são executadas em segundo plano. Fechar o navegador não interrompe um worker que continua ativo.
 
-O executor CMS também está preparado para **Supabase Edge Functions + Cron**, dentro das cotas gratuitas. Compile com `npm run worker:edge:build` e siga [a ativação](docs/background-sync.md); o agendamento é instalado inicialmente desativado.
+| Ambiente | Execução |
+| --- | --- |
+| Desenvolvimento | `npm run worker` em outro terminal, com as credenciais privadas configuradas. |
+| Processo Node compilado | `npm run worker:build`, seguido de `npm run worker:start`. |
+| Supabase hospedado | `npm run worker:edge:build`, deploy da Edge Function e configuração do Cron. |
 
-Limites do plano gratuito e privilégios administrativos: [docs/free-plan.md](docs/free-plan.md).
+O build da Edge Function não publica nem ativa o agendamento. Configuração de segredos, Cron e recuperação estão no [guia de execução em segundo plano](docs/background-sync.md). A fila de operações confirmadas está documentada em [CMS change queue](docs/cms-change-queue.md).
 
-Identidade visual: [guia da marca](docs/brand-guide.md). Logos e fontes Geist locais em `public/brand`; licença OFL incluída com as fontes.
+## Arquitetura
+
+Aplicação organizada por módulos, com Next.js para interface e endpoints, Supabase para autenticação e persistência e um executor CMS que compartilha as regras de negócio. Sem divisão em microserviços.
+
+| Camada | Tecnologia / responsabilidade |
+| --- | --- |
+| Interface | Next.js App Router, React, Tailwind e next-intl. |
+| Domínio | TypeScript estrito e Zod; lógica fora dos componentes React. |
+| Persistência | PostgreSQL/Supabase, RLS e RPCs transacionais. |
+| Integrações | Conectores Webflow, Supabase e Gemini. |
+| Execução | Worker Node ou Supabase Edge Function, com fila persistida. |
+| Verificação | Vitest, PGlite, ESLint e TypeScript. |
+
+```text
+src/
+├── app/                    # Páginas, layouts e endpoints
+├── components/             # Interface do dashboard e fluxos de revisão
+├── modules/                # Regras de negócio, schemas e serviços
+├── connectors/             # Integrações com plataformas
+├── i18n/                   # Idiomas e traduções
+└── proxy.ts                # Sessão e roteamento do dashboard
+extensions/webflow-designer/ # App executado dentro do Designer
+supabase/
+├── migrations/             # Esquema, políticas e funções PostgreSQL
+├── functions/              # Executor Edge
+└── cron/                   # Agendamento do worker
+scripts/                    # Build, desenvolvimento e ferramentas
+tests/database/            # Testes de banco e isolamento
+public/                     # Landing page, logos e fontes locais
+docs/                       # Guias, decisões e roteiros de validação
+```
+
+## Segurança e limites
+
+- **Controle explícito:** alterações exigem prévia, validação, confirmação e auditoria. Sugestões de IA não aplicam mudanças por conta própria.
+- **Isolamento:** autorização por conta/site, políticas RLS e funções restritas no banco. IDs públicos não substituem permissões.
+- **Idempotência:** confirmações repetidas reutilizam a operação; conflitos e resultados incertos exigem tratamento próprio, sem reenvio cego.
+- **Credenciais:** tokens criptografados no servidor; segredos não pertencem ao cliente, aos logs ou ao Git.
+- **Sem publicação automática:** alterações CMS usam conteúdo staged; o site publicado pode continuar diferente até a publicação no Webflow.
+- **Limites do provedor:** operações podem ser parciais e não constituem uma transação atômica de todo o site. O histórico informa os resultados por fonte.
+- **Cobertura estática:** depende dos elementos e APIs disponíveis no Designer; não equivale a ler qualquer embed, estrutura HTML ou conteúdo entre nós.
+- **Global Facts:** o cadastro e a comparação já existem; coleta automática de páginas publicadas, auditoria de JSON-LD e verificação de links quebrados ainda não estão disponíveis.
+- **Acesso:** cadastro público, recuperação de senha e gestão completa de membros ainda não compõem o fluxo atual.
+
+## Qualidade
+
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
+Os testes cobrem regras de negócio e contratos de banco, incluindo isolamento, confirmação, idempotência, conflitos e execução. Os testes PostgreSQL usam **PGlite**, sem Docker, com provedores simulados.
+
+Eles não substituem validação de OAuth real, cookies, elementos do Designer, concorrência entre conexões PostgreSQL ou execução em um site de teste. Consulte [AGENTS.md](AGENTS.md) antes de contribuir.
+
+## Etapa atual e próximos passos
+
+A **Fase A de melhorias do dashboard com dados persistidos** está implementada: busca salva, repetição de scans, preservação da navegação, contexto e edição de Managed Values. Também foram adicionados ajustes de revisão, fila CMS e suporte a edições sequenciais.
+
+O roteiro de otimização está organizado em:
+
+1. **Fase B — Banco:** reduzir consultas e volume carregado, melhorar agregações e paginação.
+2. **Fase C — Webflow:** reduzir leituras de metadados com cache e invalidação adequados.
+3. **Fase D — Executor:** otimizar acompanhamento de progresso e trabalho ocioso.
+
+A evolução da auditoria **Global Facts** é uma frente separada: coleta de páginas publicadas, extração de dados estruturados e relatório associado à versão aprovada da referência. Melhorias semânticas com IA permanecem uma possibilidade futura.
+
+## Documentação
+
+| Assunto | Guia |
+| --- | --- |
+| Retomada e troca de máquina | [Handoff](docs/HANDOFF.md) |
+| Conexão com Webflow | [OAuth e configuração](docs/webflow.md) |
+| Pesquisa no CMS | [Scans](docs/scans.md) · [Busca textual](docs/text-search.md) |
+| Alterações e revisão | [Edição CMS](docs/cms-changes.md) · [Prévia inline](docs/inline-review.md) |
+| Execução e fila | [Worker](docs/background-sync.md) · [Fila CMS](docs/cms-change-queue.md) · [Edições sequenciais](docs/sequential-scan-edits.md) |
+| Valores centralizados | [Managed Values](docs/managed-value-sync.md) |
+| Conteúdo estático | [Designer](docs/static-text-designer-poc.md) · [Conexão ao dashboard](docs/designer-dashboard.md) |
+| Integridade de informações | [Global Facts](docs/global-facts.md) |
+| IA | [Sugestões Gemini](docs/ai-suggestions.md) |
+| Plano e consumo | [Limites e administração](docs/free-plan.md) |
+| Interface e navegação | [Padrão de UI](docs/dashboard-designer-ui-pattern.md) · [URLs](docs/dashboard-urls.md) · [Idiomas](docs/internationalization.md) |
+| Otimização | [Auditoria e roadmap](docs/api-ux-cost-audit.md) · [Fase A](docs/dashboard-phase-a.md) |
+| Identidade | [Guia da marca](docs/brand-guide.md) · [Landing page](docs/landing-page.md) |
+
+---
+
+<div align="center">
+  <strong>ReplaceAll</strong><br />
+  <sub>Encontre o que precisa mudar. Substitua com segurança.</sub>
+</div>
