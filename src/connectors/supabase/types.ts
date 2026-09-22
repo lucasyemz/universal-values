@@ -10,6 +10,7 @@ type ReadTable<Row> = {
 export type Database = {
   public: {
     Tables: {
+      dashboard_resource_routes: ReadTable<{kind: string; resource_id: string; scope_id: string; account_id: string; site_id: string | null; number: number}>;
       global_fact_versions: ReadTable<{ site_id: string; version: number; facts: Json; actor_id: string; preview_id: string; created_at: string }>;
       global_fact_previews: ReadTable<{ id: string; site_id: string; actor_id: string; base_version: number; facts: Json; created_at: string; expires_at: string; confirmed_version: number | null; archived_at: string | null }>;
       global_fact_audit: ReadTable<{ preview_id: string; site_id: string; actor_id: string; action: string; created_at: string }>;

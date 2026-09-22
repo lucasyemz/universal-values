@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+vi.mock("@/modules/routes/links", () => ({
+ operationLinks: vi.fn(async (ids:string[])=>Object.fromEntries(ids.map(id=>[id,"/dashboard/account/sites/project/scans/1?filter=reviewed&operation=1"]))),
+ resourceLinks: vi.fn(async (_kind:string,ids:string[])=>Object.fromEntries(ids.map(id=>[id,"/dashboard/account/sites/project/scans/1"]))),
+}));
 vi.mock("@/modules/auth/service", () => ({ requireUser: vi.fn() }));
 import { requireUser } from "@/modules/auth/service";
 import { getActivity } from "./actions";
@@ -35,7 +39,7 @@ describe("read-only activity query", () => {
     const rpc = vi.fn().mockResolvedValue({ data: new Date().toISOString(), error: null });
     const from = vi.fn((table: string) => table === "cms_change_requests" ? changes : table === "cms_scans" ? scans : sites);
     vi.mocked(requireUser).mockResolvedValue({ user: { id }, client: { from, rpc } } as unknown as Awaited<ReturnType<typeof requireUser>>);
-    expect(await getActivity({ changes: [id], scans: [] })).toMatchObject({ ok: true, worker: "online", items: [{ site: "Meu site" }] });
+    expect(await getActivity({ changes: [id], scans: [] })).toMatchObject({ ok: true, worker: "online", items: [{ site: "Meu site", href: "/dashboard/account/sites/project/scans/1?filter=reviewed&operation=1" }] });
     expect(changes.eq).toHaveBeenCalledWith("actor_id", id); expect(scans.eq).toHaveBeenCalledWith("actor_id", id);
     expect(changes.or).toHaveBeenCalledWith(`status.eq.confirmed,id.in.(${id})`);
     expect(rpc).toHaveBeenCalledExactlyOnceWith("cms_worker_last_seen", {});

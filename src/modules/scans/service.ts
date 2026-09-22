@@ -1,3 +1,4 @@
+import { loadReviewState } from "./review-state";
 import "server-only";
 import { isIndependentManagedText } from "./managed-protection";
 import { bindingSchema } from "@/modules/managed-values/sync-plan";
@@ -84,11 +85,8 @@ export async function loadScanResults(id: string) {
   }).map(o => o.id) : [];
   const bound = new Set(linked.map((b) => b.source_key));
   const available = occurrences.filter((o) => !bound.has(o.source_key));
-  const reviews = await client.rpc("scan_reviewed_occurrences", { p_scan_id: id });
-  const reviewsMissing = !!reviews.error && ["PGRST202", "42883"].includes(reviews.error.code);
-  if (reviews.error && !reviewsMissing) throw new Error("Marcações de revisão indisponíveis.");
-  const reviewedIds = z.array(z.object({ occurrence_id: z.uuid() })).parse(reviews.data ?? []).map((row) => row.occurrence_id);
-  return { scan, occurrences, reviewedIds, reviewsMissing, linkedValues, editableBoundOccurrenceIds, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
+  const {outcomes, reviewHistory, reviewedIds, reviewsMissing} = await loadReviewState(client, scan, occurrences);
+  return { scan, occurrences, outcomes, reviewHistory, reviewedIds, reviewsMissing, linkedValues, editableBoundOccurrenceIds, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
 }
 export async function processBatch(id: string, revision: number) {
   const scan = await getScan(id);

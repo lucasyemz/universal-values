@@ -11,3 +11,8 @@ it("preserves distinct workspaces without UUIDs in their URLs",()=>{
  expect(workspaceRoute('/dashboard/workspaces/preview/123')).toBeNull();
  expect(workspaceRoute('/dashboard/lucasmatrixx/sites/projeto')).toBeNull();
 });
+it("supports workspace settings without UUIDs",()=>{
+ expect(workspaceRoute('/dashboard/lucasmatrixx/settings/webflow')).toEqual({id:null,account:'lucasmatrixx',slug:null,suffix:'settings/webflow'});
+ expect(workspaceRoute('/dashboard/lucasmatrixx/workspaces/cliente-2/settings/webflow')?.suffix).toBe('settings/webflow');
+ expect(workspaceRoute('/dashboard/workspaces/b1e62961-a11a-413a-811d-b8011b997bf6/settings/webflow')?.suffix).toBe('settings/webflow');
+});

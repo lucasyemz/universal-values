@@ -20,6 +20,7 @@ export async function previewChanges(input: unknown) {
     if (!["completed", "limited"].includes(view.scan.status)) return { ok: false as const, message: "Aguarde a conclusão do scan." };
     if (!isRepeatedGroupSelection(view.occurrences, parsed.data.changes.map((change) => change.occurrenceId), view.scan.plan.some(entry => !!entry.searchText || entry.placeholders))) return { ok: false as const, message: "Revise apenas ocorrências de um mesmo grupo de valores repetidos por vez." };
     if (parsed.data.changes.some(change => { const source = view.occurrences.find(o => o.id === change.occurrenceId); return source && view.linkedValues[source.source_key] && !view.editableBoundOccurrenceIds.includes(source.id); })) return { ok: false as const, message: "Este trecho está protegido ou seu vínculo está desatualizado. Abra o Managed Value ou execute um novo scan." };
+    if (parsed.data.changes.some(change => view.reviewedIds?.includes(change.occurrenceId))) return { ok: false as const, message: "Ocorrências revisadas são somente leitura. Consulte a operação para reverter uma alteração." };
     const plan = buildFieldChanges(view.occurrences, parsed.data.changes);
     if (!plan.length) return { ok: false as const, message: "Nenhum valor foi alterado." };
     // Store only effective changes, keeping DB field counts identical to the execution plan.
@@ -57,7 +58,7 @@ export async function getChangeProgress(input: unknown) {
     const health = await client.rpc("cms_worker_last_seen", {});
     if (health.error && !["PGRST202", "42883"].includes(health.error.code)) throw new Error("Worker health unavailable");
     const worker = health.error ? "missing" as const : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" as const : "offline" as const;
-    return { ok: true as const, worker, progress: { cursor: request.cursor, total: request.total, status: request.status, paused: request.background_paused ?? false, error: request.worker_error } };
+    return { ok: true as const, worker, progress: { verified: request.results.filter(r => ["applied", "already_applied"].includes(r.status)).length, issues: request.results.filter(r => !["applied", "already_applied"].includes(r.status)).length, cursor: request.cursor, total: request.total, status: request.status, paused: request.background_paused ?? false, error: request.worker_error } };
   } catch { return { ok: false as const, message: "Não foi possível atualizar o progresso. O processamento no servidor independe desta tela." }; }
 }
 

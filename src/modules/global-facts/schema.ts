@@ -62,7 +62,7 @@ export const factFields = [
   { key: "forbiddenDomains", label: "Domínios proibidos", help: "Um domínio em minúsculas por linha, sem https://. Inclui seus subdomínios.", max: 5100 },
   { key: "notes", label: "Outros fatos e limites", help: "Horários, endereço, honorários, razão social e exceções ainda são referências para revisão humana; não são verificados automaticamente nesta etapa.", max: 5000 },
 ] as const;
-export function factDisplay(facts: GlobalFacts, key: typeof factFields[number]["key"]) {
+export function factDisplay(facts: GlobalFacts, key: typeof factFields[number]["key"], missing = "Não informado") {
   const value = facts[key];
-  return (Array.isArray(value) ? value.join("\n") : value) || "Não informado";
+  return (Array.isArray(value) ? value.join("\n") : value) || missing;
 }

@@ -19,7 +19,7 @@ export default async function SitePage({ params, searchParams }: {
   try { view = await loadSiteContent(id, query.collection, safeOffset(query.offset)); }
   catch (cause) {
     unstable_rethrow(cause);
-    return <main className="ui-page"><FreshLink href="/dashboard" >{t("Voltar aos workspaces")}</FreshLink><p role="alert" className="mt-6">{t(webflowMessage(cause))}</p></main>;
+    return <main className="ui-page"><FreshLink href="/dashboard" >{t("Voltar aos workspaces")}</FreshLink><PageHeader title={t("Explorar CMS")} /><Notice tone="danger">{t(webflowMessage(cause))}</Notice><FreshLink className="ui-btn mt-4" href={"/dashboard/sites/" + id + "/cms"}>{t("Tentar novamente")}</FreshLink></main>;
   }
   const siteBase = "/dashboard/sites/" + id;
   const base = siteBase + "/cms";
@@ -38,10 +38,11 @@ export default async function SitePage({ params, searchParams }: {
         <ul className="mt-4 space-y-2">{view.details.fields.map((field) => <li key={field.id}>{field.displayName} <span className="text-sm text-faint">({field.type})</span></li>)}</ul>
       </details>
       <p className="mt-6 text-sm text-muted">{view.page.pagination.total}  {t("itens · mostrando")} {view.page.items.length}  {t("nesta página.")}</p>
+      {!view.page.items.length && <EmptyState title={t("Nenhum item nesta página")} description={t("Escolha outra coleção ou volte à primeira página.")} action={view.page.pagination.offset > 0 ? <Link className="ui-btn" href={base + "?collection=" + view.details.id}>{t("Primeira página")}</Link> : undefined} /> }
       <div className="mt-4"><DataTable label={t("Itens do CMS")}><thead><tr><th>Item</th><th>{t("Estado")}</th><th>{t("Conteúdo")}</th></tr></thead><tbody>{view.page.items.map((item) => <tr key={item.id + ":" + (item.cmsLocaleId ?? "")}>
         <td className="min-w-44 align-top"><h3 className="font-semibold">{typeof item.fieldData.name === "string" ? item.fieldData.name : item.id}</h3>{item.cmsLocaleId && <p className="mt-2 break-all text-xs text-muted">Locale: {item.cmsLocaleId}</p>}</td>
         <td className="align-top"><StatusBadge status={item.isDraft ? "draft" : "ready"} label={item.isDraft ? t("Rascunho") : t("Preparado")} />{item.isArchived && <p className="mt-2 text-xs text-muted">{t("Arquivado")}</p>}</td>
-        <td className="min-w-64"><details><summary className="font-medium text-accent">{t("Ver campos do item")}</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" ? value : <details><summary className="text-xs text-muted">{t("Ver dados estruturados")}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
+        <td className="min-w-64"><details><summary className="font-medium text-accent">{t("Ver campos do item")}</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" || typeof value === "number" ? String(value) : typeof value === "boolean" ? t(value ? "Sim" : "Não") : value === null ? t("Não informado") : <details><summary className="text-xs text-muted">{t("Ver dados estruturados")}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
       </tr>)}</tbody></DataTable></div>
       <nav aria-label={t("Paginação de itens")} className="mt-6 flex gap-6">
         {view.page.pagination.offset > 0 && <Link className="ui-btn" href={base + "?collection=" + view.details.id + "&offset=" + Math.max(0, view.page.pagination.offset - 25)}>{t("Anterior")}</Link>}

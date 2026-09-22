@@ -1,3 +1,4 @@
+import { resolveResourceRoute } from "@/modules/routes/resolve";
 import { workspaceRoute, workspacePath } from "@/modules/sites/workspace-url";
 import { siteRoute, siteRouteDestination } from "@/modules/sites/url";
 import { createServerClient } from "@supabase/ssr";
@@ -23,6 +24,21 @@ export async function proxy(request: NextRequest) {
   });
   // Verify and refresh the session before Server Components consume cookies.
   await client.auth.getClaims();
+  const resource = await resolveResourceRoute(client, request.nextUrl.pathname, request.nextUrl.searchParams, request.method);
+  if (resource) {
+    const url = request.nextUrl.clone();
+    if (resource.kind === "not-found") {
+      const missing = new NextResponse("Not found", {status:404,headers:{"Cache-Control":"private, no-store"}});
+      response.cookies.getAll().forEach(cookie=>missing.cookies.set(cookie));
+      return missing;
+    }
+    url.pathname = resource.pathname;
+    url.search = resource.search;
+    const routed = resource.kind === "redirect" ? NextResponse.redirect(url,307) : NextResponse.rewrite(url,{request:{headers:request.headers}});
+    response.cookies.getAll().forEach(cookie=>routed.cookies.set(cookie));
+    routed.headers.set("Cache-Control","private, no-store");
+    return routed;
+  }
   const workspace = workspaceRoute(request.nextUrl.pathname);
   if (workspace) {
     const account = workspace.account ? (await client.from("account_routes").select("user_id,slug").eq("slug", workspace.account).maybeSingle()).data : null;
@@ -40,7 +56,8 @@ export async function proxy(request: NextRequest) {
     const redirect = !!workspace.id && ["GET", "HEAD"].includes(request.method);
     if (workspace.id && !redirect) return response;
     const url = request.nextUrl.clone();
-    url.pathname = redirect ? workspacePath(owner.slug, entry) : `/dashboard/workspaces/${entry.workspace_id}/sites`;
+    const suffix = workspace.suffix ?? "sites";
+    url.pathname = redirect ? workspacePath(owner.slug, entry).replace(/sites$/, suffix) : `/dashboard/workspaces/${entry.workspace_id}/${suffix}`;
     const routed = redirect ? NextResponse.redirect(url, 307) : NextResponse.rewrite(url, { request: { headers: request.headers } });
     response.cookies.getAll().forEach(cookie => routed.cookies.set(cookie));
     routed.headers.set("Cache-Control", "private, no-store");

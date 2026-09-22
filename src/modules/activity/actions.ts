@@ -1,4 +1,5 @@
 "use server";
+import { operationLinks, resourceLinks } from "@/modules/routes/links";
 import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
 import { activityInput, changeRow, scanRow, changeActivity, scanActivity } from "./model";
@@ -11,7 +12,7 @@ export async function getActivity(input: unknown) {
     const changesFilter = "status.eq.confirmed" + (parsed.data.changes.length ? `,id.in.(${parsed.data.changes.join(",")})` : "");
     const scansFilter = "status.in.(running,paused)" + (parsed.data.scans.length ? `,id.in.(${parsed.data.scans.join(",")})` : "");
     const [changes, scans, health] = await Promise.all([
-      client.from("cms_change_requests").select("id,site_id,status,cursor,total,background_paused,managed_value_id,results").eq("actor_id", user.id).or(changesFilter).order("created_at", { ascending: false }).limit(50),
+      client.from("cms_change_requests").select("id,site_id,status,cursor,total,background_paused,scan_id,managed_value_id,results").eq("actor_id", user.id).or(changesFilter).order("created_at", { ascending: false }).limit(50),
       client.from("cms_scans").select("id,site_id,status,items_read,occurrences_count").eq("actor_id", user.id).or(scansFilter).order("created_at", { ascending: false }).limit(50),
       client.rpc("cms_worker_last_seen", {}),
     ]);
@@ -22,7 +23,8 @@ export async function getActivity(input: unknown) {
     const sites = siteIds.length ? await client.from("sites").select("id,display_name").in("id", siteIds) : { data: [], error: null };
     if (sites.error) throw new Error("Sites unavailable");
     const names = new Map(sites.data?.map(site => [site.id, site.display_name]));
-    const items = [...changeRows.map(row => changeActivity(row, names.get(row.site_id) ?? "Site")), ...scanRows.map(row => scanActivity(row, names.get(row.site_id) ?? "Site"))];
+    const [changeLinks,scanLinks] = await Promise.all([operationLinks(changeRows.map(row=>row.id)),resourceLinks("scans",scanRows.map(row=>row.id))]);
+    const items = [...changeRows.map(row => ({...changeActivity(row, names.get(row.site_id) ?? "Site"),href:changeLinks[row.id]!})), ...scanRows.map(row => ({...scanActivity(row, names.get(row.site_id) ?? "Site"),href:scanLinks[row.id]!}))];
     const worker = health.error ? "unknown" : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" : "offline";
     return { ok: true as const, items, worker, limited: changeRows.length === 50 || scanRows.length === 50 };
   } catch { return { ok: false as const, message: "Não foi possível atualizar os processos. Tentaremos novamente automaticamente." }; }

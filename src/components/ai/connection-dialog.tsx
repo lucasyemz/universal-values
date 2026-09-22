@@ -10,9 +10,10 @@ export function AiConnectionDialog({ onClose, onConnected }: { onClose: () => vo
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const element = dialog.current;
     element?.showModal();
-    return () => element?.close();
+    return () => { element?.close(); previousFocus?.focus(); };
   }, []);
   return <dialog ref={dialog} aria-labelledby={title}
     onCancel={event => { event.preventDefault(); onClose(); }}

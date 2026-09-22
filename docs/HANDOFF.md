@@ -350,3 +350,13 @@ Plano e consumo inclui seção separada para cota diária Gemini do app, restant
 ### Scan de textos de exemplo
 
 Novo scan oferece “Lorem Ipsum and placeholder text”. O plano persiste `placeholders: true` e habilita detecção textual. Procura frases conhecidas (Lorem ipsum, dolor sit amet, consectetur adipiscing, sample/placeholder/dummy text, texto de exemplo/de teste/fictício), incluindo ocorrências únicas. Texto simples retorna o campo; Rich Text retorna o nó textual correspondente e preserva as tags ao redor, ignorando atributos/scripts. Frases divididas entre tags não são unidas. Limites existentes de leitura e tamanho continuam valendo. A detecção não usa IA. Managed Values e prévia/confirmação de escrita permanecem. Sem migration; execute um novo scan para cobrir campos não registrados antes.
+
+### Prévia inline — edição comum
+
+Editor do scan (individual/lote) e Managed Values exibem prévia persistida e validada na própria tela, com antes/depois, campos/itens, imagens e slugs. Botão Apply to N fields confirma via receipt de conteúdo; mudanças invalidam a versão anterior e clique duplicado usa a mesma operação. Worker, conflitos, permissões, cotas e auditoria mantidos. Progresso inline e página de resultados opcional. Sem migration nova. Consulte `docs/inline-review.md`.
+
+### Scan summary by collection
+The review summary now lists collections and items read per collection instead of highlighting raw detector occurrence totals. Review occurrence totals use the same eligible groups as the review tabs. Apply `20260921000300_scan_collection_counts.sql` to record per-collection counts atomically with accepted scan batches. Legacy multi-collection scans display unavailable counts; single-collection legacy scans can reuse their known total. No Webflow queries are added for this summary.
+
+### Stable public dashboard URLs
+Apply `20260921000400_dashboard_resource_routes.sql`. Scans now use `/dashboard/{account}/sites/{site}/scans/{number}`; the same namespace/number convention covers Managed Values, operation entries, static changes and previews. Existing UUID URLs redirect and action payloads keep internal UUIDs. Number allocation is transactional and scoped per resource type/site; existing IDs and audit data are preserved. Workspace Webflow settings also use account/workspace slugs. See `docs/dashboard-urls.md`; the URL standard is now mandatory in `AGENTS.md`.

@@ -10,7 +10,7 @@ import { managedValueSchema } from "./schema";
 import { loadManagedSyncValue } from "./sync-service";
 import { buildManagedSyncPlan } from "./sync-plan";
 
-export async function previewManagedSync(_previous: { error?: string }, form: FormData): Promise<{ error?: string }> {
+async function saveManagedSyncPreview(form: FormData): Promise<{ error?: string; id?: string }> {
   const parsed = z.object({ id: z.uuid(), valueId: z.uuid(), version: z.coerce.number().int().positive(), replacement: z.string().max(10000) }).safeParse(Object.fromEntries(form));
   if (!parsed.success) return { error: "Confira o novo valor e recarregue a página se necessário." };
   const input = parsed.data;
@@ -28,5 +28,21 @@ export async function previewManagedSync(_previous: { error?: string }, form: Fo
   if (quotaErrorCode(result.error)) return { error: quotaMessage(quotaErrorCode(result.error))! };
   if (result.error) return { error: result.error.code === "40001" ? "A versão mudou. Recarregue e revise novamente." : result.error.message === "Provider cooldown" ? "O Webflow pediu uma pausa. Aguarde o prazo indicado na operação anterior." : "Não foi possível salvar a prévia. Conclua ou cancele a operação ativa neste site e confira a conexão Webflow. Se já enviou esta prévia, consulte o histórico antes de tentar outro conteúdo." };
   try { await prepareItemSlugs(input.id); } catch (error) { return { error: error instanceof Error ? error.message : "Não foi possível revisar o slug." }; }
-  redirect("/dashboard/changes/" + input.id);
+  return { id: input.id };
+}
+
+export async function previewManagedSync(_previous: { error?: string }, form: FormData): Promise<{ error?: string }> {
+  const result = await saveManagedSyncPreview(form);
+  if (result.id) redirect("/dashboard/changes/" + result.id);
+  return result;
+}
+export async function prepareInlineManagedSync(input: unknown) {
+  const parsed = z.strictObject({ id:z.uuid(),valueId:z.uuid(),version:z.number().int().positive(),replacement:z.string().max(10000) }).safeParse(input);
+  if (!parsed.success) return { ok:false as const,message:"Confira o novo valor e recarregue a página se necessário." };
+  const form = new FormData();
+  for (const [key,value] of Object.entries(parsed.data)) form.set(key,String(value));
+  const result = await saveManagedSyncPreview(form);
+  if (!result.id) return { ok:false as const,message:result.error ?? "Não foi possível preparar os vínculos." };
+  const { readInlinePreview } = await import("@/modules/scans/inline-actions");
+  return readInlinePreview(result.id);
 }

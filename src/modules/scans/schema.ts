@@ -27,6 +27,7 @@ export const scanSchema = z.object({
   status: z.enum(["preview", "running", "paused", "completed", "limited", "cancelled"]),
   item_limit: z.number().int().min(1).max(500).optional(),
   plan: planSchema, collection_index: z.number().int(), item_offset: z.number().int(),
+  collection_items_read: z.record(z.string(), z.number().int().nonnegative()).nullish(),
   revision: z.number().int(), items_read: z.number().int(), occurrences_count: z.number().int(),
   truncated: z.boolean(), skipped_fields: z.number().int(), error_code: z.string().nullable(),
   retry_at: z.string().nullable(), expires_at: z.string(), created_at: z.string(),

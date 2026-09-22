@@ -12,7 +12,7 @@ export function CentralizeValue({ scanId, occurrences, linkedValues }: { scanId:
   return <details className="rounded-lg border p-4">
     <summary className="cursor-pointer font-medium text-accent">{t("Centralizar valor")}</summary>
     <p className="mt-3 text-sm text-muted">{t("Crie um Managed Value para atualizar este dado em suas fontes vinculadas. Selecione apenas ocorrências que representam a mesma informação de negócio. A marcação de conferência é independente.")}</p>
-    {!eligible ? <p className="mt-3 text-sm">{t("São necessárias ocorrências em pelo menos dois campos ainda não vinculados. Use Todos para incluir as revisadas ou abra o valor já vinculado abaixo.")}</p> : <form action={previewManagedValue} className="mt-4 space-y-4">
+    {!eligible ? <p className="mt-3 text-sm">{t("Selecione ocorrências pendentes em pelo menos dois campos não gerenciados. Para atualizar um valor vinculado, abra seu Managed Value.")}</p> : <form action={previewManagedValue} className="mt-4 space-y-4">
       <input type="hidden" name="id" value={randomUUID()} />
       <input type="hidden" name="scanId" value={scanId} />
       <label className="block text-sm font-medium">{t("Nome do valor central")} <input name="name" required minLength={2} maxLength={80} placeholder={t("Ex.: Telefone comercial")} className="mt-2 block w-full rounded border p-3" />

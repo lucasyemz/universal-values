@@ -16,11 +16,11 @@ export default async function FactsPreviewPage({ params, searchParams }: { param
   const { error } = await searchParams;
   const base = `/dashboard/sites/${id}/facts`;
   return <main className="ui-page">
-    <SiteContext title={site.display_name} siteName={site.display_name} siteId={id} workspaceId={site.workspace_id} />
+    <SiteContext title={t("Prévia")} siteName={site.display_name} siteId={id} workspaceId={site.workspace_id} />
     <FreshLink href={base}>← Global Facts</FreshLink>
     <PageHeader title={t("Revisar versão {0}", preview.base_version + 1)} eyebrow={site.display_name} description={t("Confira a referência inteira. A confirmação registra uma nova versão, sem modificar o site.")} />
     {error && <Notice tone="danger">{error === "archive" ? t("Não foi possível arquivar. Confira a migration 011 e se a prévia ainda não foi confirmada.") : t("Não foi possível confirmar. Confira se a prévia foi arquivada, expirou ou ficou desatualizada.")}</Notice>}
-    {factFields.map(field => <section className="mb-6" key={field.key}><h2 className="font-semibold">{t(field.label)}</h2><Diff before={before ? factDisplay(before, field.key) : t("Sem referência aprovada")} after={factDisplay(preview.facts, field.key)} /></section>)}
+    {factFields.map(field => <section className="mb-6" key={field.key}><h2 className="font-semibold">{t(field.label)}</h2><Diff before={before ? factDisplay(before, field.key, t("Não informado")) : t("Sem referência aprovada")} after={factDisplay(preview.facts, field.key, t("Não informado"))} /></section>)}
     {preview.archived_at ? <Notice>{t("Prévia arquivada em")} {new Date(preview.archived_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })}  {t("UTC. Mantida para consulta; não pode ser confirmada.")}</Notice> : preview.confirmed_version ? <Notice tone="success">{t("Esta prévia já foi confirmada como versão")} {preview.confirmed_version}. <Link className="underline" href={`${base}/versions/${preview.confirmed_version}`}>{t("Ver versão")}</Link></Notice> : stale ? <Notice tone="warning">{t("Outra versão foi aprovada desde a criação desta prévia. Volte ao cadastro e prepare uma nova revisão.")}</Notice> : expired ? <Notice tone="warning">{t("A prévia expirou. Volte ao cadastro para gerar outra.")}</Notice> : <form action={confirmFacts} className="ui-card space-y-5 p-6">
       <input type="hidden" name="id" value={preview.id} /><input type="hidden" name="siteId" value={id} />
       <p className="text-sm text-muted">{t("Válida até")} {new Date(preview.expires_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })} UTC.</p>

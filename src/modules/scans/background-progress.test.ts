@@ -11,10 +11,10 @@ const id="11111111-1111-4111-8111-111111111111";
 beforeEach(()=>vi.clearAllMocks());
 describe("background progress UI actions",()=>{
   it("only reads progress and health; never advances a field",async()=>{
-    vi.mocked(loadChangeRequest).mockResolvedValue({request:{id,cursor:1,total:2,status:"confirmed",background_paused:false,worker_error:null}} as Awaited<ReturnType<typeof loadChangeRequest>>);
+    vi.mocked(loadChangeRequest).mockResolvedValue({request:{id,cursor:1,total:2,status:"confirmed",results:[{status:"conflict",message:"Changed",sourceKey:"source"}],background_paused:false,worker_error:null}} as Awaited<ReturnType<typeof loadChangeRequest>>);
     const rpc=vi.fn(async()=>({data:new Date().toISOString(),error:null}));
     vi.mocked(requireUser).mockResolvedValue({client:{rpc},user:{id}} as unknown as Awaited<ReturnType<typeof requireUser>>);
-    expect(await getChangeProgress({id})).toMatchObject({ok:true,worker:"online",progress:{cursor:1,total:2}});
+    expect(await getChangeProgress({id})).toMatchObject({ok:true,worker:"online",progress:{cursor:1,total:2,verified:0,issues:1}});
     expect(rpc).toHaveBeenCalledExactlyOnceWith("cms_worker_last_seen",{});
   });
   it("requires confirmation to resume pending work",async()=>{

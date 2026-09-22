@@ -62,7 +62,7 @@ export function AccountMenu({ email, plan, onNavigate }: {
       <div className="border-b px-3 py-3"><p title={email ?? name} className="truncate text-sm font-semibold">{email ?? name}</p><p className="mt-1 text-xs text-muted">{planLabel}</p></div>
       <nav aria-label={t("Configurações da conta")} className="space-y-1 py-2">
         <Link onClick={navigate} href="/dashboard/plan" className="ui-nav-link" aria-current={pathname === "/dashboard/plan" ? "page" : undefined}><ShieldCheck size={18} className="shrink-0" aria-hidden="true" /><span>{t("Plano e consumo")}<span className="block text-xs text-muted">{t("Ver limites e trocar de plano")}</span></span></Link>
-        <Link onClick={navigate} href="/dashboard/settings/integrations" className="ui-nav-link" aria-current={pathname === "/dashboard/settings/integrations" ? "page" : undefined}><Sparkles size={18} className="shrink-0" aria-hidden="true" />{t("Integrações")}</Link>
+        <Link onClick={navigate} href="/dashboard/settings/integrations" className="ui-nav-link" aria-current={pathname === "/dashboard/settings/integrations" || pathname.endsWith("/settings/webflow") ? "page" : undefined}><Sparkles size={18} className="shrink-0" aria-hidden="true" />{t("Integrações")}</Link>
         <LanguageSwitcher />
       </nav>
       <details className="border-t pt-2"><summary className="ui-nav-link cursor-pointer list-none [&::-webkit-details-marker]:hidden"><LogOut size={18} className="shrink-0" aria-hidden="true" />{t("Sair")}</summary><form action={logout} className="space-y-3 px-3 pb-3 pt-2"><p className="text-xs text-muted">{t("Sair desta sessão neste navegador?")}</p><SubmitButton variant="secondary" pendingLabel={t("Saindo…")}>{t("Confirmar saída")}</SubmitButton></form></details>
