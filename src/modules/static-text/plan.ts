@@ -1,3 +1,4 @@
+import { linkReviewSchema, validLinkEdit } from "./link-edit";
 import { findTextMatches, searchOptionsSchema, type SearchOptions } from "../text-search/match";
 import { z } from "zod";
 
@@ -12,11 +13,11 @@ export const contextSchema = z.object({ siteId: z.string().min(1), pageId: z.str
 export type TextNode = z.infer<typeof nodeSchema>;
 export type PageContext = z.infer<typeof contextSchema>;
 export const searchSchema = z.string().min(1).max(200).refine(value => value.trim().length > 0, "Informe um texto para buscar.");
-export const changeSchema = z.object({ id: z.string(), before: z.string().max(10000), after: z.string().max(10000), source: componentSourceSchema.optional() });
+export const changeSchema = z.object({ id: z.string(), before: z.string().max(10000), after: z.string().max(10000), source: componentSourceSchema.optional(), link: linkReviewSchema.optional() }).refine(change => !change.link || validLinkEdit(change.before, change.after, change.link.afterUrl, change.link.convertsPage), "Prévia de link inválida.");
 export const planSchema = z.object({
   id: z.uuid(), context: contextSchema, expiresAt: z.number(), searchOptions: searchOptionsSchema.optional(),
   changes: z.array(changeSchema).min(1).max(100),
-}).refine(plan => new Set(plan.changes.map(change => change.id)).size === plan.changes.length);
+}).refine(plan => plan.changes.every(change => Boolean(change.link) === Boolean(plan.changes[0]?.link)), "Prévia com tipos misturados.").refine(plan => new Set(plan.changes.map(change => change.id)).size === plan.changes.length);
 export type TextPlan = z.infer<typeof planSchema>;
 export type Mention = { key: string; nodeId: string; start: number; end: number; before: string; text: string; after: string; source?: TextNode["source"] };
 

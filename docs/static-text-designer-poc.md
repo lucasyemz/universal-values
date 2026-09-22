@@ -86,3 +86,29 @@ CMS/conditional/property-bound definition branches, code/library components, Ric
 References: https://developers.webflow.com/designer/reference/component-element/setProps (beta), https://developers.webflow.com/designer/reference/get-root-element . Tests use isolated Header/Footer and nested-component fixtures; no real Webflow component was modified during implementation. The user subsequently confirmed the component search worked in the Designer.
 
 Regression diagnosis: the user reported `DOM: unsupported type` and the live Designer showed a `Button Text` property on a nested button inside Navbar. Covered both DOM traversal and nested instance overrides with fixtures, including binding changes before dispatch. Native browser control failed before a fresh live search could run; the user then tested the updated extension and confirmed it worked. No actual Webflow writes were performed by the agent.
+
+## Repeated link inspection
+
+Search options includes **Find page links**, a link inspection mode with no required search text. It groups configured destinations and lists element labels and component paths. The component checkbox includes nested instances; each actual element counts once per placement rather than counting both a property and its consuming element. Static component property forwarding is resolved per instance. CMS trees, unresolved bindings, code/library components and embedded/executable content are excluded.
+
+Native page links are resolved to their publish paths with one page-list read and only the referenced pages' metadata. URL comparison preserves path case, queries and fragments; it does not assume that a custom domain and a staging domain are equivalent. Placeholder and executable URLs are not grouped. This is not a broken-link check: scanning never fetches destination URLs or performs writes. Link changes now use the same persisted preview, explicit confirmation, audit, idempotency and verification flow as text changes. Results remain local to the current extension view. Changing search options invalidates them; page-context changes during scanning abort the result. The scan is limited to 3,000 visited elements.
+
+Validation: unit tests cover native page/DOM equivalence, URL distinctions, deduplication, nested forwarded link props, CMS/script exclusions and a page switch. TypeScript, lint and extension build pass. No real site content was changed; live Designer validation remains pending.
+
+### Link references and optional group editing
+
+Each occurrence shows the rendered button text (including component text bindings), Navigator label and component path. A group shows its current destination and a new-destination field. Selection is by underlying writable target: buttons backed by the same shared field toggle together, and the preview lists all matching buttons while dispatching that field only once.
+
+Supported edits: native URL/page link settings, literal DOM href attributes, and static component link properties (including forwarded and nested properties). The adapter re-resolves only each target's ancestry and binding chain before writing. It checks target identity, destination, preserved link metadata and shared-component instance count. DOM writes change only the href attribute; settings/prop writes retain open-in-new-tab and other metadata. Bound CMS links and unsupported destination types remain non-editable.
+
+New destinations accept http(s), root-relative paths and query/fragment references; executable schemes and credentials are rejected. A page-reference-to-URL change is explicitly identified in the preview. Updating values/selection invalidates the UI preview. Serialized link values and impact identity remain internal to the persisted plan; the extension and dashboard render readable before/after destinations and button labels. No migration is required.
+
+Automated regression coverage includes selected-only writes, duplicate submission, shared nested field deduplication, native page conversion, preserving new-tab/rel settings and DOM attributes, removed/dynamic targets, mismatched preview contents, and audit failure before dispatch. Live writing was not tested against customer content.
+
+### All page destinations
+
+Link inspection defaults to all supported destinations, including those used only once. All / Repeated / Unique filters count destinations, not elements. Switching these local filters requires no additional Designer reads, preserves draft inputs and selections, and invalidates any existing preview. Unique destinations use the same optional editing and confirmation flow as repeated ones.
+
+### Combined link review
+
+A single review action collects edited destinations across every filter. Unchanged groups and deselected targets are excluded. Drafts are owned by the page, and any edit invalidates the existing preview. The combined persisted plan retains the 100-field limit, validation, explicit confirmation, audit, conflict checks and idempotency. Invalid changed destinations block the entire preview instead of being silently skipped.

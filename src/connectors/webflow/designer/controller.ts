@@ -1,3 +1,6 @@
+import { LinkTargets } from "./link-target";
+import { prepareLinksPlan, type LinkDraft } from "../../../modules/static-text/repeated-links";
+import { scanRepeatedLinks } from "./link-scan";
 import type { SearchOptions } from "../../../modules/text-search/match";
 import { DesignerTextPort } from "./adapter";
 import { DesignerDashboardClient } from "./dashboard-client";
@@ -5,6 +8,7 @@ import { applyPlan } from "../../../modules/static-text/apply";
 import { findMentions, preparePlan, type TextPlan } from "../../../modules/static-text/plan";
 
 export class DesignerController {
+  private links = new LinkTargets();
   readonly port = new DesignerTextPort();
   readonly dashboard = new DesignerDashboardClient();
   async identify() {
@@ -18,6 +22,15 @@ export class DesignerController {
     const home = await this.dashboard.home(scan.context.siteId);
     return { scan, home, mentions: findMentions(scan.nodes, term, options) };
   }
+  async searchLinks(includeComponents: boolean) {
+    this.links = new LinkTargets();
+    const scan = await scanRepeatedLinks(includeComponents, this.links);
+    const home = await this.dashboard.home(scan.context.siteId);
+    return {scan, home};
+  }
+  async previewLinks(scan:Awaited<ReturnType<typeof scanRepeatedLinks>>,drafts:Record<string,LinkDraft>){
+    return this.dashboard.preview(prepareLinksPlan(scan.context,scan.groups,drafts),"Links da página");
+  }
   async preview(scan: Awaited<ReturnType<DesignerTextPort["scan"]>>, term: string, replacements: Record<string, string>, options?: SearchOptions) {
     const plan = preparePlan(scan.context, scan.nodes, term, replacements, Date.now(), options);
     return this.dashboard.preview(plan, term);
@@ -26,7 +39,8 @@ export class DesignerController {
     if (!navigator.locks) throw new Error("Este navegador não oferece o bloqueio necessário para aplicar com segurança.");
     await navigator.locks.request("universal-values-designer-write", { ifAvailable: true }, async lock => {
       if (!lock) throw new Error("Outra janela está aplicando alterações. Aguarde.");
-      await applyPlan(plan, confirmed, this.port, this.dashboard.store(plan));
+      const port = plan.changes.every(change=>change.link) ? {context:()=>this.port.context(),read:(id:string)=>this.links.read(id),write:(id:string,value:string)=>this.links.write(id,value)} : this.port;
+      await applyPlan(plan, confirmed, port, this.dashboard.store(plan));
     });
   }
 }

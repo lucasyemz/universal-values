@@ -17,5 +17,5 @@ export function summarizeDesignerChange(input: { plan: unknown; events: unknown;
   const conflict = changes.some(change => change.status === "conflict");
   const reported = changes.some(change => change.status === "reported");
   const status = uncertain ? "Resultado pendente de verificação" : conflict ? "Conflito de conteúdo" : reported ? "Aplicação informada pela extensão · sem leitura registrada" : verified === changes.length ? "Verificada no Designer" : verified > 0 ? "Parcialmente verificada" : events.some(event => event.status === "confirmed") ? "Confirmada · sem resultado verificado" : Date.parse(input.expires_at) <= now ? "Prévia expirada" : "Aguardando confirmação";
-  return { pageName: plan.context.pageName, changes, verified, status, searchDescription: searchOptionsLabel(plan.searchOptions) };
+  return { pageName: plan.context.pageName, changes, verified, status, searchDescription: plan.changes[0]?.link ? "Links da página" : searchOptionsLabel(plan.searchOptions) };
 }
