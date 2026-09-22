@@ -1,6 +1,6 @@
-# CopyReplace
+# ReplaceAll
 
-Fundação do SaaS para descobrir informações repetidas em sites Webflow e gerenciar fontes vinculadas.
+Encontre e atualize textos, imagens e links em sites Webflow, com prévia, validação, confirmação explícita e histórico de alterações. Consulte o [guia da marca](docs/brand-guide.md) para a identidade ReplaceAll.
 
 ## Desenvolvimento
 

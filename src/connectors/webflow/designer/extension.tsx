@@ -96,7 +96,7 @@ function Extension() {
     finally { running.current=false;setScanning(false);setBusy(false); }
   }
   return <main className="extension-shell">
-    <header className="extension-header"><img className="brand-logo" src="./brand/logo-primary.svg" alt="CopyReplace" width="168" height="35" /><div className="header-context"><h1>{t("Buscar e substituir")}</h1><p>{identity ? identity.siteName : t("Abra esta extensão dentro do Webflow Designer.")}</p></div>
+    <header className="extension-header"><img className="brand-logo" src="./brand/logo-primary.svg" alt="ReplaceAll" width="168" height="35" /><div className="header-context"><h1>{t("Buscar e substituir")}</h1><p>{identity ? identity.siteName : t("Abra esta extensão dentro do Webflow Designer.")}</p></div>
       {home && !accessLost && <a className="dashboard-button" href={dashboardUrl+(home.dashboardPath??"/dashboard")} target="_blank" rel="noreferrer">{t("Abrir dashboard ↗")}</a>}
       {accessLost && <button disabled={busy} onClick={reconnect}>{t("Reconectar")}</button>}
       {home && !accessLost && <button className="primary header-scan" type="submit" form="page-search" disabled={busy||(mode==="text"&&!search.trim())}><Search size={17} aria-hidden="true" />{busy?t("Processando…"):t("Executar busca")}</button>}

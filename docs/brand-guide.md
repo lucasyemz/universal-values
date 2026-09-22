@@ -1,8 +1,8 @@
-# CopyReplace — Brand Guide v1
+# ReplaceAll — Brand Guide v2
 
 ## 1. Brand idea
 
-**CopyReplace** is a modern utility brand focused on one clear promise:
+**ReplaceAll** helps people find and update text, images, links, and repeated values in Webflow, with preview, validation, explicit confirmation, and an audit history. Its promise:
 
 > **Find repeated content. Replace it safely.**
 
@@ -19,7 +19,7 @@ The brand should feel:
 
 ## Brand positioning
 
-CopyReplace should communicate:
+ReplaceAll should communicate:
 
 - **control**
 - **consistency**
@@ -38,7 +38,7 @@ A good emotional target is:
 
 Use the **clarity and maturity** of brands like Coinbase as inspiration, but **do not imitate their identity**.
 
-The CopyReplace brand should remain its own system.
+The ReplaceAll brand should remain its own system.
 
 ## Visual principles
 
@@ -61,14 +61,14 @@ The CopyReplace brand should remain its own system.
 
 The current icon works because it combines:
 
-- a **C** for **Copy**
+- a **circular replacement symbol** that works across content types
 - a **circular replacement / refresh motion**
 - a clear idea of **content being replaced**
 - a modern, simple silhouette
 
 It should be treated as:
 
-> **A circular “C” replacement mark**
+> **A circular replacement mark**
 
 This is the primary symbol of the brand.
 
@@ -78,12 +78,12 @@ This is the primary symbol of the brand.
 
 ## Primary mark
 
-Use the circular **C** icon as the main brand symbol.
+Use the circular replacement icon as the main brand symbol.
 
 ### Meaning
-- **C** = Copy / Content
+- **circular form** = continuity and consistency
 - **circular arrows** = replace / update / sync
-- together = **CopyReplace**
+- together = **ReplaceAll**
 
 ---
 
@@ -91,7 +91,7 @@ Use the circular **C** icon as the main brand symbol.
 
 Use:
 
-**[Icon] + CopyReplace wordmark**
+**[Icon] + ReplaceAll wordmark**
 
 This is the default brand signature.
 
@@ -138,7 +138,7 @@ The brand should stay centered around **blue + white + dark text**.
 
 ## Primary brand colors
 
-### Copy Blue
+### Replace Blue
 **HEX:** `#1557FF`
 **Use for:**
 - primary brand color
@@ -328,20 +328,20 @@ Good because it feels:
 
 # 10. Wordmark guidance
 
-Use **CopyReplace** as a single word.
+Use **ReplaceAll** as a single word.
 
 Preferred casing:
 
-> **CopyReplace**
+> **ReplaceAll**
 
 Avoid:
 
-- copyreplace
-- Copy Replace
-- COPYREPLACE
-- Copyreplace
+- replaceall
+- Replace All
+- REPLACEALL
+- Replaceall
 
-Use “CopyReplace” consistently in:
+Use “ReplaceAll” consistently in:
 - landing page
 - app
 - docs
@@ -388,7 +388,7 @@ The product is strongest when it sounds **useful and trustworthy**.
 
 ## Supporting lines
 - Change repeated website content from one place
-- Stop hunting through your Webflow site for the same text
+- Find the text, images, and links that need updating across your Webflow site
 - Review every occurrence before you apply changes
 - Update once. Keep it consistent
 
@@ -421,7 +421,7 @@ Use a minimum clear space equal to **25% of the icon width** around the logo.
 
 No other elements should crowd the mark.
 
-For the horizontal lockup, keep at least the height of the **C icon inner opening** as spacing around the full lockup.
+For the horizontal lockup, keep at least the height of the **symbol’s inner opening** as spacing around the full lockup.
 
 ---
 
@@ -443,7 +443,7 @@ If the logo becomes too small, use the icon only.
 
 ## Buttons
 Primary button:
-- background: Copy Blue `#1557FF`
+- background: Replace Blue `#1557FF`
 - text: white
 - hover: Deep Blue `#0D47D9`
 
@@ -453,12 +453,12 @@ Secondary button:
 - border: Border Gray `#D9E0EA`
 
 Tertiary / text button:
-- text: Copy Blue `#1557FF`
+- text: Replace Blue `#1557FF`
 
 ---
 
 ## Links
-Use Copy Blue.
+Use Replace Blue.
 
 Hover:
 - slightly darker blue
@@ -566,14 +566,14 @@ The brand should feel software-native.
 # 21. Example brand stack
 
 ## Primary logo combo
-- icon: Copy Blue
+- icon: Replace Blue
 - wordmark: Ink
 - background: White
 
 ## Reverse combo
 - icon: White
 - wordmark: White
-- background: Copy Blue
+- background: Replace Blue
 
 ## Neutral combo
 - icon: Ink
@@ -604,7 +604,7 @@ Error            #DC2626
 
 # 23. Brand summary
 
-CopyReplace should feel like:
+ReplaceAll should feel like:
 
 > **a clean, trustworthy, modern software brand for safe content replacement**
 
@@ -637,6 +637,19 @@ If you want the easiest first implementation:
 - **Geist** for product and marketing
 
 ### And this lockup:
-- Blue circular CopyReplace icon
+- Blue circular ReplaceAll icon
 - Dark wordmark
 - White background
+
+## Rebrand implementation — September 2026
+
+- Written name and wordmark: **ReplaceAll**, one word, capital R and A.
+- The supplied CopyReplace brand ZIP is historical visual reference. Its old naming and presentation instructions do not govern the new identity.
+- Retain the circular replacement artwork, blue palette, and Geist typography. The symbol now represents replacement across content types, without a letter-specific meaning.
+- Wordmarks in `public/brand/logo-*.svg` use outlined Geist Semibold glyphs, so the logo renders without a font dependency. The landing logo is the same primary artwork.
+- Positioning: **Text, images, and links. Find what needs to change. Replace it safely.**
+- Portuguese: **Textos, imagens e links. Encontre o que precisa mudar. Substitua com segurança.**
+- “All” describes the broader content scope, not permission to change everything automatically. Describe supported fields and elements accurately. Static editing requires the Webflow Designer extension.
+- Keep preview, validation, explicit confirmation, audit history, and separate publishing visible in product messaging.
+- Internal `copyreplace` storage keys, cookies, events, and placeholder origins remain compatible with existing sessions, preferences, and drafts. They are not public branding.
+- Historical implementation documents retain their original titles. External Webflow app listings and OAuth display names require a separate account-side update; local branding does not change them.

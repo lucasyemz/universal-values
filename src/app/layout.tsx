@@ -18,10 +18,10 @@ const geist = localFont({
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getText();
   return {
-  title: { default: "CopyReplace", template: "%s · CopyReplace" },
-  applicationName: "CopyReplace",
+  title: { default: "ReplaceAll", template: "%s · ReplaceAll" },
+  applicationName: "ReplaceAll",
   icons: { icon: { url: "/brand/icon-blue.svg", type: "image/svg+xml" } },
-  description: t("Encontre conteúdo repetido no Webflow. Revise cada ocorrência e substitua com segurança."),
+  description: t("Encontre e atualize textos, imagens e links no Webflow. Revise cada ocorrência e substitua com segurança."),
 };
 }
 

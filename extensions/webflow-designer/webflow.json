@@ -1,5 +1,5 @@
 {
-  "name": "CopyReplace - Static Text Lab",
+  "name": "ReplaceAll",
   "apiVersion": "2",
   "size": "large",
   "publicDir": "dist"

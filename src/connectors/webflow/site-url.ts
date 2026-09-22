@@ -1,6 +1,6 @@
 import type { WebflowSite } from "./schemas";
 
-// Use provider metadata, never the CopyReplace slug or the display name.
+// Use provider metadata, never the ReplaceAll slug or the display name.
 export function webflowSiteUrl(site: Pick<WebflowSite, "shortName" | "customDomains">): string | null {
   for (const domain of site.customDomains ?? []) {
     const candidate = domain.url.trim();

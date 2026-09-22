@@ -17,7 +17,7 @@ export class DesignerController {
   readonly port = new DesignerTextPort();
   readonly dashboard = new DesignerDashboardClient();
   async identify() {
-    if (typeof webflow === "undefined" || window.self === window.top) throw new Error("Abra o CopyReplace no Webflow Designer → Apps → Launch development app.");
+    if (typeof webflow === "undefined" || window.self === window.top) throw new Error("Abra o ReplaceAll no Webflow Designer → Apps → Launch development app.");
     const site = await webflow.getSiteInfo();
     const page = await webflow.getCurrentPage();
     return { siteId: site.siteId, siteName: site.siteName, pageName: await page.getName() };

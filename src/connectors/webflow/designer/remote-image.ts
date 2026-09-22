@@ -20,7 +20,7 @@ export class RemoteImages{
    while(true){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;if(size>MAX_BYTES)throw new Error("Use uma imagem de até 4 MB.");chunks.push(new Uint8Array(chunk.value));}
   }finally{await reader.cancel();}
   if(!size)throw new Error("A URL deve retornar um arquivo de imagem válido.");
-  const file=new File(chunks,"copyreplace."+formats[mime],{type:mime});
+  const file=new File(chunks,"replaceall."+formats[mime],{type:mime});
   const hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",await file.arrayBuffer()))).map(n=>n.toString(16).padStart(2,"0")).join("");
   const urlHash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(url)))).map(n=>n.toString(16).padStart(2,"0")).join("");
   const descriptor=imageAssetSchema.parse({id:"remote:"+hash+":"+urlHash,url,name:file.name});
