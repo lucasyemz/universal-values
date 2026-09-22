@@ -29,7 +29,7 @@ function urlKey(value: string) {
     return relative ? `relative:${raw}` : `url:${url.href}`;
   } catch { return null; }
 }
-export function groupLinks(occurrences: LinkOccurrence[], pages: ReadonlyMap<string, LinkPage> = new Map()) {
+export function groupLinks(occurrences: LinkOccurrence[], pages: ReadonlyMap<string, LinkPage> = new Map(), sections:ReadonlyMap<string,string>=new Map()) {
   const groups = new Map<string, {key: string; destination: string; input: string | null; occurrences: LinkOccurrence[]}>();
   for (const occurrence of occurrences) {
     const value = occurrence.destination;
@@ -42,7 +42,7 @@ export function groupLinks(occurrences: LinkOccurrence[], pages: ReadonlyMap<str
         label = page ? `${page.name}${page.path ? ` · ${page.path}` : ""}` : "Página interna";
         break;
       }
-      case "pageSection": key = `section:${JSON.stringify(value.to.fullElementId)}`; label = "Seção da página"; break;
+      case "pageSection": key = `section:${JSON.stringify(value.to.fullElementId)}`; label = sections.get(JSON.stringify(value.to.fullElementId)) ?? "Seção da página · destino não identificado"; break;
       case "email": label = `mailto:${value.to}${value.emailSubject ? `?subject=${encodeURIComponent(value.emailSubject)}` : ""}`; key = urlKey(label); break;
       case "phone": label = `tel:${value.to}`; key = urlKey(label); break;
       case "file": key = `file:${value.to.assetId}`; label = "Arquivo vinculado"; break;
@@ -77,7 +77,7 @@ export function prepareLinkPlan(context:PageContext,group:LinkDestinationGroup,s
   const before=first.snapshot!,after=replaceLinkSnapshot(before,url);
   if(before===after)return [];
   const value=linkSnapshotSchema.parse(JSON.parse(before)).value;
-  return [{id,before,after,source:first.source,link:{beforeLabel:group.destination,afterUrl:url,buttons:buttons.map(o=>`${o.text||o.label} · ${o.location}`.slice(0,500)),convertsPage:typeof value!=="string"&&value.mode==="page"}}];
+  return [{id,before,after,source:first.source,link:{beforeLabel:group.destination,afterUrl:url,buttons:buttons.map(o=>`${o.text||o.label} · ${o.location}`.slice(0,500)),convertsPage:typeof value!=="string"&&["page","pageSection"].includes(value.mode)}}];
  });
  if(!changes.length)throw new Error("Nenhuma alteração selecionada.");
  return planSchema.parse({id:crypto.randomUUID(),context,expiresAt:Date.now()+15*60_000,changes});

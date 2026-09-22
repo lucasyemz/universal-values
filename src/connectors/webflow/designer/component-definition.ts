@@ -1,3 +1,4 @@
+import {elementLocation,shortLocation,type LocationPart} from "./element-location";
 /// <reference types="@webflow/designer-extension-typings" />
 import { nodeSchema, type TextNode } from "../../../modules/static-text/plan";
 import { editableComponentText } from "./component-text";
@@ -74,7 +75,7 @@ export class ComponentDefinitionText {
     };
     const nodes: TextNode[] = [];
     const seen = new Set<string>();
-    const walk = async (element: AnyElement, parents: string[]): Promise<void> => {
+    const walk = async (element: AnyElement, parents: string[], labels:LocationPart[]=[]): Promise<void> => {
       if (seen.has(key(element))) return;
       seen.add(key(element));
       if (++this.visited > 2000) throw new Error("Componentes acima do limite de 2.000 elementos. Refine a busca.");
@@ -115,7 +116,7 @@ export class ComponentDefinitionText {
         const text = await element.getText();
         if (typeof text !== "string" || text.length > 10000) return;
         const id = JSON.stringify(["component-definition", componentId, key(element)]);
-        nodes.push(nodeSchema.parse({ id, text, source: { kind: "component-definition", componentId, componentName, instanceCount } }));
+        nodes.push(nodeSchema.parse({ id, text, location:shortLocation(labels), source: { kind: "component-definition", componentId, componentName, instanceCount } }));
         this.targets.set(id, { resolve: async () => {
           const current = await currentComponent();
           if (!current) return null;
@@ -123,7 +124,8 @@ export class ComponentDefinitionText {
           return leaf?.type === "String" && await eligible(leaf, componentId) ? leaf : null;
         } });
       } else if (element.children) {
-        for (const child of await element.getChildren()) await walk(child, path);
+        const label=await elementLocation(element);
+        for (const child of await element.getChildren()) await walk(child, path,[...labels,label]);
       }
     };
     const root = await component.getRootElement();

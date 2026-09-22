@@ -112,3 +112,13 @@ Link inspection defaults to all supported destinations, including those used onl
 ### Combined link review
 
 A single review action collects edited destinations across every filter. Unchanged groups and deselected targets are excluded. Drafts are owned by the page, and any edit invalidates the existing preview. The combined persisted plan retains the 100-field limit, validation, explicit confirmation, audit, conflict checks and idempotency. Invalid changed destinations block the entire preview instead of being silently skipped.
+
+### Reference-based extension workspace
+
+The light extension workspace now uses a scan toolbar, live summary, left search/replacement controls, center result cards and a right inspector. Selecting a card changes only the inspector; drafts remain page-owned. Text edits automatically select the edited mention. Link review continues to include all changed destinations across filters. The current-page label describes the last scan context rather than claiming live Designer navigation tracking. Unsupported entire-site/CMS filters from the reference are not shown.
+
+Verified with a separate localhost fixture (no customer data or network writes): link scan, selection switching, retained edits and one combined preview containing three fields from two destinations. TypeScript, lint and 106 focused regression tests passed. Real Designer writes were not used for visual testing.
+
+### Continue reviewing a static scan
+
+After a fully verified application the extension retains the current scan and partitions occurrences into Pending / Reviewed / All. Counts represent occurrences (including shared link placements). Reviewed occurrences show a read-only before/after; pending groups remain editable. Link targets already applied are removed from pending selections. Text nodes are updated from the verified plan and remaining original matches are rebased after length changes, preserving other drafts without treating replacement text as a new task. A fresh scan starts a new review session; this view is in memory, with operations still audited in the dashboard. Uncertain or conflicting applications retain the existing plan and are not promoted to reviewed.

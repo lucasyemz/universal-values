@@ -9,9 +9,11 @@ export const gatewaySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("events"), webflowSiteId: z.string().regex(/^[a-f0-9]{24}$/i), id: z.uuid() }),
   z.object({ action: z.literal("event"), webflowSiteId: z.string().regex(/^[a-f0-9]{24}$/i), id: z.uuid(), event: auditSchema }),
 ]);
+const dashboardPathSchema = z.string().regex(/^\/dashboard\/[a-z0-9-]+\/sites\/[a-z0-9-]+\/(overview|changes(?:\/[1-9][0-9]*|\?filter=static)?)$/);
 export const homeSchema = z.object({
   siteId: z.uuid(), siteName: z.string(), workspaceId: z.uuid(), webflowSiteId: z.string(), expiresAt: z.string(),
-  recent: z.array(z.object({ id: z.uuid(), page_name: z.string(), created_at: z.string(), total: z.number(), applied: z.number() })),
+  dashboardPath: dashboardPathSchema.optional(), changesPath: dashboardPathSchema.optional(),
+  recent: z.array(z.object({ id: z.uuid(), href: dashboardPathSchema.optional(), page_name: z.string(), created_at: z.string(), total: z.number(), applied: z.number() })),
 });
 export type DesignerHome = z.infer<typeof homeSchema>;
 export type GatewayInput = z.infer<typeof gatewaySchema>;

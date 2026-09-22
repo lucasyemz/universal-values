@@ -201,3 +201,58 @@ describe('reviewed name and slug snapshots',()=>{
     expect((await db.query("select count(*)::int as count from public.cms_change_audit where request_id=$1 and action='slugs_previewed'",[change])).rows).toEqual([{count:1}]);
   });
 });
+
+describe('administrator usage visibility',()=>{
+  it('meters admin confirmations once without spending Free quota',async()=>{
+    const f=await fixture(true);
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
+    await rpc(f.actor,'select public.cancel_cms_scan($1)',[f.scan]);
+    const change=await f.change(75);
+    await rpc(f.actor,'select public.confirm_cms_changes($1)',[change]);
+    await rpc(f.actor,'select public.confirm_cms_changes($1)',[change]);
+    expect(await f.usage()).toMatchObject({scans:1,fields:75});
+    expect((await db.query('select count(*)::int as n from app_private.quota_events where actor_id=$1',[f.actor])).rows[0]).toEqual({n:0});
+    expect((await db.query('select previews from app_private.admin_usage where user_id=$1',[f.actor])).rows[0]).toEqual({previews:3});
+  });
+  it('restricts global capacity to administrators and protects private counters',async()=>{
+    const free=await fixture(),admin=await fixture(true);
+    expect(await free.usage()).not.toHaveProperty('capacity');
+    expect(await admin.usage()).toHaveProperty('capacity');
+    expect(await admin.usage()).toHaveProperty('trackingSince');
+    await expect(rpc(free.actor,"select app_private.record_admin_usage($1,'scan',1)",[free.actor])).rejects.toThrow('permission denied');
+    await expect(rpc(admin.actor,'select public.account_plan_usage_commercial()')).rejects.toThrow('permission denied');
+  });
+  it('keeps Free limits independent after a plan change and scopes usage to the actor',async()=>{
+    const f=await fixture(true), other=await fixture(true);
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
+    await rpc(f.actor,'select public.cancel_cms_scan($1)',[f.scan]);
+    expect((await other.usage()).scans).toBe(0);
+    await rpc(f.actor,"select public.select_account_plan($1,'free','admin')",[randomUUID()]);
+    expect(await f.usage()).toMatchObject({plan:'free',scans:0});
+    expect(await f.usage()).not.toHaveProperty('capacity');
+    const next=await f.previewScan();
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[next]);
+    await rpc(f.actor,'select public.cancel_cms_scan($1)',[next]);
+    await rpc(f.actor,"select public.select_account_plan($1,'admin','free')",[randomUUID()]);
+    expect(await f.usage()).toMatchObject({plan:'admin',scans:2});
+  });
+  it('rolls the minute counter without discarding monthly reads',async()=>{
+    const f=await fixture(true);
+    await db.query("select app_private.record_admin_usage($1,'reads')",[f.actor]);
+    await db.query("update app_private.admin_usage set minute=now()-interval '2 minutes',requests=20 where user_id=$1",[f.actor]);
+    await db.query('select app_private.consume_request($1)',[f.actor]);
+    expect(await f.usage()).toMatchObject({requests:1,reads:1});
+  });
+  it('starts the new month at zero without losing historical measurements',async()=>{
+    const f=await fixture(true);
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
+    await rpc(f.actor,'select public.cancel_cms_scan($1)',[f.scan]);
+    await db.query("update app_private.admin_usage set month=month-interval '1 month' where user_id=$1",[f.actor]);
+    expect((await f.usage()).scans).toBe(0);
+    const next=await f.previewScan();
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[next]);
+    expect((await f.usage()).scans).toBe(1);
+    expect((await db.query('select count(*)::int as n from app_private.admin_usage where user_id=$1',[f.actor])).rows[0]).toEqual({n:2});
+  });
+});

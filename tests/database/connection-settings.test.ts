@@ -68,3 +68,17 @@ it('blocks revocation during a confirmed CMS operation, keeping its credentials 
  await expect(rpc(f.actor,'select public.revoke_webflow_access($1,$2,$3)',[randomUUID(),f.workspace,[f.connection]])).rejects.toThrow('Site operation in progress');
  expect((await db.query('select connection_id from public.webflow_credentials where connection_id=$1',[f.connection])).rows).toHaveLength(1);
 });
+it('returns scoped Designer URLs with persistent change numbers and rejects another site',async()=>{
+ const f=await fixture(),session=randomUUID(),hash='d'.repeat(64),change=randomUUID();
+ await rpc(f.actor,'select public.authorize_designer_session($1,$2,$3)',[session,f.site,hash]);
+ await db.query("insert into public.designer_changes(id,site_id,actor_id,session_id,plan,search_text) values($1,$2,$3,$4,$5::jsonb,'demo')",[change,f.site,f.actor,session,JSON.stringify({context:{pageName:'Home'},changes:[{id:'node',before:'a',after:'b'}]})]);
+ const namespace=await db.query<{account:string;site:string}>("select a.slug account,s.slug site from public.sites s join public.account_routes a on a.user_id=s.account_id where s.id=$1",[f.site]);
+ const base=`/dashboard/${namespace.rows[0]!.account}/sites/${namespace.rows[0]!.site}`;
+ const load=async(site='c'.repeat(24))=>(await db.query<{data:{dashboardPath:string;changesPath:string;recent:{href:string}[]}}>("select public.designer_gateway($1,$2,'home','{}') data",[hash,site])).rows[0]!.data;
+ const data=await load();
+ expect(data.dashboardPath).toBe(base+'/overview');expect(data.changesPath).toBe(base+'/changes?filter=static');
+ expect(data.recent[0]?.href).toBe(base+'/changes/1');expect((await load()).recent).toEqual(data.recent);
+ await expect(load('e'.repeat(24))).rejects.toThrow('Site unavailable');
+ await db.query('update public.designer_sessions set revoked_at=now() where id=$1',[session]);
+ await expect(load()).rejects.toThrow('Session unavailable');
+});

@@ -178,3 +178,21 @@ it("reviews changed groups together, excludes unchanged groups and rejects inval
  drafts[firstGroup.key]!.selected=[];
  expect(()=>prepareLinksPlan(scan.context,scan.groups,drafts)).toThrow("Nenhuma alteração");
 });
+it('identifies a section destination and converts its link only through a confirmed plan',async()=>{
+ const f=fixture(),section=f.node('Works section');section.type='Section';
+ const settings={link:{mode:'pageSection',to:{fullElementId:section.id},openInNewTab:false}};
+ f.a.getSettings=async()=>settings;
+ f.a.setSettings=vi.fn(async next=>{Object.assign(settings,next);return null;});
+ f.root.getChildren=async()=>[f.a,section];
+ const targets=new LinkTargets(),scan=await scanRepeatedLinks(false,targets),group=scan.groups[0]!;
+ expect(group.destination).toBe('Home → Works section');
+ expect(group.occurrences[0]?.targetId).toBeTruthy();
+ const plan=prepareLinkPlan(scan.context,group,[group.occurrences[0]!.targetId!],'/work');
+ expect(plan.changes[0]?.link).toMatchObject({beforeLabel:'Home → Works section',afterUrl:'/work',convertsPage:true});
+ expect(f.a.setSettings).not.toHaveBeenCalled();
+ const events:AuditEvent[]=[],store={load:()=>events,append:(event:AuditEvent)=>{events.push(event);}};
+ const port={context:()=>new DesignerTextPort().context(),read:(id:string)=>targets.read(id),write:(id:string,text:string)=>targets.write(id,text)};
+ await applyPlan(plan,true,port,store,async()=>{});
+ expect(f.a.setSettings).toHaveBeenCalledExactlyOnceWith({link:{mode:'url',to:'/work',openInNewTab:false}});
+ expect(events.at(-1)?.status).toBe('applied');
+});

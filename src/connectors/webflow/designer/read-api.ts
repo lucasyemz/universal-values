@@ -16,3 +16,12 @@ export async function designerRead<T>(operation: string, read: () => Promise<T>)
 export function isMissingPage(error: unknown) {
   return error instanceof DesignerReadError && /\bMissing page\b/i.test(error.detail);
 }
+
+// A read may stop responding in the Designer bridge. Bound the UI wait;
+// never retry automatically and never use this helper for writes.
+export async function boundedDesignerRead<T>(read:()=>Promise<T>,timeoutMs=90000):Promise<T>{
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{return await Promise.race([read(),new Promise<never>((_,reject)=>{
+  timer=setTimeout(()=>reject(new Error("O Designer demorou demais para responder. Reabra a extensão com a página aberta e tente novamente. Nenhuma alteração foi aplicada.")),timeoutMs);
+ })]);}finally{if(timer!==undefined)clearTimeout(timer);}
+}

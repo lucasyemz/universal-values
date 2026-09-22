@@ -16,7 +16,7 @@ export function LinkGroup({group,busy,draft,onEdit}:{group:LinkDestinationGroup;
   </li>)}</ul>
   {group.occurrences.some(o=>o.targetId)&&<>
    <p className="muted">{t("Botões que usam o mesmo campo de link são selecionados juntos.")}</p>
-   <label>{t("Novo destino")}<input value={url} disabled={busy} maxLength={2000} placeholder="https://example.com/page" onChange={event=>{onEdit({...draft,url:event.target.value});}} /></label>
+   <label>{t("Novo destino")}<input value={url} disabled={busy||!draft.selected.length} maxLength={2000} placeholder="https://example.com/page" onChange={event=>{onEdit({...draft,url:event.target.value});}} /></label>
   </>}
  </article>;
 }

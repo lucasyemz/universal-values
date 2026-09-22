@@ -55,7 +55,7 @@ export async function siteChangesPage(id: string, page: number, filter: string) 
   for (const row of designer?.data ?? []) {
     const summary = summarizeDesignerChange(row);
     const attention = summary.changes.some(c => ["conflict", "uncertain", "dispatching", "reported"].includes(c.status ?? ""));
-    rows.push({ id: row.id, source: "static", title: summary.changes[0]?.link ? "Edição de links" : "Edição de texto", target: summary.pageName || "Página estática", status: attention ? "uncertain" : summary.verified === summary.changes.length ? "applied" : "draft", label: summary.status, verified: summary.verified, total: summary.changes.length, createdAt: row.created_at, href: `/dashboard/sites/${id}/changes/${row.id}`, attention });
+    rows.push({ id: row.id, source: "static", title: summary.changes[0]?.image?"Edição de imagens":summary.changes[0]?.link ? "Edição de links" : "Edição de texto", target: summary.pageName || "Página estática", status: attention ? "uncertain" : summary.verified === summary.changes.length ? "applied" : "draft", label: summary.status, verified: summary.verified, total: summary.changes.length, createdAt: row.created_at, href: `/dashboard/sites/${id}/changes/${row.id}`, attention });
   }
   const sorted = rows.filter(row => filter !== "attention" || row.attention).sort((a,b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
   const visible = sorted.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);

@@ -51,3 +51,29 @@ A migration 017 adiciona `/dashboard/plan`, acessível na barra lateral perto do
 A escolha fica em `app_private.plan_selection`, no banco, e vale para todas as sessões/dispositivos até outra troca. `is_admin` avalia a habilitação administrativa e o plano escolhido; selecionar Free não remove a habilitação para voltar. A RPC valida autenticação, elegibilidade, plano anterior e idempotência; cada confirmação é auditada em `app_private.plan_changes`. O formulário exige revisão e confirmação explícita. Prévia desatualizada é rejeitada; repetição de uma confirmação antiga não desfaz uma escolha posterior.
 
 A troca não limpa contadores. Consumo administrativo não é contabilizado nas cotas Free; a UI informa essa distinção. Sites e operações ativas são totais atuais. A mudança para Free exige finalizar/cancelar operações ativas para não interromper trabalho em andamento. Sites e histórico existentes permanecem mesmo acima do novo limite, mas novas operações seguem as cotas. Revogar a habilitação administrativa prevalece sobre qualquer seleção salva.
+
+## Administrator usage and external allowances
+
+Migration `20260922000200_admin_usage_visibility.sql` meters Administrator scans,
+confirmed CMS fields (including additional slug writes), preparation requests and
+integration credential accesses separately from Free quotas. Reservations are
+idempotent and transactional. Failed transactions do not increment counters;
+confirmed reservations remain counted after cancellation. Monthly UTC buckets
+retain history. Admin requests are counted per minute, without commercial limits.
+The plan page combines that month's Free and Admin usage for an administrator;
+switching back to Free continues to show/enforce only the original Free counters.
+Earlier Administrator activity was not metered and is explicitly excluded; the
+page shows when tracking started, rather than backfilling guessed usage.
+
+Global capacity is available only in the active Administrator plan. It reflects
+exactly the existing Free admission/reservation guards and the current measured
+size of public/app_private tables and indexes. It is not Supabase billing usage.
+
+External quotas are separate. A manual Webflow check performs one authenticated
+GET for a site the user can access, reads only validated rate-limit headers, and
+shows the remaining requests and observation time. No retry, polling, body logging
+or token exposure. A 429 may report a genuine zero; missing/invalid headers remain
+unavailable. It is a point-in-time minute allowance, not a monthly balance.
+The current Supabase app credentials and Gemini generation key do not provide
+organization/project billing balances; the UI links to the official usage pages
+instead of presenting estimated or hardcoded Free-tier allowances as real quotas.

@@ -1,3 +1,4 @@
+import {elementLocation} from "./element-location";
 /// <reference types="@webflow/designer-extension-typings" />
 import { LinkTargets, instanceLinkProps, elementLinkTarget, linkElementAllowed, readButtonText } from "./link-target";
 import type {TextNode} from "../../../modules/static-text/plan";
@@ -9,10 +10,12 @@ import { groupLinks, parseLinkDestination, type LinkOccurrence, type LinkPage } 
 export async function scanRepeatedLinks(includeComponents: boolean, targets?: LinkTargets) {
   const port = new DesignerTextPort(), context = await port.context();
   const occurrences: LinkOccurrence[] = [];
+  const elements=new Map<string,AnyElement>();
   let visited = 0, skipped = 0;
   const walk = async (element: AnyElement, path: string[], location: string[], props: Awaited<ReturnType<typeof instanceLinkProps>>, definitions: Set<string>, source?: TextNode["source"]): Promise<void> => {
     if (++visited > 3000) throw new Error("Página acima do limite de 3.000 elementos para links.");
     const elementKey = JSON.stringify(element.id);
+    elements.set(elementKey,element);
     if (path.includes(elementKey)) {skipped++; return;}
     const currentPath = [...path, elementKey];
     if (element.type === "ComponentInstance") {
@@ -44,6 +47,16 @@ export async function scanRepeatedLinks(includeComponents: boolean, targets?: Li
   if (pageIds.size) for (const page of await webflow.getAllPagesAndFolders()) {
     if (page.type === "Page" && pageIds.has(page.id)) pages.set(page.id, {name: await page.getName(), path: await page.getPublishPath()});
   }
+  const sections=new Map<string,string>();
+  for(const occurrence of occurrences){
+    if(occurrence.destination.mode!=="pageSection")continue;
+    const id=JSON.stringify(occurrence.destination.to.fullElementId);
+    if(sections.has(id))continue;
+    const target=elements.get(id);
+    const label=target?(await elementLocation(target)).label:"";
+    const componentName=occurrences.find(item=>item.destination.mode==="pageSection"&&JSON.stringify(item.destination.to.fullElementId)===id&&item.source?.componentName)?.source?.componentName;
+    sections.set(id,label?`${context.pageName} → ${label}`:componentName??`${context.pageName} · Seção não identificada`);
+  }
   if (JSON.stringify(await port.context()) !== JSON.stringify(context)) throw new Error("A página mudou durante a busca. Tente novamente.");
-  return {context, groups: groupLinks(occurrences, pages), total: occurrences.length, skipped};
+  return {context, groups: groupLinks(occurrences, pages,sections), total: occurrences.length, skipped};
 }

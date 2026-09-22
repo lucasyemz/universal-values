@@ -40,3 +40,9 @@ export function internalResourcePath(kind:ResourceKind,id:string,siteId?:string)
     case "fact-previews":return `/dashboard/sites/${siteId}/facts/preview/${id}`;
   }
 }
+
+// The Designer receives a canonical site route from its authenticated session.
+export function newScanFromSitePath(path?:string){
+ const match=path?.match(/^(\/dashboard\/[a-z0-9-]+\/sites\/[a-z0-9-]+)\/overview$/);
+ return match?`${match[1]}/scans/new`:null;
+}

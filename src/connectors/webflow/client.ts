@@ -1,3 +1,4 @@
+import { parseWebflowRateLimit } from "./rate-limit";
 import { z } from "zod";
 import type { WebflowConfig } from "./config";
 import { collectionDetailsSchema, collectionsSchema, itemsSchema, sitesSchema, tokenSchema, webflowIdSchema } from "./schemas";
@@ -55,6 +56,15 @@ export class WebflowReader {
       throw new WebflowError("unavailable");
     }
     return checkedJson(response, schema);
+  }
+
+  async rateLimit(siteId: string) {
+    const response = await this.fetcher("https://api.webflow.com/v2/sites/" + webflowIdSchema.parse(siteId), {
+      method: "GET", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15000),
+      headers: { Authorization: "Bearer " + this.token, Accept: "application/json" },
+    });
+    if (!response.ok && response.status !== 429) throw new WebflowError("unavailable");
+    return parseWebflowRateLimit(response.headers);
   }
 
   async sites() { return (await this.get("/sites", sitesSchema)).sites; }

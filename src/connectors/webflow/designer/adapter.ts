@@ -1,3 +1,4 @@
+import {elementLocation,shortLocation,type LocationPart} from "./element-location";
 /// <reference types="@webflow/designer-extension-typings" />
 import { contextSchema, nodeSchema, type PageContext, type TextNode } from "../../../modules/static-text/plan";
 import type { TextPort } from "../../../modules/static-text/apply";
@@ -68,7 +69,7 @@ export class DesignerTextPort implements TextPort {
     let skipped = 0;
     let visited = 0;
     const seen = new Set<string>();
-    const walk = async (element: AnyElement, parents: string[]): Promise<void> => {
+    const walk = async (element: AnyElement, parents: string[], labels: LocationPart[] = []): Promise<void> => {
       if (seen.has(key(element))) return;
       seen.add(key(element));
       if (++visited > 2000) throw new Error("Página acima do limite de 2.000 elementos deste teste.");
@@ -90,11 +91,12 @@ export class DesignerTextPort implements TextPort {
       if (element.type === "String") {
         const text = await designerRead("String.getText", () => element.getText());
         if (typeof text !== "string" || text.length > 10000) { skipped++; return; }
-        nodes.push(nodeSchema.parse({ id: key(element), text }));
+        nodes.push(nodeSchema.parse({ id: key(element), text, location: shortLocation(labels) }));
         this.elements.set(key(element), element);
         this.paths.set(key(element), [...parents, key(element)]);
       } else if (element.children) {
-        for (const child of await designerRead(`${element.type}.getChildren`, () => element.getChildren())) await walk(child, [...parents, key(element)]);
+        const label=await elementLocation(element);
+        for (const child of await designerRead(`${element.type}.getChildren`, () => element.getChildren())) await walk(child, [...parents, key(element)], [...labels,label]);
       }
     };
     const root = await designerRead("getRootElement", () => webflow.getRootElement());

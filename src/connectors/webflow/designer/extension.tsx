@@ -1,45 +1,63 @@
+import {newScanFromSitePath} from "../../../modules/routes/resources";
+import {useSearchTabState,type SearchMode} from "./use-search-tab-state";
+import {ImageGroupEditor} from "./image-group-editor";
+import {DesignerImagePreview} from "@/components/designer-image-preview";
+import {changedImageCount,continueImageScan,reviewedImages,type ImageDraft} from "../../../modules/static-text/image-plan";
+import {ImageResults} from "./image-results";
+import {selectedTextEditor,toggleTextSelection,continueTextScan,continueLinkScan,editSelectedMentions,reviewedOccurrences,mergeReviewed,type ReviewedOccurrence} from "../../../modules/static-text/continue-scan";
+import { ValuePreview } from "./value-preview";
+import { TriangleAlert, CheckCircle2, Search, ArrowLeft, FileText, Link2, ImageIcon, Database, ArrowUpRight, History, Eye } from "lucide-react";
 import { filterLinkGroups, linkGroupCounts, changedLinkDrafts, initialLinkDraft, type LinkDraft, type LinkFilter } from "../../../modules/static-text/repeated-links";
 import { LinkGroup } from "./link-group";
 import { componentLabel } from "../../../modules/static-text/component-label";
-import { DesignerLanguageProvider } from "@/i18n/designer-provider";
+import { DesignerLanguageProvider, DesignerSettings } from "@/i18n/designer-provider";
 import { useText } from "@/i18n/use-text";
 import { exactSearch, searchOptionsLabel, type SearchOptions } from "../../../modules/text-search/match";
 /* eslint-disable @next/next/no-img-element -- Standalone Designer extension bundles its local SVG; no Next.js runtime. */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { LocalAuditStore } from "./audit-store";
 import { DesignerController } from "./controller";
-import { dashboardUrl } from "./dashboard-client";
+import { dashboardUrl, DesignerAccessError } from "./dashboard-client";
 import type { DesignerHome } from "../../../modules/static-text/protocol";
 import { type Mention, type TextPlan } from "../../../modules/static-text/plan";
 
 const controller = new DesignerController();
-const audit = new LocalAuditStore();
 type Scan = Awaited<ReturnType<DesignerController["port"]["scan"]>>;
 
 function Extension() {
   const t = useText();
+  const [mode,setMode]=useState<SearchMode>("text");
+  const [connectionScope,setConnectionScope]=useState(0);
+  const tabScope=connectionScope+":"+mode;
 
-  const [view, setView] = useState<"home" | "static">("home");
+  const [reviewFilter,setReviewFilter]=useSearchTabState<"pending"|"reviewed"|"all">(tabScope, "pending");
+  const [reviewed,setReviewed]=useSearchTabState<ReviewedOccurrence[]>(tabScope, []);
+  const [activeResult,setActiveResult] = useSearchTabState<string|undefined>(tabScope);
+  const [accessLost,setAccessLost] = useState(false);
   const [identity, setIdentity] = useState<Awaited<ReturnType<DesignerController["identify"]>>>();
   const [home, setHome] = useState<DesignerHome>();
   const [code, setCode] = useState("");
-  const [search, setSearch] = useState("");
-  const [linkDrafts,setLinkDrafts] = useState<Record<string,LinkDraft>>({});
-  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
-  const [findLinks, setFindLinks] = useState(false);
-  const [linkScan, setLinkScan] = useState<Awaited<ReturnType<DesignerController["searchLinks"]>>["scan"]>();
-  const [includeComponents, setIncludeComponents] = useState(false);
-  const [scannedTerm, setScannedTerm] = useState("");
-  const [searchOptions, setSearchOptions] = useState<SearchOptions>(exactSearch);
-  const [scannedOptions, setScannedOptions] = useState<SearchOptions>(exactSearch);
-  const [scan, setScan] = useState<Scan>();
-  const [mentions, setMentions] = useState<Mention[]>([]);
-  const [replacements, setReplacements] = useState<Record<string, string>>({});
-  const [bulk, setBulk] = useState("");
-  const [plan, setPlan] = useState<TextPlan>();
-  const [confirmed, setConfirmed] = useState(false);
+  const [search, setSearch] = useSearchTabState(tabScope, "");
+  const [linkDrafts,setLinkDrafts] = useSearchTabState<Record<string,LinkDraft>>(tabScope, {});
+  const [imageFilter,setImageFilter]=useSearchTabState<LinkFilter>(tabScope,"repeated");
+  const [linkFilter, setLinkFilter] = useSearchTabState<LinkFilter>(tabScope, "all");
+  const findLinks=mode==="links",findImages=mode==="images";
+  const [imageDrafts,setImageDrafts]=useSearchTabState<Record<string,ImageDraft>>(tabScope, {});
+  const [imageScan,setImageScan]=useSearchTabState<Awaited<ReturnType<DesignerController["searchImages"]>>|undefined>(tabScope);
+  const [linkScan, setLinkScan] = useSearchTabState<Awaited<ReturnType<DesignerController["searchLinks"]>>["scan"]|undefined>(tabScope);
+  const [includeComponents, setIncludeComponents] = useSearchTabState(tabScope, false);
+  const [scannedTerm, setScannedTerm] = useSearchTabState(tabScope, "");
+  const [searchOptions, setSearchOptions] = useSearchTabState<SearchOptions>(tabScope, exactSearch);
+  const [scannedOptions, setScannedOptions] = useSearchTabState<SearchOptions>(tabScope, exactSearch);
+  const [scan, setScan] = useSearchTabState<Scan|undefined>(tabScope);
+  const [mentions, setMentions] = useSearchTabState<Mention[]>(tabScope, []);
+  const [replacements, setReplacements] = useSearchTabState<Record<string, string>>(tabScope, {});
+  const [bulk, setBulk] = useSearchTabState(tabScope, "");
+  const [plan, setPlan] = useSearchTabState<TextPlan|undefined>(tabScope);
+  const [confirmed, setConfirmed] = useSearchTabState(tabScope, false);
   const [testSite, setTestSite] = useState(false);
+  const running=useRef(false);
+  const [scanning,setScanning]=useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   useEffect(() => {
@@ -48,99 +66,156 @@ function Extension() {
       if (!active) return;
       setIdentity(info);
       if (controller.dashboard.hasSession()) { const value = await controller.dashboard.home(info.siteId); if (active) setHome(value); }
-    }).catch(error => { if (active) setMessage(error instanceof Error ? error.message : "Abra a extensão no Designer."); });
+    }).catch(error => { if (active) {setAccessLost(error instanceof DesignerAccessError); setMessage(error instanceof Error ? error.message : "Abra a extensão no Designer.");} });
     return () => { active = false; };
   }, []);
+  const cmsScanPath=newScanFromSitePath(home?.dashboardPath);
+  const componentWarning=message==="Saia da edição de componentes para testar uma página estática.";
+  const pendingCount=findImages?(imageScan?.groups.reduce((sum,g)=>sum+g.occurrences.length,0)??0):findLinks?(linkScan?.groups.reduce((sum,group)=>sum+group.occurrences.length,0)??0):mentions.length;
+  const activeImageGroup=imageScan?.groups.find(group=>group.url===activeResult);
+  const activeImageDraft=activeImageGroup?(imageDrafts[activeImageGroup.url]??{selected:[]}):undefined;
+  const activeGroup=linkScan?.groups.find(group=>group.key===activeResult);
+  const textEditor=selectedTextEditor(mentions,replacements,activeResult);
+  const activeMention=textEditor.active;
+  const activeLinkDraft=activeGroup?(linkDrafts[activeGroup.key]??initialLinkDraft(activeGroup)):undefined;
+  const selectedLinks=activeGroup?.occurrences.filter(o=>o.targetId&&activeLinkDraft?.selected.includes(o.targetId))??[];
   const linkCounts = linkGroupCounts(linkScan?.groups ?? []);
   const visibleLinkKeys = new Set(filterLinkGroups(linkScan?.groups ?? [], linkFilter).map(group => group.key));
   const invalidatePreview = () => {setPlan(undefined); setConfirmed(false);};
-  const invalidate = () => { setLinkScan(undefined); setLinkDrafts({}); invalidatePreview(); };
-  async function run(action: () => void | Promise<void>) {
+  const invalidate = () => { setImageScan(undefined);setImageDrafts({}); setLinkScan(undefined); setLinkDrafts({}); invalidatePreview(); };
+  function reconnect(){
+    controller.dashboard.disconnect();setConnectionScope(current=>current+1);setReviewed([]);setReviewFilter("pending");invalidate();setHome(undefined);setAccessLost(false);setMessage("");
+    setScan(undefined);setMentions([]);setReplacements({});setActiveResult(undefined);setCode("");
+  }
+  async function run(action: () => void | Promise<void>, isScan=false) {
+    if(running.current)return;
+    running.current=true;setScanning(isScan);
     setBusy(true); setMessage("");
     try { await action(); }
-    catch (error) { setMessage(error instanceof Error ? error.message : t("Não foi possível concluir o teste.")); }
-    finally { setBusy(false); }
+    catch (error) { if(error instanceof DesignerAccessError){setAccessLost(true);invalidatePreview();} setMessage(error instanceof Error ? error.message : t("Não foi possível concluir o teste.")); }
+    finally { running.current=false;setScanning(false);setBusy(false); }
   }
-  return <main>
-    <header><img className="brand-logo" src="./brand/logo-primary.svg" alt="CopyReplace" width="168" height="35" /><h1>{view === "home" ? t("Seu conteúdo, organizado") : t("Textos da página")}</h1><p>{identity ? identity.siteName : t("Abra esta extensão dentro do Webflow Designer.")}</p>
-      {home && <nav className="lab-nav"><button disabled={busy} onClick={() => setView("home")}>{t("Início")}</button><a href={dashboardUrl + "/dashboard/workspaces/" + home.workspaceId + "/settings/webflow#designer"} target="_blank" rel="noreferrer">{t("Abrir dashboard ↗")}</a><button disabled={busy} onClick={() => { invalidate(); setHome(undefined); setView("home"); }}>{t("Reconectar")}</button></nav>}
+  return <main className="extension-shell">
+    <header className="extension-header"><img className="brand-logo" src="./brand/logo-primary.svg" alt="CopyReplace" width="168" height="35" /><div className="header-context"><h1>{t("Buscar e substituir")}</h1><p>{identity ? identity.siteName : t("Abra esta extensão dentro do Webflow Designer.")}</p></div>
+      {home && !accessLost && <a className="dashboard-button" href={dashboardUrl+(home.dashboardPath??"/dashboard")} target="_blank" rel="noreferrer">{t("Abrir dashboard ↗")}</a>}
+      {accessLost && <button disabled={busy} onClick={reconnect}>{t("Reconectar")}</button>}
+      {home && !accessLost && <button className="primary header-scan" type="submit" form="page-search" disabled={busy||(mode==="text"&&!search.trim())}><Search size={17} aria-hidden="true" />{busy?t("Processando…"):t("Executar busca")}</button>}
+      <DesignerSettings><p className="muted">{t("Problemas de acesso? Conecte novamente este site.")}</p><button type="button" disabled={busy} popoverTarget="designer-settings" popoverTargetAction="hide" onClick={reconnect}>{t("Reconectar")}</button></DesignerSettings>
     </header>
-    {!home && <section><h2>{t("Conecte sua conta")}</h2><p>{t("Autorize este site no dashboard e cole o código temporário aqui. Prévia, confirmação e resultado serão registrados no seu workspace.")}</p>
+    {!home && !accessLost && <section><h2>{t("Conecte sua conta")}</h2><p>{t("Autorize este site no dashboard e cole o código temporário aqui. Prévia, confirmação e resultado serão registrados no seu workspace.")}</p>
       <a className="lab-link" href={dashboardUrl + "/dashboard/designer" + (identity ? "?site=" + encodeURIComponent(identity.siteId) : "")} target="_blank" rel="noreferrer">{t("1. Abrir dashboard e autorizar ↗")}</a>
-      <form onSubmit={event => { event.preventDefault(); void run(async () => { const info = await controller.identify(); setIdentity(info); setHome(await controller.dashboard.connect(code, info.siteId)); setCode(""); setMessage(t("Conta conectada para este site.")); }); }}>
+      <form onSubmit={event => { event.preventDefault(); void run(async () => { const info = await controller.identify(); setIdentity(info); setHome(await controller.dashboard.connect(code, info.siteId)); setAccessLost(false); setCode(""); setMessage(t("Conta conectada para este site.")); }); }}>
         <label>{t("2. Código de conexão")}<input type="password" autoComplete="off" required value={code} onChange={event => setCode(event.target.value)} placeholder={t("Cole o código gerado no dashboard")} /></label><button className="primary" disabled={busy || !code.trim()}>{t("Conectar este site")}</button>
       </form><p className="muted">{t("A sessão dura até 30 dias e pode ser revogada no dashboard. Nenhuma alteração é aplicada ao conectar.")}</p>
     </section>}
-    {home && view === "home" && <>
-      <div className="lab-grid"><section><span className="badge">DESIGNER</span><h2>{t("Páginas estáticas")}</h2><p>{t("Busque textos iguais e revise as mudanças na página aberta.")}</p><button className="primary" disabled={busy} onClick={() => void run(async () => { invalidate(); setScan(undefined); setMentions([]); setReplacements({}); const info = await controller.identify(); setIdentity(info); setHome(await controller.dashboard.home(info.siteId)); setView("static"); })}>{t("Buscar nesta página")}</button></section>
-      <section><span className="badge">DASHBOARD</span><h2>{t("Conteúdo do CMS")}</h2><p>{t("Gerencie coleções, scans e Managed Values em tela cheia.")}</p><a className="lab-link" href={dashboardUrl + "/dashboard/sites/" + home.siteId + "/scans"} target="_blank" rel="noreferrer">{t("Abrir CMS ↗")}</a></section></div>
-      <section><h2>{t("Atividade recente")}</h2><p className="muted">{t("Páginas estáticas · resultados informados pela extensão após leitura de verificação.")}</p>{home.recent.length ? home.recent.map(item => <article key={item.id}><a href={dashboardUrl + "/dashboard/sites/" + home.siteId + "/changes/" + item.id} target="_blank" rel="noreferrer">{item.page_name}</a><p>{item.applied}/{item.total}  {t("alterações verificadas ·")} {new Date(item.created_at).toLocaleString(t.dateLocale)}</p></article>) : <p>{t("Nenhuma prévia registrada neste site.")}</p>}</section>
-    </>}
-    <details className="legacy"><summary>{t("Histórico do protótipo anterior")}</summary><p>{t("Os registros antigos continuam neste navegador. Eles não foram importados para o dashboard.")}</p><button type="button" disabled={busy} onClick={() => void run(() => audit.export())}>{t("Exportar histórico local antigo")}</button></details>
-    {home && view === "static" && <>
-    <aside>{t("Teste em um")} <strong>{t("site sem Localization")}</strong>{t(". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.")}</aside>
-    <form onSubmit={event => { event.preventDefault(); void run(async () => {
-      invalidate(); setScan(undefined); setMentions([]); setReplacements({});
+    {home && !accessLost && <>
+    <div className="workflow-grid">
+    <div className="search-panel">
+    <form id="page-search" className="search-form" onSubmit={event => { event.preventDefault(); void run(async () => {
+      invalidate(); setReviewed([]);setReviewFilter("pending");setScan(undefined); setMentions([]); setReplacements({});
+      if(findImages){setImageFilter("repeated");setActiveResult(undefined);setImageScan(await controller.searchImages(includeComponents));return;}
       if (findLinks) {
         const result = await controller.searchLinks(includeComponents);
-        setLinkScan(result.scan); setLinkFilter("all"); setHome(result.home);
+        setLinkScan(result.scan); setActiveResult(result.scan.groups[0]?.key); setLinkFilter("all"); setHome(result.home);
         setMessage(result.scan.groups.length ? t("{0} destinos encontrados.", result.scan.groups.length) : t("Nenhum link encontrado nos elementos compatíveis."));
         return;
       }
       const { scan: result, mentions: found, home: activity } = await controller.search(search, searchOptions, includeComponents);
       setHome(activity);
-      setScan(result); setScannedTerm(search); setScannedOptions(searchOptions); setMentions(found);
+      setScan(result); setActiveResult(found[0]?.key); setScannedTerm(search); setScannedOptions(searchOptions); setMentions(found);
       setMessage(found.length ? t("{0} menções iguais encontradas.", found.length) : t("Nenhuma menção encontrada nos textos compatíveis."));
-    }); }}>
-      {!findLinks && <label>{t("Texto para buscar")}<input required maxLength={200} value={search} disabled={busy} onChange={event => { setSearch(event.target.value); invalidate(); setScan(undefined); setMentions([]); }} placeholder={t("Nome da empresa")} /></label>}
+    },true); }}>
+      <h2><Search size={17} aria-hidden="true" />{t("Buscar nesta página")}</h2>
+      {mode==="text" && <label>{t("Texto para buscar")}<input required maxLength={200} value={search} disabled={busy} onChange={event => { setSearch(event.target.value); invalidatePreview(); }} placeholder={t("Nome da empresa")} /></label>}
       <fieldset><legend>{t("Opções de busca")}</legend>
-      <label className="check"><input type="checkbox" disabled={busy} checked={findLinks} onChange={event => {setFindLinks(event.target.checked); invalidate(); setScan(undefined); setMentions([]); setReplacements({});}} />{t("Buscar links da página")}</label>
-      {findLinks && <p className="muted">{t("Agrupa destinos de botões e links nesta página. Não é necessário informar um texto. Revise antes de aplicar alterações. A busca não testa se as URLs estão online.")}</p>}<label className="check"><input type="checkbox" disabled={busy} checked={includeComponents} onChange={event => {setIncludeComponents(event.target.checked); invalidate(); setScan(undefined); setMentions([]); setReplacements({});}} />{t("Incluir componentes (Symbols) desta página")}</label>
-      <p className="muted">{t(findLinks ? "Inclui links do Header, Footer e outros componentes presentes nesta página." : "Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.")}</p>{!findLinks && ([{ key: "ignoreCase", label: t("Ignorar maiúsculas e minúsculas") }, { key: "ignoreAccents", label: t("Ignorar acentos") }, { key: "wholeWord", label: t("Palavra ou expressão inteira") }] as const).map(option => <label className="check" key={option.key}><input type="checkbox" disabled={busy} checked={searchOptions[option.key]} onChange={event => { setSearchOptions({ ...searchOptions, [option.key]: event.target.checked }); invalidate(); setScan(undefined); setMentions([]); setReplacements({}); }} />{t(option.label)}</label>)}</fieldset>{!findLinks && <p className="muted">{t("Palavra inteira: “casa” não encontra “casamento” no mesmo nó de texto. Trechos divididos entre elementos continuam fora da busca. Não procura dentro de URLs ou atributos. A substituição usa exatamente o texto que você escrever.")}</p>}
-      <button className="primary" disabled={busy || (!findLinks && !search.trim())}>{busy ? t("Processando…") : t("Buscar nesta página")}</button>
+      <div className="mode-tabs" role="group" aria-label={t("Tipo de busca")}>{[{key:"text",label:t("Texto"),icon:FileText},{key:"links",label:t("Links"),icon:Link2},{key:"images",label:t("Imagens"),icon:ImageIcon}].map(option=><button type="button" key={option.key} aria-pressed={mode===option.key} disabled={busy} onClick={()=>{if(mode!==option.key){setConfirmed(false);setMessage("");setMode(option.key as SearchMode);}}}><option.icon size={15} aria-hidden="true" />{option.label}</button>)}{cmsScanPath?<a className="cms-scan-link" href={dashboardUrl+cmsScanPath} target="_blank" rel="noreferrer" title={t("Abrir novo scan do CMS no dashboard")}><Database size={15} aria-hidden="true"/>CMS<ArrowUpRight size={13} aria-hidden="true"/></a>:<button type="button" disabled title={t("Reconecte o site para abrir o scan do CMS.")}><Database size={15} aria-hidden="true"/>CMS</button>}<button type="button" disabled className="seo-coming-soon" title={t("SEO (em breve)")}><Search size={15} aria-hidden="true"/>{t("SEO (em breve)")}</button></div>
+      {findLinks && <details className="inline-help"><summary>{t("Sobre a busca de links")}</summary><p className="muted">{t("Agrupa destinos de botões e links nesta página. Não é necessário informar um texto. Revise antes de aplicar alterações. A busca não testa se as URLs estão online.")}</p></details>}<label className="check"><input type="checkbox" disabled={busy} checked={includeComponents} onChange={event => {setIncludeComponents(event.target.checked); invalidatePreview();}} />{t("Incluir componentes (Symbols) desta página")}</label>
+      <details className="inline-help"><summary>{t("Sobre componentes")}</summary><p className="muted">{t(findImages ? "Inclui imagens estáticas dos componentes desta página. Vínculos com CMS ficam fora." : findLinks ? "Inclui links do Header, Footer e outros componentes presentes nesta página." : "Inclui textos internos e propriedades dos componentes. Textos compartilhados serão alterados em todas as instâncias do site; propriedades continuam locais. Vínculos com CMS ficam fora.")}</p></details>{mode==="text" && ([{ key: "ignoreCase", label: t("Ignorar maiúsculas e minúsculas") }, { key: "ignoreAccents", label: t("Ignorar acentos") }, { key: "wholeWord", label: t("Palavra ou expressão inteira") }] as const).map(option => <label className="check" key={option.key}><input type="checkbox" disabled={busy} checked={searchOptions[option.key]} onChange={event => { setSearchOptions({ ...searchOptions, [option.key]: event.target.checked }); invalidatePreview(); }} />{t(option.label)}</label>)}</fieldset>{mode==="text" && <details className="inline-help"><summary>{t("Dicas da busca")}</summary><p className="muted">{t("Palavra inteira: “casa” não encontra “casamento” no mesmo nó de texto. Trechos divididos entre elementos continuam fora da busca. Não procura dentro de URLs ou atributos. A substituição usa exatamente o texto que você escrever.")}</p></details>}
+      <button className="primary" disabled={busy || (mode==="text" && !search.trim())}>{busy ? t("Processando…") : t("Buscar nesta página")}</button>
     </form>
+    {scan && mentions.length>0 && <section className="replace-panel"><h2><ArrowLeft size={16} aria-hidden="true" />{t("Substituir")}</h2><label>{t("Novo valor para o grupo")}<input maxLength={2000} disabled={busy} value={bulk} onChange={event=>setBulk(event.target.value)} placeholder={t("Vazio remove o trecho")}/></label><button disabled={busy} onClick={()=>{setReplacements(Object.fromEntries(mentions.map(mention=>[mention.key,bulk])));invalidatePreview();}}>{t("Preencher todas as ocorrências")}</button></section>}
+    <section className="sidebar-activity"><h2><History size={16} aria-hidden="true" />{t("Atividade recente")}</h2><a className="activity-all" href={dashboardUrl+(home.changesPath??"/dashboard")} target="_blank" rel="noreferrer">{t("Ver todas no dashboard")} ↗</a>{home.recent.slice(0,3).map(item=><article key={item.id}><a href={dashboardUrl+(item.href??home.changesPath??"/dashboard")} target="_blank" rel="noreferrer">{item.page_name}</a><small>{item.applied}/{item.total} {t("alterações verificadas ·")} {new Date(item.created_at).toLocaleDateString(t.dateLocale)}</small></article>)}{!home.recent.length&&<p className="muted">{t("Nenhuma prévia registrada neste site.")}</p>}</section>
+    </div><div className="results-panel">
+    {(scan||linkScan||imageScan)&&<div className="link-filters" role="group" aria-label={t("Status da revisão")}>{([{key:"pending",label:t("Pendentes"),count:pendingCount},{key:"reviewed",label:t("Revisados"),count:reviewed.length},{key:"all",label:t("Todos"),count:pendingCount+reviewed.length}] as const).map(filter=><button type="button" key={filter.key} disabled={busy} aria-pressed={reviewFilter===filter.key} onClick={()=>{setReviewFilter(filter.key);invalidatePreview();}}>{filter.label} ({filter.count})</button>)}</div>}
+    {reviewFilter!=="pending"&&<section><h2>{t("Revisados")}</h2>{reviewed.map(change=><article className="reviewed-occurrence" key={change.reviewKey}>
+      <span className="badge"><CheckCircle2 size={12} aria-hidden="true"/> {t("Aplicado")}</span>
+      <h3>{change.source?componentLabel(change.source,t):change.location||t("Texto")}</h3>
+      <p className="muted">{change.pageName}{change.source&&change.location?` · ${change.location}`:""}</p>
+      {change.image?<DesignerImagePreview before={change.image.beforeUrl} after={change.image.asset.url} afterSrc={controller.imagePreviewUrl(change.image.asset)} beforeLabel={t("Antes")} afterLabel={t("Depois")}/>:<ValuePreview title={t("Alteração aplicada")} before={change.link?.beforeLabel??change.before} after={change.link?.afterUrl??change.after}/>}
+      {change.contextBefore!==undefined&&<><h3>{t("Contexto original")}</h3><p className="context">{change.contextBefore}<mark>{change.before}</mark>{change.contextAfter}</p></>}
+      {change.link?.convertsPage&&<p className="muted">{t("O vínculo com a página foi substituído por uma URL.")}</p>}
+      <small>{t("Somente leitura. Esta ocorrência já foi aplicada.")}</small>
+    </article>)}{!reviewed.length&&<p className="muted">{t("Nenhuma alteração aplicada neste scan.")}</p>}</section>}
+    <div hidden={reviewFilter==="reviewed"} className="pending-results">
+    {(scan||linkScan||imageScan)&&pendingCount===0&&<p className="muted">{t("Nenhuma ocorrência pendente neste scan.")}</p>}
+    {scanning&&<section className="scan-skeleton" role="status" aria-live="polite" aria-busy="true"><h2>{t("Buscando na página…")}</h2><p className="muted">{t("Lendo os elementos e componentes. Aguarde os resultados.")}</p><div aria-hidden="true">{[0,1,2].map(n=><div className="skeleton-card" key={n}><span/><span/><span/></div>)}</div></section>}
+    {!scanning && !scan && !linkScan && !imageScan && <section className="empty-results"><Search size={28} aria-hidden="true" /><h2>{t("Pronto para buscar")}</h2><p>{t("Escolha texto, links ou imagens e busque na página aberta no Designer.")}</p><p className="search-coverage-note">{t("Teste em um")} <strong>{t("site sem Localization")}</strong>{t(". CMS, Rich Text, embeds e trechos divididos entre elementos ficam fora da busca. Componentes exigem a opção abaixo. A extensão não publica o site.")}</p></section>}
+    {imageScan&&<><ImageResults scan={imageScan} filter={imageFilter} setFilter={setImageFilter} activeUrl={activeResult} busy={busy} onSelect={url=>{setActiveResult(url);invalidatePreview();}}/></>}
     {linkScan && <section><h2>{t("Links da página")}</h2><p>{t("{0} links lidos · {1} destinos · {2} blocos ou vínculos ignorados", linkScan.total, linkScan.groups.length, linkScan.skipped)}</p>
-      <p className="muted">{t("Repetir um destino pode ser intencional, como no Header e Footer. As quantidades consideram as instâncias na página, incluindo elementos ocultos em outros tamanhos de tela.")}</p>
+      <details className="inline-help"><summary>{t("Como os links são contados")}</summary><p className="muted">{t("Repetir um destino pode ser intencional, como no Header e Footer. As quantidades consideram as instâncias na página, incluindo elementos ocultos em outros tamanhos de tela.")}</p></details>
       <div className="link-filters" role="group" aria-label={t("Filtrar destinos")}>
         {([{key:"all",label:t("Todos")},{key:"repeated",label:t("Repetidos")},{key:"unique",label:t("Únicos")}] as const).map(filter => <button type="button" key={filter.key} aria-pressed={linkFilter===filter.key} disabled={busy} onClick={()=>{setLinkFilter(filter.key);invalidatePreview();}}>{filter.label} ({linkCounts[filter.key]})</button>)}
       </div><p className="muted">{t("Contagem por destino. Únicos aparecem em apenas um elemento desta página.")}</p>
       {!visibleLinkKeys.size && <p role="status">{t("Nenhum destino neste filtro.")}</p>}
-      {linkScan.groups.map(group => <div key={group.key} hidden={!visibleLinkKeys.has(group.key)}><LinkGroup group={group} busy={busy} draft={linkDrafts[group.key]??initialLinkDraft(group)} onEdit={draft=>{setLinkDrafts(current=>({...current,[group.key]:draft}));invalidatePreview();}} /></div>)}
+      {linkScan.groups.filter(group=>visibleLinkKeys.has(group.key)).map(group=><button type="button" className="result-card" key={group.key} aria-pressed={activeResult===group.key} disabled={busy} onClick={()=>{setActiveResult(group.key);invalidatePreview();}}><Link2 size={19} aria-hidden="true"/><span><strong>{group.occurrences[0]?.text||group.occurrences[0]?.label}</strong><span className="result-value">{group.destination}</span><small>{group.occurrences.length} {t("Ocorrências")} · {group.occurrences[0]?.location}</small></span><span className="badge">{t("Links")}</span></button>)}
       <p className="muted">{t("A revisão inclui os destinos alterados em todos os filtros. Destinos sem mudança ficam de fora.")}</p>
-      <button type="button" className="primary" disabled={busy||!changedLinkDrafts(linkScan.groups,linkDrafts).length} onClick={()=>void run(async()=>{invalidatePreview();setPlan(await controller.previewLinks(linkScan,linkDrafts));})}>{t("Revisar destinos alterados ({0})",changedLinkDrafts(linkScan.groups,linkDrafts).length)}</button>
     </section>}
-    {scan && <section><h2>{t("Resultado da busca")}</h2><p className="muted">{t(searchOptionsLabel(scannedOptions))}</p><p>{scan.nodes.length}  {t("nós de texto lidos ·")} {scan.skipped}  {t("elementos ou blocos ignorados")}</p></section>}
+    {scan && <section><h2>{t("Resultado da busca")} · {scan.context.pageName}</h2><p className="muted">{t(searchOptionsLabel(scannedOptions))}</p><p>{scan.nodes.length}  {t("nós de texto lidos ·")} {scan.skipped}  {t("elementos ou blocos ignorados")}</p></section>}
     {scan && scan.componentDiagnostics.length > 0 && <details><summary>Component diagnostics</summary><pre>{scan.componentDiagnostics.join("\n")}</pre></details>}
     {scan && mentions.length > 0 && <section>
       <h2>{t("Menções de “")}{scannedTerm}”</h2>
-      <label>{t("Novo valor para o grupo")}<input maxLength={2000} disabled={busy} value={bulk} onChange={event => setBulk(event.target.value)} placeholder={t("Vazio remove o trecho")} /></label>
-      <button disabled={busy} onClick={() => { setReplacements(Object.fromEntries(mentions.map(mention => [mention.key, bulk]))); invalidate(); }}>{t("Preencher todas as ocorrências")}</button>
-      {mentions.map((mention, index) => <article key={mention.key}>
-        <label className="check"><input type="checkbox" disabled={busy} checked={Object.hasOwn(replacements, mention.key)} onChange={event => {
-          const next = { ...replacements };
-          if (event.target.checked) next[mention.key] = mention.text; else delete next[mention.key];
-          setReplacements(next); invalidate();
-        }} />  {t("Alterar ocorrência")} {index + 1}</label>
-        {mention.source && <p className="badge">{componentLabel(mention.source, t)}</p>}
-        <p className="context">{mention.before}<mark>{mention.text}</mark>{mention.after}</p>
-        {Object.hasOwn(replacements, mention.key) && <label>{t("Novo trecho")}<input maxLength={2000} disabled={busy} value={replacements[mention.key]} onChange={event => { setReplacements({ ...replacements, [mention.key]: event.target.value }); invalidate(); }} /><small>{t("Vazio remove somente o trecho destacado.")}</small></label>}
+      <label className="check"><input type="checkbox" disabled={busy} checked={mentions.every(mention=>Object.hasOwn(replacements,mention.key))} onChange={event=>{setReplacements(event.target.checked?Object.fromEntries(mentions.map(mention=>[mention.key,replacements[mention.key]??mention.text])):{});invalidatePreview();}}/>{t("Selecionar todos")}</label>
+      {mentions.map((mention,index)=><article className="text-result" key={mention.key} data-active={Object.hasOwn(replacements,mention.key)}>
+        <input aria-label={`${t("Alterar ocorrência")} ${index+1}`} type="checkbox" disabled={busy} checked={Object.hasOwn(replacements,mention.key)} onChange={event=>{const next={...replacements};if(event.target.checked)next[mention.key]=mention.text;else delete next[mention.key];setReplacements(next);invalidatePreview();}}/>
+        <button type="button" className="result-card" aria-pressed={Object.hasOwn(replacements,mention.key)} disabled={busy} onClick={()=>{setReplacements(current=>toggleTextSelection(current,mention));setActiveResult(mention.key);invalidatePreview();}}><FileText size={19} aria-hidden="true"/><span><strong>{mention.location||(mention.source?componentLabel(mention.source,t):t("Texto"))}</strong><span className="result-value context">{mention.before}<mark>{mention.text}</mark>{mention.after}</span></span><span className="badge">{t("Texto")}</span></button>
       </article>)}
-      <button disabled={busy || !Object.keys(replacements).length} className="primary" onClick={() => void run(async () => { invalidate(); setPlan(await controller.preview(scan, scannedTerm, replacements, scannedOptions)); })}>{t("Salvar prévia e revisar")}</button>
     </section>}
-    {plan && <section><h2>{t("Revisar")} {plan.changes.length}  {t(plan.changes[0]?.link ? "campos de link" : "nós de texto")}</h2>{!plan.changes[0]?.link && <p className="muted">{t(searchOptionsLabel(plan.searchOptions))}</p>}
-      {plan.changes.some(change => change.source?.kind === "component-definition") && <aside role="note">{t("Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada texto compartilhado será alterado uma única vez.")}</aside>}
-      {plan.changes.map(change => <article key={change.id}>{change.source && <p className="badge">{componentLabel(change.source, t)}</p>}{change.link && <><ul>{change.link.buttons.map((button,index)=><li key={index}>{button}</li>)}</ul>{change.link.convertsPage&&<aside>{t("O vínculo com a página será substituído por uma URL. Futuras mudanças no slug não atualizarão este link automaticamente.")}</aside>}</>}<small>{t("Antes")}</small><pre>{change.link?.beforeLabel??change.before}</pre><small>{t("Depois")}</small><pre>{change.link?.afterUrl??(change.after || t("(texto removido)"))}</pre></article>)}
+    </div></div>
+    {!plan && reviewFilter!=="reviewed" && <section className="inspector-panel"><h2><FileText size={20} aria-hidden="true" />{activeImageGroup?(activeImageDraft!.selected.length>1?t("Edição em grupo"):t("Imagens da página")):activeGroup?(selectedLinks.length>1?t("Edição em grupo"):t("Links da página")):textEditor.selected.length>1?t("Edição em grupo"):activeMention?(activeMention.source?componentLabel(activeMention.source,t):activeMention.location||t("Texto")):t("Detalhes")}</h2>
+      {activeImageGroup&&activeImageDraft&&<><ImageGroupEditor group={activeImageGroup} draft={activeImageDraft} busy={busy} onEdit={draft=>{setImageDrafts(current=>({...current,[activeImageGroup.url]:draft}));invalidatePreview();}}/><button type="button" className="primary" disabled={busy||!changedImageCount(imageScan!.groups,imageDrafts)} onClick={()=>void run(async()=>{invalidatePreview();setPlan(await controller.previewImages(imageScan!,imageDrafts));})}><Eye size={16} aria-hidden="true"/>{t("Revisar imagens alteradas ({0})",changedImageCount(imageScan!.groups,imageDrafts))}</button></>}
+      {activeGroup && <><LinkGroup group={activeGroup} busy={busy} draft={linkDrafts[activeGroup.key]??initialLinkDraft(activeGroup)} onEdit={draft=>{setLinkDrafts(current=>({...current,[activeGroup.key]:draft}));invalidatePreview();}}/>{selectedLinks.length>0&&<ValuePreview title={selectedLinks.length>1?t("Prévia de {0} ocorrências selecionadas",selectedLinks.length):t("Prévia")} before={t(activeGroup.destination)} after={linkDrafts[activeGroup.key]?.url||activeGroup.input||t(activeGroup.destination)}/>}{activeGroup.occurrences.some(o=>o.destination.mode==="pageSection")&&<p className="muted">{t("Ao informar outro destino, o vínculo com a seção será convertido em URL. Use /pagina ou #secao e revise antes de aplicar.")}</p>}<button className="primary" disabled={busy||!changedLinkDrafts(linkScan!.groups,linkDrafts).length} onClick={()=>void run(async()=>{invalidatePreview();setPlan(await controller.previewLinks(linkScan!,linkDrafts));})}><Eye size={16} aria-hidden="true"/>{t("Revisar destinos alterados ({0})",changedLinkDrafts(linkScan!.groups,linkDrafts).length)}</button></>}
+      {activeMention && <>
+        {textEditor.selected.length===1&&<label>{t("Valor atual")}<textarea readOnly value={activeMention.text}/></label>}
+        <label>{textEditor.selected.length>1?t("Novo trecho para {0} ocorrências selecionadas",textEditor.selected.length):t("Novo trecho")}<textarea maxLength={2000} disabled={busy} value={textEditor.value} placeholder={textEditor.mixed?t("Valores diferentes. Digite para alterar os selecionados."):undefined} onChange={event=>{setReplacements(current=>editSelectedMentions(current,activeMention.key,event.target.value));invalidatePreview();}}/></label>
+        <div className="selection-preview">
+          {textEditor.selected.length>1&&<h3>{t("Prévia de {0} ocorrências selecionadas",textEditor.selected.length)}</h3>}
+          {textEditor.selected.map(mention=><article key={mention.key}>
+            {textEditor.selected.length>1&&<strong>{mention.location||(mention.source?componentLabel(mention.source,t):t("Texto"))}</strong>}
+            <ValuePreview before={mention.text} after={replacements[mention.key]!}/>
+            <p className="context">{mention.before}<mark>{mention.text}</mark>{mention.after}</p>
+            {mention.source&&<p className="badge">{componentLabel(mention.source,t)}</p>}
+          </article>)}
+        </div>
+        <button className="primary" disabled={busy} onClick={()=>void run(async()=>{invalidatePreview();setPlan(await controller.preview(scan!,scannedTerm,replacements,scannedOptions));})}><Eye size={16} aria-hidden="true"/>{t("Salvar prévia e revisar")}</button>
+      </>}
+      {(!activeImageGroup&&!activeGroup&&!activeMention)&&<p className="muted">{t(findImages?"Selecione um grupo de imagens para ver as opções.":"Marque uma ocorrência para editar e ver a prévia.")}</p>}
+    </section>}
+    {plan && <section className="review-panel"><button type="button" disabled={busy} onClick={invalidatePreview}><ArrowLeft size={15} aria-hidden="true"/>{t("Voltar à edição")}</button><h2><Eye size={17} aria-hidden="true" />{t("Revisar")} {plan.changes.length}  {t(plan.changes[0]?.image?"imagens":plan.changes[0]?.link ? "campos de link" : "nós de texto")}</h2>{!plan.changes[0]?.link && !plan.changes[0]?.image && <p className="muted">{t(searchOptionsLabel(plan.searchOptions))}</p>}
+      {plan.changes.some(change => change.source?.kind === "component-definition") && <aside role="note">{t("Esta prévia inclui componentes compartilhados. A alteração também afeta outras páginas que usam esses componentes. Cada campo compartilhado será alterado uma única vez.")}</aside>}
+      {plan.changes.map(change => <article key={change.id}>{change.source && <p className="badge">{componentLabel(change.source, t)}</p>}{change.link && <><ul>{change.link.buttons.map((button,index)=><li key={index}>{button}</li>)}</ul>{change.link.convertsPage&&<aside>{t("O vínculo com a página ou seção será substituído por uma URL. Futuras mudanças no destino não atualizarão este link automaticamente.")}</aside>}</>}{change.image?<><ul>{change.image.locations.map((location,index)=><li key={index}>{location}</li>)}</ul><DesignerImagePreview before={change.image.beforeUrl} after={change.image.asset.url} afterSrc={controller.imagePreviewUrl(change.image.asset)} beforeLabel={t("Antes")} afterLabel={t("Depois")}/></>:<div className="diff-grid"><div><small>{t("Antes")}</small><pre>{change.link?.beforeLabel??change.before}</pre></div><div className="diff-after"><small>{t("Depois")}</small><pre>{change.link?.afterUrl??(change.after || t("(texto removido)"))}</pre></div></div>}</article>)}
       <label className="check"><input type="checkbox" checked={testSite} disabled={busy} onChange={event => setTestSite(event.target.checked)} />  {t("Estou em um site de teste sem Localization.")}</label>
       <label className="check"><input type="checkbox" checked={confirmed} disabled={busy} onChange={event => setConfirmed(event.target.checked)} />  {t("Revisei esta prévia e confirmo as alterações desta prévia.")}</label>
       <button className="primary" disabled={busy || !confirmed || !testSite} onClick={() => void run(async () => {
         await controller.apply(plan, confirmed && testSite);
-        invalidate(); setScan(undefined); setMentions([]); setReplacements({});
+        setReviewed(current=>mergeReviewed(current,plan.changes[0]?.image?reviewedImages(plan,imageScan?.groups??[]):reviewedOccurrences(plan,mentions,replacements,linkScan?.groups??[])));
+        if(plan.changes[0]?.image&&imageScan){
+          const next=continueImageScan(imageScan.groups,imageDrafts,plan);
+          setImageScan({...imageScan,groups:next.groups});setImageDrafts(next.drafts);setActiveResult(next.groups[0]?.url);
+        }else if(plan.changes[0]?.link&&linkScan){
+          const next=continueLinkScan(linkScan.groups,linkDrafts,plan);
+          setLinkScan({...linkScan,groups:next.groups});setLinkDrafts(next.drafts);setActiveResult(next.groups[0]?.key);
+        }else if(scan){
+          const next=continueTextScan(scan.nodes,mentions,replacements,plan,scannedTerm,scannedOptions);
+          setScan({...scan,nodes:next.nodes});setMentions(next.mentions);setReplacements(next.replacements);setActiveResult(next.mentions[0]?.key);
+        }
+        invalidatePreview();
         setMessage(t("Alterações verificadas e registradas no dashboard. O site não foi publicado pela extensão."));
         setHome(await controller.dashboard.home(plan.context.siteId));
-      })}>{busy ? t("Aplicando e verificando…") : t("Confirmar e aplicar no Designer")}</button>
+      })}>{busy ? t("Aplicando e verificando…") : plan.changes[0]?.image?t("Aplicar em {0} campos de imagem",plan.changes.length):t("Confirmar e aplicar no Designer")}</button>
     </section>}
+    </div>
     </>}
-    <p role="status" aria-live="polite" className="status">{t(message)}</p>
+    <p role={componentWarning?"alert":"status"} aria-live={componentWarning?"assertive":"polite"} className={`status${componentWarning?" status-warning":""}`}>{componentWarning&&<TriangleAlert size={18} aria-hidden="true"/>}{t(message)}</p>
   </main>;
 }
 

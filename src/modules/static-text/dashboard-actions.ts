@@ -7,7 +7,7 @@ import { designerSite } from "./dashboard-service";
 
 export async function authorizeDesigner(_previous: { code?: string; error?: string }, form: FormData): Promise<{ code?: string; error?: string }> {
   const input = z.object({ id: z.uuid(), siteId: z.uuid(), confirmed: z.literal("on") }).safeParse(Object.fromEntries(form));
-  if (!input.success) return { error: "Revise o acesso e marque a confirmação." };
+  if (!input.success) return { error: "Não foi possível validar a autorização. Recarregue a página e tente novamente." };
   const { client } = await designerSite(input.data.siteId);
   const config = getWebflowConfig();
   if (!config) return { error: "Integração indisponível." };
