@@ -55,7 +55,7 @@ describe("Webflow read connector", () => {
     expect(() => decryptToken(encrypted, "another-workspace", config.encryptionKey)).toThrow();
     expect(() => decryptToken(encrypted, context, "cd".repeat(32))).toThrow();
     const parts = encrypted.split(".");
-    parts[3] = "00" + parts[3]!.slice(2);
+    parts[3] = (parseInt(parts[3]!.slice(0, 2), 16) ^ 1).toString(16).padStart(2, "0") + parts[3]!.slice(2);
     expect(() => decryptToken(parts.join("."), context, config.encryptionKey)).toThrow();
   });
 

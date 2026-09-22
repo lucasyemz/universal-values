@@ -6,6 +6,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, ChevronDown, ChevronRight, Globe2, History, LayoutGrid, Layers3, Menu, ScanLine, ShieldCheck, X } from "lucide-react";
+import { RememberedLink } from "./navigation-state";
 import { AccountMenu } from "./account-menu";
 import { Brand } from "./brand";
 
@@ -57,9 +58,9 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
       <Link onClick={close} href="/dashboard" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />{t("Visão geral")}</Link>
       {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Sites")}</Link>}
       {siteBase && <><p title={siteName} className="truncate px-3 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">{siteName}</p>
-        <Link onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span><ChevronDown size={14} className="shrink-0 text-faint" aria-hidden="true" /></Link>
+        <RememberedLink onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span><ChevronDown size={14} className="shrink-0 text-faint" aria-hidden="true" /></RememberedLink>
         <ul aria-label={t("Páginas de ") + siteName} className="ml-5 space-y-1 border-l pl-2">
-          {siteSections.map(({path,label,Icon}) => <li key={path}><Link onClick={close} href={siteBase + "/" + path} className="ui-nav-link" aria-current={activeSection?.path === path ? "page" : undefined}><Icon size={16} className="shrink-0" aria-hidden="true" /><span>{label}</span></Link></li>)}
+          {siteSections.map(({path,label,Icon}) => <li key={path}><RememberedLink onClick={close} href={siteBase + "/" + path} className="ui-nav-link" aria-current={activeSection?.path === path ? "page" : undefined}><Icon size={16} className="shrink-0" aria-hidden="true" /><span>{label}</span></RememberedLink></li>)}
         </ul>
         <details className="pt-2" open={pathname.startsWith(siteBase + "/facts") || pathname === siteBase + "/static" || undefined}><summary className="px-3 py-2 text-xs font-medium text-muted">{t("Avançado")}</summary>
           <Link onClick={close} href={siteBase + "/static"} className="ui-nav-link" aria-current={pathname === siteBase + "/static" ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Páginas estáticas")}</Link>
@@ -84,8 +85,8 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
             {siteBase ? <>
               {workspaceId && <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><Link href={"/dashboard/workspaces/" + workspaceId + "/sites"} title={activeWorkspace?.name ?? t("Sites do workspace")} className="max-w-36 truncate text-muted hover:text-accent sm:max-w-52">{activeWorkspace?.name ?? t("Sites do workspace")}</Link></li>}
               <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span title={siteName} className="max-w-36 truncate text-muted sm:max-w-52">{siteName}</span></li>
-              <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{isOverview ? <span aria-current="page" className="font-medium">{t("Visão geral do site")}</span> : <Link href={siteBase + "/overview"} className="text-muted hover:text-accent">{t("Visão geral do site")}</Link>}</li>
-              {activeSection && <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{pathname === siteBase + "/" + activeSection.path ? <span aria-current="page" className="font-medium">{activeSection.label}</span> : <Link href={siteBase + "/" + activeSection.path} className="text-muted hover:text-accent">{activeSection.label}</Link>}</li>}
+              <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{isOverview ? <span aria-current="page" className="font-medium">{t("Visão geral do site")}</span> : <RememberedLink href={siteBase + "/overview"} className="text-muted hover:text-accent">{t("Visão geral do site")}</RememberedLink>}</li>
+              {activeSection && <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{pathname === siteBase + "/" + activeSection.path ? <span aria-current="page" className="font-medium">{activeSection.label}</span> : <RememberedLink href={siteBase + "/" + activeSection.path} className="text-muted hover:text-accent">{activeSection.label}</RememberedLink>}</li>}
               {!isOverview && pathname !== siteBase + "/" + activeSection?.path && <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span aria-current="page" title={pageTitle} className="max-w-52 truncate font-medium">{pageTitle}</span></li>}
             </> : <li className="flex min-w-0 items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span aria-current="page" title={pageTitle} className="truncate font-medium">{pageTitle}</span></li>}
           </ol></nav>

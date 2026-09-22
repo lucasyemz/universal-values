@@ -1,5 +1,6 @@
 "use client";
 
+import { ManagedValueContext } from "@/components/managed-value-context";
 import { useScanDrafts } from "./use-scan-drafts";
 import { useText } from "@/i18n/use-text";
 import Link from "next/link";
@@ -50,10 +51,10 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
       {protectedOccurrence(o) && <Link className="mt-2 block text-sm text-accent underline" href={"/dashboard/managed-values/" + linkedValues[o.source_key]!.id}>{t("Protegido por:")} {linkedValues[o.source_key]!.name}</Link>}
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs"><dt className="text-muted">{t("Coleção")}</dt><dd>{o.collection_name}</dd><dt className="text-muted">{t("Item do CMS")}</dt><dd>{o.item_name}</dd><dt className="text-muted">{t("Campo")}</dt><dd>{o.field_name}</dd></dl><span className="mt-3 inline-flex rounded-full border px-2 py-1 text-xs">{reviewedIds.includes(o.id) ? t("Revisada") : t("Pendente de revisão")}</span>
       {outcomes[o.id] && <div className="mt-2"><StatusBadge status={outcomes[o.id]!.status}/>{outcomes[o.id]!.message && <p className="mt-2 text-sm">{t(outcomes[o.id]!.message!)}</p>}</div>}
-      <details className="mt-1 text-xs text-faint"><summary>{t("Detalhes da origem")}</summary><p className="mt-1">Locale {o.locale || t("padrão")}  {t("· posição")} {o.start_pos}</p></details>
+      <details data-state-key={"source:" + o.id} className="mt-1 text-xs text-faint"><summary>{t("Detalhes da origem")}</summary><p className="mt-1">Locale {o.locale || t("padrão")}  {t("· posição")} {o.start_pos}</p></details>
       {display.context && <div className="mt-3 rounded border-l-4 border-accent bg-subtle p-3">
         <p className="whitespace-pre-wrap break-words leading-7 text-slate-700" aria-label={t("Trecho com a menção encontrada")}>{display.context.clippedBefore && "…"}{display.context.before}<mark className="rounded bg-amber-100 px-0.5 font-semibold text-slate-900">{display.context.match}</mark>{display.context.after}{display.context.clippedAfter && "…"}</p>
-        {(display.context.clippedBefore || display.context.clippedAfter) && <details className="mt-2 text-sm text-muted"><summary className="cursor-pointer">{t("Ver texto completo")}</summary><p className="mt-2 whitespace-pre-wrap break-words">{display.context.full}</p></details>}
+        {(display.context.clippedBefore || display.context.clippedAfter) && <details data-state-key={"context:" + o.id} className="mt-2 text-sm text-muted"><summary className="cursor-pointer">{t("Ver texto completo")}</summary><p className="mt-2 whitespace-pre-wrap break-words">{display.context.full}</p></details>}
       </div>}
       </div><div className="min-w-0">
       {protectedOccurrence(o) ? <section aria-label={t("Gerenciamento deste campo")} className="rounded-lg border border-accent/20 bg-white p-4">
@@ -61,6 +62,7 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
         <p className="mt-2 break-words font-semibold text-accent">{linkedValues[o.source_key]!.name}</p>
         <p className="mt-3 text-sm leading-6 text-muted">{t("Esta ocorrência alcança um trecho gerenciado ou seu vínculo precisa ser atualizado. Abra o valor central para conferir a origem e revisar a sincronização.")}</p>
         <Link className="ui-btn mt-4 inline-flex items-center gap-2" href={"/dashboard/managed-values/" + linkedValues[o.source_key]!.id}>{t("Abrir Managed Value")}<ArrowUpRight size={16} aria-hidden="true" /></Link>
+        <div className="mt-3"><ManagedValueContext siteId={o.site_id} valueId={linkedValues[o.source_key]!.id} /></div>
         <p className="mt-3 text-xs text-muted">{t("O conteúdo exibido corresponde ao registro deste scan.")}</p>
       </section> : <><label className="block text-sm font-medium">{t("Novo valor")} <ReplacementInput text={type === "text"} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs({ ...inputs, [o.id]: value });  }} />
       </label>

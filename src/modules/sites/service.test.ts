@@ -5,7 +5,8 @@ vi.mock("server-only", () => ({}));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
 const { requireUser } = vi.hoisted(() => ({ requireUser: vi.fn() }));
 vi.mock("@/modules/auth/service", () => ({ requireUser }));
-import { loadSiteContent } from "./service";
+import { loadSiteContent, loadWorkspaceSiteUrls } from "./service";
+import { loadScanCollections } from "@/modules/scans/service";
 
 const actor = "11111111-1111-4111-8111-111111111111";
 const workspace = "22222222-2222-4222-8222-222222222222";
@@ -88,5 +89,42 @@ describe("CMS authorization boundary", () => {
     expect(view.details?.id).toBe(collection);
     expect(view.page?.pagination.offset).toBe(25);
     expect(fetcher).toHaveBeenCalledTimes(4);
+  });
+});
+
+// Baseline for docs/api-ux-cost-audit.md. Replace these expectations with the
+// cheaper budgets when the corresponding optimization phase ships.
+describe("dashboard provider-cost baseline (2026-09-22)", () => {
+  function provider() {
+    fetcher.mockImplementation(async input => {
+      const url = String(input);
+      if (url.endsWith("/sites")) return Response.json({ sites: [{ id: remoteSite, displayName: "Site", shortName: "site" }] });
+      if (url.endsWith("/collections")) return Response.json({ collections: [{ id: collection, displayName: "Products", slug: "products" }] });
+      if (url.includes("/items?")) return Response.json({ items: [], pagination: { total: 0, limit: 25, offset: 0 } });
+      return Response.json({ id: collection, displayName: "Products", slug: "products", fields: [] });
+    });
+  }
+  it("new scan configuration currently costs two Webflow reads and one credential access", async () => {
+    const client = setupDatabase(); provider();
+    await loadScanCollections(localSite);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(client.rpc).toHaveBeenCalledTimes(1);
+    expect(client.rpc).toHaveBeenCalledWith("read_webflow_credential", { p_id: connection });
+  });
+  it("opening the same CMS collection twice repeats all four reads", async () => {
+    const client = setupDatabase(); provider();
+    await loadSiteContent(localSite, collection);
+    await loadSiteContent(localSite, collection);
+    expect(fetcher).toHaveBeenCalledTimes(8);
+    expect(client.rpc).toHaveBeenCalledTimes(2);
+  });
+  it("site URL display shares a read per connection but repeats it on the next load", async () => {
+    const client = setupDatabase(); provider();
+    const sites = [localSite, "55555555-5555-4555-8555-555555555555"].map(id => ({ id, workspace_id: workspace, connection_id: connection, webflow_site_id: remoteSite, display_name: "Site" }));
+    await loadWorkspaceSiteUrls(sites, [{ id: connection }]);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    await loadWorkspaceSiteUrls(sites, [{ id: connection }]);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(client.rpc).toHaveBeenCalledTimes(2);
   });
 });

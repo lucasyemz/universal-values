@@ -1,3 +1,5 @@
+import { filterSavedGroup, savedGroupSchema } from "@/modules/scans/saved-search";
+import { RememberedLink } from "@/components/layout/navigation-state";
 import { visibleRevertGroups } from "@/modules/scans/review-history";
 import { resourceLink } from "@/modules/routes/links";
 import { ScanCollectionSummary } from "@/components/scans/collection-summary";
@@ -7,7 +9,6 @@ import { ReviewedOccurrence } from "@/components/scans/reviewed-occurrence";
 import { AiBatch } from "@/components/ai/batch";
 import { getText } from "@/i18n/server";
 import { searchOptionsLabel } from "@/modules/text-search/match";
-import { FreshLink } from "@/components/ui/fresh-link";
 import { randomUUID } from "node:crypto";
 import { ManagedDivergence } from "@/components/scans/managed-divergence";
 import { CentralizeValue } from "@/components/scans/centralize-value";
@@ -25,16 +26,17 @@ import { PageHeader, Notice, StatusBadge, SectionHeader, Steps, ContextHelp, Emp
 import { SiteContext } from "@/components/layout/app-shell";
 import { SubmitButton } from "@/components/ui/submit-button";
 
-export default async function ScanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; filter?: string; q?: string; operation?: string; operationError?: string }> }) {
+export default async function ScanPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ error?: string; filter?: string; q?: string; group?: string; operation?: string; operationError?: string }> }) {
   const t = await getText();
 
   const { id } = await params;
   const view = await loadScanResults(id);
   const scanHref = await resourceLink("scans",id);
-  const { error, filter: filterInput, q, operation, operationError } = await searchParams;
+  const { error, filter: filterInput, q, group: groupInput, operation, operationError } = await searchParams;
   const query = resultsSearchSchema.parse(q ?? "");
   const filter = reviewFilterSchema.catch("pending").parse(filterInput);
-  const searched = searchResultGroups(view.sections, query);
+  const groupKey = savedGroupSchema.parse(groupInput ?? "");
+  const searched = filterSavedGroup(searchResultGroups(view.sections, query), groupKey);
   const counts = countReviewedOccurrences(searched, view.reviewedIds);
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter);
   const visibleIds = new Set(sections.flatMap(section=>section.duplicates.flatMap(group=>group.occurrences.map(o=>o.id))));
@@ -42,8 +44,9 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const site = await getScanSite(scan.site_id);
   return <main className="ui-page">
     <SiteContext siteName={site.display_name} title={t("Scan do CMS")} siteId={scan.site_id} workspaceId={scan.workspace_id} />
-    <FreshLink href={"/dashboard/sites/" + scan.site_id + "/scans"} >{t("← Scans")}</FreshLink>
+    <RememberedLink className="ui-btn" href={scanHref.replace(/\/\d+$/, "")}>{t("← Scans")}</RememberedLink>
     <PageHeader title={scan.status === "preview" ? t("Revisar scan") : t("Revisão do scan")} description={scan.status === "preview" ? t("Confira o que será lido antes de iniciar.") : t("Revise as ocorrências e mantenha o foco no que precisa mudar.")} status={<StatusBadge status={scan.status} />} />
+    {["completed", "limited", "cancelled"].includes(scan.status) && scan.plan.length > 0 && <Link prefetch={false} className="ui-btn mt-4" href={scanHref.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + scanHref.split("/").at(-1)}>{t("Repetir scan")}</Link>}
     {scan.plan.some(entry => entry.placeholders) && <p className="mt-3 text-sm">{t("Busca de textos de exemplo: inclui ocorrências únicas, sem exigir repetição.")}</p>}
     {scan.plan[0]?.searchText && <p className="mt-3 break-words">{t("Busca específica:")} <strong>“{scan.plan[0].searchText}”</strong> — {t(searchOptionsLabel(scan.plan[0].searchOptions))}.</p>}
     {error && <p role="alert" className="mt-5 rounded border bg-amber-50 p-4">{error === "name" ? t("Use um nome de 2 a 80 caracteres, como Link de cadastro. Este campo dá um nome ao valor encontrado; ele não substitui a URL.") : error === "invalid" ? t("A solicitação de revisão é inválida. Atualize o scan e tente novamente.") : error === "selection" ? t("Selecione de 2 a 100 ocorrências do mesmo valor, em pelo menos dois campos de origem diferentes e ainda não gerenciados.") : t("Não foi possível concluir. A prévia pode ter expirado, a conexão mudou ou já existe um scan ativo para este site.")}</p>}
@@ -73,6 +76,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       </section>}
       <p className="mb-3 text-xs text-muted">{t("Registro deste scan. Para buscar mudanças feitas no Webflow, inicie outro scan.")}</p>
 
+      {groupKey && <p className="mt-3 text-sm">{t("Exibindo o grupo salvo selecionado.")} <Link prefetch={false} className="text-accent underline" href={scanHref + "?filter=all"}>{t("Ver todos os resultados do scan")}</Link></p>}
       <form method="get" className="mt-5 space-y-2">
         <input type="hidden" name="filter" value={filter} />
         <label htmlFor="results-search" className="block font-medium">{t("Pesquisar nos resultados")}</label>
@@ -83,7 +87,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         </div>
 
       </form>
-      <nav aria-label={t("Filtrar por revisão")} className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(reviewFilterLabels[option])} ({counts[option]})</Link>)}</nav>
+      <nav aria-label={t("Filtrar por revisão")} className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}), ...(groupKey ? { group: groupKey } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(reviewFilterLabels[option])} ({counts[option]})</Link>)}</nav>
 
       <ContextHelp title={t("Como funciona esta revisão")} className="mt-3"><p className="text-muted">{t("Cada grupo mantém o texto original encontrado. Variações de acentos e maiúsculas ficam em grupos separados para você revisar com precisão. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.")}</p><p className="text-sm text-muted">{t("Filtra grupos pelo valor, trecho, coleção, item ou campo já registrado, ignorando maiúsculas/minúsculas e acentos. Mantém juntas as ocorrências de cada grupo e não faz novas consultas ao Webflow. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.")}</p><p className="mt-3 text-sm text-muted">{t("Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Uma busca específica começa com os textos e números correspondentes pendentes, sem herdar revisões de outros scans. Trechos de Managed Values continuam protegidos. Edições externas aparecem como pendentes em um novo scan.")}</p><p>{t("Os valores aplicados são registros históricos verificados, não uma consulta ao CMS atual. Reverter exige prévia e confirmação nesta tela.")}</p></ContextHelp>
       {operation && <ReviewOperationControls id={operation} scanId={id} error={operationError}/>}
@@ -98,14 +102,14 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       {sections.filter(section => section.duplicates.length > 0).map((section) => <section key={section.type} className="mt-8">
         <SectionHeader title={t(section.label)} action={<span className="text-xs text-muted">{section.duplicates.length}  {t("grupos neste filtro")}</span>} />
         {!section.duplicates.length && <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted">{t("Nenhum grupo neste filtro. Experimente Todos ou limpe a pesquisa para conferir os demais resultados.")}</p>}
-        {section.duplicates.map((group) => <div key={filter + query + group.label} className="ui-card mt-5 overflow-hidden p-5 md:p-6">
+        {section.duplicates.map((group) => <details open data-state-key={"group:" + JSON.stringify(group.occurrences[0]?.canonical)} key={filter + query + group.label} className="ui-card mt-5 overflow-hidden p-5 md:p-6"><summary className="cursor-pointer break-words font-semibold">{group.label} · {group.occurrences.length} {t("ocorrências")}</summary>
           {group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <AiBatch scanId={id} groupId={group.occurrences[0]!.id}>
           {!view.reviewsMissing && <ReviewFlag scanId={id} pendingIds={group.occurrences.filter((o) => !view.reviewedIds.includes(o.id)).map((o) => o.id)} reviewedIds={group.occurrences.filter((o) => view.reviewedIds.includes(o.id)).map((o) => o.id)} />}
           <CentralizeValue scanId={scan.id} occurrences={group.occurrences.filter(o => !view.reviewedIds.includes(o.id))} linkedValues={view.linkedValues} />
           <OccurrenceEditor outcomes={view.outcomes} userId={scan.actor_id} editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.filter(o => !view.reviewedIds.includes(o.id)).map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
           </AiBatch>}
           {group.occurrences.filter(o => view.reviewedIds.includes(o.id)).map(o => <ReviewedOccurrence key={o.id} occurrence={o} history={view.reviewHistory[o.id]} outcome={view.outcomes[o.id]} />)}
-        </div>)}
+        </details>)}
       </section>)}
 
     </section>}

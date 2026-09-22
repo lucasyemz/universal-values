@@ -14,3 +14,12 @@ export function cmsOperationSummary(input: { status: string; results: unknown; e
   const expired = input.status === "preview" && Date.parse(input.expires_at) <= now;
   return { verified, attention: !!problem, status: problem?.status ?? (expired ? "expired" : input.status) };
 }
+
+export function activityDestination(href: string, attention: boolean, status: string) {
+  const [path, query = ""] = href.split("?");
+  if (!path || !/\/scans\/[1-9][0-9]*$/.test(path)) return href;
+  const params = new URLSearchParams(query);
+  // Failed/unresolved fields are not reviewed. Keep operation context, show both sets.
+  if (attention || ["confirmed", "preview", "expired", "cancelled"].includes(status)) params.set("filter", "all");
+  return path + (params.size ? "?" + params : "");
+}

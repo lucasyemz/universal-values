@@ -9,7 +9,7 @@ import { requireUser } from "@/modules/auth/service";
 import { getScanSite } from "@/modules/scans/service";
 import { savedValueSchema, scanSchema } from "@/modules/scans/schema";
 import { summarizeDesignerChange } from "@/modules/static-text/history";
-import { cmsOperationSummary, PAGE_SIZE } from "./presentation";
+import { activityDestination, cmsOperationSummary, PAGE_SIZE } from "./presentation";
 
 export async function siteScansPage(id: string, page: number) {
   const site = await getScanSite(id); const { client } = await requireUser();
@@ -60,7 +60,7 @@ export async function siteChangesPage(id: string, page: number, filter: string) 
   const sorted = rows.filter(row => filter !== "attention" || row.attention).sort((a,b) => b.createdAt.localeCompare(a.createdAt) || a.id.localeCompare(b.id));
   const visible = sorted.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(visible.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",visible.filter(row=>row.source==="static").map(row=>row.id))]);
-  return { site, rows: visible.map(row=>({...row,href:(row.source==="cms"?cmsLinks:staticLinks)[row.id]!})), hasMore: sorted.length>page*PAGE_SIZE, limited: filter === "attention" };
+  return { site, rows: visible.map(row=>({...row,href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!, row.attention, row.status)})), hasMore: sorted.length>page*PAGE_SIZE, limited: filter === "attention" };
 }
 export async function siteOverview(id: string) {
   const site = await getScanSite(id); const { client } = await requireUser();

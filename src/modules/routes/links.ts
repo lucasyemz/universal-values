@@ -40,3 +40,10 @@ export async function operationLinks(ids:string[]) {
  const scans=await resourceLinks("scans",scanIds);
  return Object.fromEntries((rows.data??[]).map(row=>[row.id,row.scan_id && scans[row.scan_id] && paths[row.id] ? `${scans[row.scan_id]}?filter=reviewed&operation=${paths[row.id]!.split("/").at(-1)}` : paths[row.id]!]));
 }
+
+export async function siteLink(siteId: string) {
+ const { user } = await requireUser();
+ const namespace = await siteNamespace(siteId, user.id);
+ if (!namespace.site) throw new Error("Endereço indisponível.");
+ return `/dashboard/${namespace.account}/sites/${namespace.site}`;
+}

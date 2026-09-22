@@ -1,3 +1,4 @@
+import { selectionStateKey } from "@/modules/navigation/state";
 import { useText } from "@/i18n/use-text";
 import { randomUUID } from "node:crypto";
 import { previewManagedValue } from "@/modules/scans/actions";
@@ -9,7 +10,7 @@ export function CentralizeValue({ scanId, occurrences, linkedValues }: { scanId:
   const t = useText();
 
   const { available, eligible } = centralizationOptions(occurrences, linkedValues);
-  return <details className="rounded-lg border p-4">
+  return <details data-state-key={"centralize:" + occurrences[0]?.id} className="rounded-lg border p-4">
     <summary className="cursor-pointer font-medium text-accent">{t("Centralizar valor")}</summary>
     <p className="mt-3 text-sm text-muted">{t("Crie um Managed Value para atualizar este dado em suas fontes vinculadas. Selecione apenas ocorrências que representam a mesma informação de negócio. A marcação de conferência é independente.")}</p>
     {!eligible ? <p className="mt-3 text-sm">{t("Selecione ocorrências pendentes em pelo menos dois campos não gerenciados. Para atualizar um valor vinculado, abra seu Managed Value.")}</p> : <form action={previewManagedValue} className="mt-4 space-y-4">
@@ -19,7 +20,7 @@ export function CentralizeValue({ scanId, occurrences, linkedValues }: { scanId:
       </label>
       <fieldset className="space-y-3"><legend className="mb-2 text-sm font-medium">{t("Origens que serão vinculadas")}</legend>
         {available.map(o => <label key={o.id} className="flex items-start gap-3 rounded border p-3 text-sm">
-          <input type="checkbox" name="occurrenceIds" value={o.id} className="mt-1" />
+          <input data-selection-key={selectionStateKey(o.id, o.source_value, o.start_pos, o.end_pos)} type="checkbox" name="occurrenceIds" value={o.id} className="mt-1" />
           <span>{o.collection_name} → {o.item_name} → {o.field_name}<span className="mt-1 block break-words text-muted">{o.raw_match}  {t("· posição")} {o.start_pos} · locale {o.locale || t("padrão")}</span></span>
         </label>)}
       </fieldset>
