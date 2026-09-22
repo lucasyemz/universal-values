@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { detectMedia } from "./media";
-import { occurrencePresentation } from "./presentation";
+import { imageFilename, occurrencePresentation } from "./presentation";
 
 describe("link and image presentation", () => {
   it("finds each anchor label by its saved position, without displaying href markup", () => {
@@ -23,4 +23,10 @@ describe("link and image presentation", () => {
   it("does not treat an empty href as a link occurrence", () => {
     expect(detectMedia("RichText", '<a href="">Vazio</a>')?.matches).toEqual([]);
   });
+});
+
+it("decodes image filenames without rewriting the URL or unrelated underscores", () => {
+ expect(imageFilename("https://cdn.example/6ab081612f679d28d7444430_%F0%9F%8C%9F%20(1).png?x=1")).toBe("🌟 (1).png");
+ expect(imageFilename("https://cdn.example/my_photo.png")).toBe("my_photo.png");
+ expect(imageFilename("https://cdn.example/%ZZ.png")).toBe("Image");
 });

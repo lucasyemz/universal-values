@@ -1,3 +1,4 @@
+import { sourceHistorySchema, withAppliedSources } from "./applied-source";
 import { slugUpdatesSchema, withSlugUpdates } from "./item-slug";
 import { z } from "zod";
 import { buildManagedSyncPlan, locationsSchema } from "@/modules/managed-values/sync-plan";
@@ -15,6 +16,8 @@ export const changeRequestSchema = z.object({
   managed_resolution: z.object({ bindingId: z.uuid(), scanId: z.uuid(), occurrenceIds: z.array(z.uuid()).min(1), mode: z.enum(["keep", "adopt"]) }).nullish(),
   managed_version: z.number().int().positive().nullish(),
   managed_before: managedValueSchema.nullish(), managed_after: managedValueSchema.nullish(), managed_snapshot: z.json().nullish(),
+  source_history: sourceHistorySchema.optional(),
+  queue_order: z.number().int().positive().nullish(),
   background_paused: z.boolean().optional(), worker_error: z.string().nullable().optional(),
   status: z.enum(["preview", "confirmed", "completed", "cancelled"]), cursor: z.number().int().nonnegative(), total: z.number().int().positive(),
   dispatched: z.boolean(), lease_until: z.string().nullable(), retry_at: z.string().nullable(), expires_at: z.string(),
@@ -29,6 +32,7 @@ export function buildRequestPlan(request: z.infer<typeof changeRequestSchema>, o
     if (managed.plan.length !== request.total || managed.plan.some(field => field.binding.managed_value_id !== request.managed_value_id || field.binding.site_id !== request.site_id)) throw new Error("Vínculos inconsistentes.");
     return { request: { ...request, changes: managed.changes }, ...managed, plan: withSlugUpdates(managed.plan, request.slug_updates), managedPlan: managed.plan, revertCount: 0, retryCount: 0, expired: new Date(request.expires_at).getTime() <= Date.now() };
   }
+  occurrences = withAppliedSources(occurrences, request.source_history ?? original?.source_history ?? []);
   let plan = buildFieldChanges(occurrences, request.changes);
   if (request.reverts_request_id) {
     if (!original) throw new Error("Operação original indisponível.");

@@ -67,7 +67,7 @@ export async function loadScanResults(id: string) {
   const { client } = await requireUser();
   const result = await client.from("scan_occurrences").select("*").eq("scan_id", id).order("id").limit(1000);
   if (result.error) throw new Error("Resultados indisponíveis.");
-  const occurrences = z.array(occurrenceSchema).parse(result.data);
+  let occurrences = z.array(occurrenceSchema).parse(result.data);
   const bindings = await client.from("managed_value_bindings").select("*").eq("site_id", scan.site_id).limit(1000);
   if (bindings.error) throw new Error("Vínculos indisponíveis.");
   const linked = z.array(z.object({ source_key: z.string(), managed_value_id: z.uuid() })).parse(bindings.data);
@@ -83,9 +83,10 @@ export async function loadScanResults(id: string) {
     const binding = fullBindings.data.find(b => b.source_key === o.source_key);
     return binding && isIndependentManagedText(o, binding);
   }).map(o => o.id) : [];
+  const {outcomes, reviewHistory, reviewedIds, reviewsMissing, currentOccurrences} = await loadReviewState(client, scan, occurrences);
+  occurrences = currentOccurrences;
   const bound = new Set(linked.map((b) => b.source_key));
   const available = occurrences.filter((o) => !bound.has(o.source_key));
-  const {outcomes, reviewHistory, reviewedIds, reviewsMissing} = await loadReviewState(client, scan, occurrences);
   return { scan, occurrences, outcomes, reviewHistory, reviewedIds, reviewsMissing, linkedValues, editableBoundOccurrenceIds, divergences, sections: groupScanResults(scan, occurrences, available), duplicates: groupOccurrences(occurrences, true), boundCount: occurrences.length - available.length, groups: groupOccurrences(available), expired: new Date(scan.expires_at).getTime() <= Date.now() };
 }
 export async function processBatch(id: string, revision: number) {

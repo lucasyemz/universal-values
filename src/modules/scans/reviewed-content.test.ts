@@ -23,3 +23,9 @@ describe("review counters", () => {
     expect(countReviewedOccurrences(sections, rows.map(o => o.id))).toEqual({ pending: 0, reviewed: 3, all: 3 });
   });
 });
+it("keeps the last repeated image pending after applying only its peer", () => {
+ const images = rows.slice(0,2).map(o=>({...o,canonical:{type:"image" as const,url:"https://cdn.example/image.png"}}));
+ const groups=groupScanResults({plan:[{id:"a".repeat(24),name:"CMS",types:["image"]}]},images,images);
+ expect(filterReviewedGroups(groups,[images[0]!.id],"pending")[0]?.duplicates[0]?.occurrences.map(o=>o.id)).toEqual([images[1]!.id]);
+ expect(countReviewedOccurrences(groups,[images[0]!.id])).toEqual({pending:1,reviewed:1,all:2});
+});

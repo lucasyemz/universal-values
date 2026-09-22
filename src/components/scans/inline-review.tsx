@@ -10,8 +10,8 @@ import { Diff, Notice } from "@/components/ui";
 import { ImageChangePreview } from "./image-change-preview";
 import { ChangeProgress } from "./change-progress";
 
-export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting = false }: {
-  reverting?:boolean; draftKey:string; prepare:(id:string)=>Promise<PreviewResult>; onConfirmingChange:(value:boolean)=>void;
+export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, onCompleted }: {
+  newImagesOnly?: boolean; onCompleted?: () => void; reverting?:boolean; draftKey:string; prepare:(id:string)=>Promise<PreviewResult>; onConfirmingChange:(value:boolean)=>void;
 }) {
   const t=useText(), ai=useAiWork();
   const [store]=useState(()=>createInlineReview(()=>crypto.randomUUID()));
@@ -39,8 +39,8 @@ export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting 
       <ul className="space-y-4">{preview.fields.map(field=><li key={field.sourceKey} className="rounded-lg border p-4">
         <h4 className="break-words text-sm font-semibold">{field.collection} → {field.item} → {field.field}</h4>
         {field.locale && <p className="text-xs text-muted">Locale: {field.locale}</p>}
-        <Diff before={field.before} after={field.after}/>
-        {field.images.map((image,index)=><ImageChangePreview key={index} before={image.before} after={image.after}/>)}
+        {!field.images.length && <Diff before={field.before} after={field.after}/>}
+        {field.images.map((image,index)=><ImageChangePreview key={index} newOnly={newImagesOnly} before={image.before} after={image.after}/>)}
         {field.slug && <div className="mt-3 rounded bg-amber-50 p-3"><h5 className="text-sm font-semibold">{t("Slug sugerido")}</h5><Diff before={field.slug.before} after={field.slug.after}/></div>}
       </li>)}</ul>
       {preview.slugCount>0 && <Notice tone="warning">{t("Mudar o slug altera o endereço da página quando publicada. Redirecionamentos não são criados automaticamente. Os slugs alterados estão incluídos na quantidade de campos.")}</Notice>}
@@ -48,7 +48,7 @@ export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting 
         <p className="text-sm text-muted">{t("Ao aplicar, você confirma exatamente os valores e slugs exibidos. O site não será publicado. Campos alterados no Webflow serão bloqueados; os demais podem ser aplicados.")}</p>
         <button type="button" className="ui-btn ui-btn-primary disabled:opacity-40" disabled={!fresh||state.stage!=="ready"||ai?.busy} onClick={()=>void store.confirm(draftKey,receipt=>confirmInlineChanges({id:receipt.id,digest:receipt.digest,confirmed:true}))}>{state.stage==="confirming"?t("Confirmando operação…"):reverting?t("Confirmar reversão de {0} campos",preview.fieldCount):preview.fieldCount===1?t("Aplicar em 1 campo"):t("Aplicar em {0} campos",preview.fieldCount)}</button>
       </>}
-      {state.stage==="confirmed" && <><Notice tone="success">{t("Alteração confirmada. Acompanhe o processamento abaixo ou continue navegando.")}</Notice><ChangeProgress id={preview.id} cursor={0} total={preview.fields.length} paused={false}/><Link className="ui-btn" href={changeDestination(preview.id,preview.scanId)}>{t("Ver revisados")}</Link></>}
+      {state.stage==="confirmed" && <><Notice tone="success">{t("Alteração confirmada. Acompanhe o processamento abaixo ou continue navegando.")}</Notice><ChangeProgress id={preview.id} cursor={0} total={preview.fields.length} paused={false} onCompleted={onCompleted ? () => { onCompleted(); store.finish(); } : undefined}/><Link className="ui-btn" href={changeDestination(preview.id,preview.scanId)}>{t("Ver revisados")}</Link></>}
     </>}
     {fresh && state.stage==="error" && <button type="button" className="ui-btn" disabled={ai?.busy} onClick={()=>void store.prepare(draftKey,id=>action.current(id))}>{t("Atualizar prévia")}</button>}
   </section>;

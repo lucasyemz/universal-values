@@ -26,3 +26,13 @@ it("invalidates server-rejected stale receipts but safely retries ambiguous conf
  await store.confirm("edit",async()=>{throw new Error("Network");});expect(store.getSnapshot().stage).toBe("ready");
  await store.confirm("edit",async()=>({ok:false,refresh:true,message:"Stale"}));expect(store.getSnapshot()).toMatchObject({stage:"error",error:"Stale"});
 });
+it("unlocks the editor after a finished operation without reusing its confirmation ID",async()=>{
+ let n=0;const store=createInlineReview(()=>String(++n));
+ store.invalidate("one");await store.prepare("one",async()=>({ok:true,preview}));
+ store.finish();expect(store.getSnapshot().stage).toBe("ready");
+ await store.confirm("one",async()=>({ok:true}));
+ store.invalidate("remaining");expect(store.getSnapshot().stage).toBe("confirmed");
+ store.finish();expect(store.getSnapshot().stage).toBe("idle");
+ store.invalidate("remaining");const prepare=vi.fn(async()=>({ok:true as const,preview}));
+ await store.prepare("remaining",prepare);expect(prepare).toHaveBeenCalledWith("2");
+});

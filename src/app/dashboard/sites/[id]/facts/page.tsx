@@ -1,3 +1,4 @@
+import { TabLink } from "@/components/ui/tab-link";
 import { getText } from "@/i18n/server";
 import Link from "next/link";
 import { randomUUID } from "node:crypto";
@@ -30,7 +31,7 @@ export default async function FactsPage({ params, searchParams }: { params: Prom
         </section>
         <div className="space-y-6">
           <section className="ui-card p-6"><h2 className="mb-4 text-lg font-semibold">{t("Suas prévias")}</h2>
-            <nav className="ui-tabs mb-4" aria-label={t("Filtrar prévias")}><Link className="ui-tab" href={base} aria-current={!showArchived ? "page" : undefined}>{t("Pendentes")}</Link><Link className="ui-tab" href={base + "?view=archived"} aria-current={showArchived ? "page" : undefined}>{t("Arquivadas")}</Link></nav>
+            <nav className="ui-tabs mb-4" aria-label={t("Filtrar prévias")}><TabLink className="ui-tab" href={base} aria-current={!showArchived ? "page" : undefined}>{t("Pendentes")}</TabLink><TabLink className="ui-tab" href={base + "?view=archived"} aria-current={showArchived ? "page" : undefined}>{t("Arquivadas")}</TabLink></nav>
             {!view.previews.length ? <p className="text-sm text-muted">{showArchived ? t("Nenhuma prévia arquivada.") : t("Nenhuma prévia pendente.")}</p> : <ul className="space-y-4">{view.previews.map(preview => <li key={preview.id}><Link className="ui-btn" href={`${base}/preview/${preview.id}`}>{t("Ver prévia da versão")} {preview.base_version + 1}</Link><p className="text-xs text-muted">{t("Criada em")} {new Date(preview.created_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })} UTC</p><p className="mt-1 text-xs text-muted">{t(preview.statusLabel)}</p></li>)}</ul>}
             <p className="mt-4 text-xs text-muted">{t("Até 20 prévias recentes por filtro. Arquivar preserva o conteúdo e o histórico.")}</p>
           </section>

@@ -45,3 +45,10 @@ it("limits bulk reversal to visible fields and deduplicates source fields",async
  expect(visibleRevertGroups(all,{[id]:h,[other]:h},new Set([id]))).toEqual([{requestId:id,sources:["source"]}]);
  expect(visibleRevertGroups(all,{[id]:h,[other]:{...h,reversible:false}},new Set([id,other]))).toEqual([{requestId:id,sources:["source"]}]);
 });
+
+it("shows image comparison only for the explicitly changed, verified occurrence", () => {
+ const imageRows=rows.map(o=>({...o,canonical:{type:"image" as const,url:"https://cdn.example/old.png"}}));
+ const change={...request(),changes:[{occurrenceId:id,after:{type:"image" as const,url:"https://cdn.example/new.png"}}]};
+ expect(reviewedChanges(imageRows,[change])[id]?.image).toEqual({before:"https://cdn.example/old.png",after:"https://cdn.example/new.png"});
+ expect(reviewedChanges(imageRows,[{...change,results:[{sourceKey:"source",status:"conflict"}]}])).toEqual({});
+});

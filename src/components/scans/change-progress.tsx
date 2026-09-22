@@ -1,15 +1,17 @@
 "use client";
 import { useText } from "@/i18n/use-text";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getChangeProgress, resumeChanges } from "@/modules/scans/change-actions";
 import { Progress, StatusBadge } from "@/components/ui";
 
-export function ChangeProgress({ id, cursor, total, paused }: { id: string; cursor: number; total: number; paused: boolean }) {
+export function ChangeProgress({ id, cursor, total, paused, onCompleted }: { onCompleted?: () => void; id: string; cursor: number; total: number; paused: boolean }) {
   const t = useText();
 
   const router = useRouter();
-  const [live, setLive] = useState({ cursor, total, paused, status: "confirmed", verified: 0, issues: 0 });
+  const completion = useRef(onCompleted);
+  useEffect(() => { completion.current = onCompleted; }, [onCompleted]);
+  const [live, setLive] = useState({ queuePosition: null as number | null, cursor, total, paused, status: "confirmed", verified: 0, issues: 0 });
   const [error, setError] = useState("");
   const [worker, setWorker] = useState<"checking" | "missing" | "online" | "offline">("checking");
   const [resuming, setResuming] = useState(false);
@@ -24,7 +26,7 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
         if (!result.ok) setError(result.message);
         else {
           setError(""); setWorker(result.worker); setLive({ ...result.progress }); router.refresh();
-          if (["completed", "cancelled"].includes(result.progress.status)) return;
+          if (["completed", "cancelled"].includes(result.progress.status)) { completion.current?.(); return; }
         }
       } catch { if (!disposed) setError("Não foi possível consultar o progresso. O worker continua independente desta página."); }
       if (!disposed) timer = setTimeout(poll, 15000);
@@ -33,7 +35,8 @@ export function ChangeProgress({ id, cursor, total, paused }: { id: string; curs
     return () => { disposed = true; clearTimeout(timer); };
   }, [id, router]);
   return <section className="ui-card my-6 p-5">
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{live.cursor}  {t("de")} {live.total}  {t("fontes processadas")}</p><StatusBadge status={live.paused ? "paused" : live.status} label={live.paused ? t("Aguardando revisão") : live.status === "confirmed" ? t("Na fila do servidor") : undefined} /></div>
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{live.cursor}  {t("de")} {live.total}  {t("fontes processadas")}</p><StatusBadge status={live.paused ? "paused" : live.status} label={live.paused ? t("Aguardando revisão") : live.status === "confirmed" ? live.queuePosition && live.queuePosition > 1 ? t("Na fila · posição {0}", live.queuePosition) : t("Na fila do servidor") : undefined} /></div>
+    {live.queuePosition !== null && live.queuePosition > 1 && <p role="status" className="mb-3 text-sm text-muted">{t("Aguardando as alterações anteriores. Se a primeira estiver pausada, retome ou cancele essa operação para liberar a fila.")}</p>}
     <Progress value={live.cursor} max={live.total} label={t("Fontes processadas")} />
     <p className="mt-3 text-sm text-muted">{t("Você pode sair desta página ou fechar o navegador. O worker processa as fontes confirmadas e salva o progresso no banco.")}</p>
     {live.status !== "confirmed" && <p role="status" className="mt-3 text-sm">{t("{0} fontes verificadas · {1} com conflito, falha ou resultado incerto",live.verified,live.issues)}</p>}

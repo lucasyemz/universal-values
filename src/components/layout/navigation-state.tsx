@@ -1,7 +1,7 @@
 "use client";
-import { createContext, useContext, useEffect, type ComponentProps, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, type ComponentProps, type ReactNode } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { readNavigation, stateHref, stateKey } from "@/modules/navigation/state";
 const User = createContext("");
 export function NavigationState({ userId, children }: { userId: string; children: ReactNode }) {
@@ -11,8 +11,8 @@ export function NavigationState({ userId, children }: { userId: string; children
     if (!href) return;
     const root = document.getElementById("page-content");
     if (!root) return;
-    const details = () => [...root.querySelectorAll<HTMLDetailsElement>("details[data-state-key]")];
-    const selections = () => [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-selection-key]:not(:disabled)')];
+    const details = () => [...root.querySelectorAll<HTMLDetailsElement>("details[data-state-key][data-state-ready]")];
+    const selections = () => [...root.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-selection-key][data-state-ready]:not(:disabled)')];
     let restoring = true;
     let restored = false;
     let frame = 0;
@@ -23,8 +23,6 @@ export function NavigationState({ userId, children }: { userId: string; children
       try {
         const state = readNavigation(sessionStorage, userId, pathname);
         if (state?.href === href) {
-          for (const element of details()) { const open = state.details[element.dataset.stateKey!]; if (open !== undefined) element.open = open; }
-          for (const element of selections()) { const checked = state.selections[element.dataset.selectionKey!]; if (checked !== undefined) element.checked = checked; }
           if (!window.location.hash) window.scrollTo({ top: state.y, behavior: "instant" });
         }
       } catch { /* Storage unavailable: normal navigation still works. */ }
@@ -35,7 +33,7 @@ export function NavigationState({ userId, children }: { userId: string; children
     restore();
     const save = () => {
       if (restoring) return;
-      try { sessionStorage.setItem(stateKey(userId, pathname), JSON.stringify({ href, y: window.scrollY, details: Object.fromEntries(details().map(element => [element.dataset.stateKey!, element.open])), selections: Object.fromEntries(selections().map(element => [element.dataset.selectionKey!, element.checked])), savedAt: Date.now() })); } catch { /* Best effort only. */ }
+      try { const previous = readNavigation(sessionStorage, userId, pathname); const sameView = previous?.href === href ? previous : undefined; sessionStorage.setItem(stateKey(userId, pathname), JSON.stringify({ href, y: window.scrollY, details: { ...sameView?.details, ...Object.fromEntries(details().map(element => [element.dataset.stateKey!, element.open])) }, selections: { ...sameView?.selections, ...Object.fromEntries(selections().map(element => [element.dataset.selectionKey!, element.checked])) }, savedAt: Date.now() })); } catch { /* Best effort only. */ }
     };
     window.addEventListener("scroll", save, { passive: true });
     window.addEventListener("pagehide", save);
@@ -47,6 +45,7 @@ export function NavigationState({ userId, children }: { userId: string; children
   return <User.Provider value={userId}>{children}</User.Provider>;
 }
 export function RememberedLink({ href, onClick, ...props }: ComponentProps<typeof Link> & { href: string }) {
+  const router = useRouter();
   const userId = useContext(User);
   return <Link {...props} href={href} prefetch={false} onClick={event => {
     onClick?.(event);
@@ -55,7 +54,41 @@ export function RememberedLink({ href, onClick, ...props }: ComponentProps<typeo
     if (!userId || href.includes("?") || href.includes("#") || !stateHref(href)) return;
     try {
       const saved = readNavigation(sessionStorage, userId, href);
-      event.preventDefault(); window.location.assign(saved?.href ?? href);
+      event.preventDefault(); router.push(saved?.href ?? href);
     } catch { /* Fall back to the ordinary link. */ }
   }} />;
+}
+
+// Restore each control only after its own hydration, not when streamed HTML is
+// inserted into the layout. Its first client render must match the server.
+export function RememberedDetails({ stateId, initiallyOpen = false, ...props }: Omit<ComponentProps<"details">, "open"> & { stateId: string; initiallyOpen?: boolean }) {
+  const ref = useRef<HTMLDetailsElement>(null), userId = useContext(User);
+  const pathname = usePathname(), params = useSearchParams();
+  const href = stateHref(pathname + "?" + params.toString());
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    try {
+      const saved = readNavigation(sessionStorage, userId, pathname);
+      element.open = saved?.href === href ? saved.details[stateId] ?? initiallyOpen : initiallyOpen;
+    } catch { /* Keep the deterministic server default. */ }
+    element.dataset.stateReady = "true";
+  }, [userId, pathname, href, stateId, initiallyOpen]);
+  return <details {...props} ref={ref} open={initiallyOpen} data-state-key={stateId}/>;
+}
+
+export function RememberedCheckbox({ selectionId, ...props }: Omit<ComponentProps<"input">, "type" | "checked" | "defaultChecked"> & { selectionId: string }) {
+  const ref = useRef<HTMLInputElement>(null), userId = useContext(User);
+  const pathname = usePathname(), params = useSearchParams();
+  const href = stateHref(pathname + "?" + params.toString());
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || props.disabled) return;
+    try {
+      const saved = readNavigation(sessionStorage, userId, pathname);
+      element.checked = saved?.href === href ? saved.selections[selectionId] ?? false : false;
+    } catch { /* Browser selection remains usable without storage. */ }
+    element.dataset.stateReady = "true";
+  }, [userId, pathname, href, selectionId, props.disabled]);
+  return <input {...props} ref={ref} type="checkbox" defaultChecked={false} data-selection-key={selectionId}/>;
 }

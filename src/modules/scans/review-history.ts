@@ -1,13 +1,15 @@
+import { detectMedia } from "./media";
+import { replacementSchema } from "./replacement-schema";
 import { z } from "zod";
 import type { Occurrence } from "./schema";
 
 export const reviewHistorySchema = z.object({
   id: z.uuid(), created_at: z.string(), reverts_request_id: z.string().nullable(),
   status: z.string().optional(),
-  changes: z.array(z.object({ occurrenceId: z.string() })),
+  changes: z.array(z.object({ occurrenceId: z.string(), after: replacementSchema.optional() })),
   results: z.array(z.object({ sourceKey: z.string(), status: z.string(), message: z.string().optional(), actual: z.json().optional(), reviewedSource: z.string().optional() })),
 });
-export type ReviewedChange = { requestId: string; after: string; reverted: boolean; reversible: boolean };
+export type ReviewedChange = { requestId: string; after: string; reverted: boolean; reversible: boolean; image?: { before: string; after: string } };
 /** Historical verified results, never a claim about the live CMS. Newest request wins. */
 export function reviewedChanges(occurrences: Occurrence[], requests: z.infer<typeof reviewHistorySchema>[]) {
   const history: Record<string, ReviewedChange> = {};
@@ -17,7 +19,15 @@ export function reviewedChanges(occurrences: Occurrence[], requests: z.infer<typ
       const result = occurrence && request.results.find(r => r.sourceKey === occurrence.source_key && ["applied", "already_applied"].includes(r.status));
       if (!result || history[change.occurrenceId]) continue;
       const after = result.reviewedSource ?? (typeof result.actual === "string" ? result.actual : result.actual !== undefined ? JSON.stringify(result.actual) : undefined);
-      if (after !== undefined) history[change.occurrenceId] = { requestId: request.id, after, reverted: !!request.reverts_request_id, reversible: !request.reverts_request_id && result.status === "applied" && result.actual !== undefined };
+      let imageAfter = change.after?.type === "image" ? change.after.url : undefined;
+      if (occurrence?.canonical.type === "image" && ["Image", "ImageRef", "MultiImage"].includes(occurrence.field_type) && result.actual !== undefined) {
+        const beforeMedia = detectMedia(occurrence.field_type, JSON.parse(occurrence.source_value));
+        const actualMedia = detectMedia(occurrence.field_type, result.actual);
+        const index = beforeMedia?.matches.findIndex(m => m.start === occurrence.start_pos && m.end === occurrence.end_pos) ?? -1;
+        const match = actualMedia?.matches[index];
+        if (match?.canonical.type === "image") imageAfter = match.canonical.url;
+      }
+      if (after !== undefined) history[change.occurrenceId] = { requestId: request.id, after, reverted: !!request.reverts_request_id, reversible: !request.reverts_request_id && result.status === "applied" && result.actual !== undefined, ...(occurrence?.canonical.type === "image" && change.after?.type === "image" ? { image: { before: occurrence.canonical.url, after: imageAfter ?? change.after.url } } : {}) };
     }
   }
   return history;

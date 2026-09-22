@@ -19,7 +19,7 @@ const statuses: Record<string, { label: string; tone: "success" | "warning" | "d
   reported: { label: "Informado pela extensão", tone: "warning" },
   reverted: { label: "Revertido", tone: "success" },
   expired: { label: "Prévia expirada", tone: "muted" }, dispatching: { label: "Verificação pendente", tone: "warning" },
-  preview: { label: "Aguardando confirmação", tone: "accent" }, running: { label: "Em andamento", tone: "accent" }, paused: { label: "Pausado", tone: "warning" }, completed: { label: "Concluído", tone: "success" }, limited: { label: "Cobertura parcial", tone: "warning" }, cancelled: { label: "Cancelado", tone: "muted" }, confirmed: { label: "Em aplicação", tone: "accent" }, disconnected: { label: "Reconectar", tone: "warning" }, connected: { label: "Vinculado", tone: "success" }, reviewed: { label: "Revisado", tone: "success" }, conflict: { label: "Alterado no Webflow", tone: "warning" }, failed: { label: "Falhou", tone: "danger" }, uncertain: { label: "Conferência necessária", tone: "warning" }, applied: { label: "Aplicado", tone: "success" }, already_applied: { label: "Já aplicado", tone: "success" }, draft: { label: "Rascunho", tone: "muted" }, ready: { label: "Pronto", tone: "success" },
+  preview: { label: "Aguardando confirmação", tone: "accent" }, running: { label: "Em andamento", tone: "accent" }, paused: { label: "Pausado", tone: "warning" }, completed: { label: "Concluído", tone: "success" }, limited: { label: "Cobertura parcial", tone: "warning" }, cancelled: { label: "Cancelado", tone: "muted" }, confirmed: { label: "Em aplicação", tone: "accent" }, disconnected: { label: "Reconectar", tone: "warning" }, connected: { label: "Vinculado", tone: "success" }, reviewed: { label: "Revisado", tone: "success" }, conflict: { label: "Conflito de versão", tone: "warning" }, failed: { label: "Falhou", tone: "danger" }, uncertain: { label: "Conferência necessária", tone: "warning" }, applied: { label: "Aplicado", tone: "success" }, already_applied: { label: "Já aplicado", tone: "success" }, draft: { label: "Rascunho", tone: "muted" }, ready: { label: "Pronto", tone: "success" },
 };
 const tones = { success: "bg-[var(--success-soft)] text-[var(--success)]", warning: "bg-[var(--warning-soft)] text-[var(--warning)]", danger: "bg-[var(--danger-soft)] text-[var(--danger)]", accent: "bg-accent-soft text-accent", muted: "bg-subtle text-muted" };
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
@@ -44,10 +44,14 @@ export function Steps({ steps, current }: { steps: string[]; current: number }) 
 
   return <ol aria-label={t("Etapas")} className="my-6 flex flex-wrap gap-4 border-b pb-5">{steps.map((step, index) => <li key={step} aria-current={index === current ? "step" : undefined} className={`flex items-center gap-2 text-xs ${index === current ? "font-semibold text-accent" : "text-muted"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-full ${index === current ? "bg-accent text-white" : "bg-subtle"}`}>{index < current ? <CheckCircle2 size={13} aria-hidden="true" /> : index + 1}</span>{t(step)}</li>)}</ol>;
 }
-export function Diff({ before, after }: { before: ReactNode; after: ReactNode }) {
+export function Diff({ before, after, beforeLabel, afterLabel }: { before: ReactNode; after: ReactNode; beforeLabel?: string; afterLabel?: string }) {
   const t = useText();
 
-  return <div className="mt-4 grid items-start gap-3 rounded-lg border bg-subtle/50 p-4 sm:grid-cols-[1fr_auto_1fr]"><div className="min-w-0"><p className="mb-2 text-xs font-medium text-muted">{t("Valor atual")}</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div><ArrowRight size={16} className="mt-1 text-faint sm:mt-8" aria-hidden="true" /><div className="min-w-0"><p className="mb-2 text-xs font-medium text-accent">{t("Novo valor")}</p><div className="whitespace-pre-wrap break-words text-sm font-medium">{after}</div></div></div>;
+  return <div className="mt-4 grid items-stretch gap-2 sm:grid-cols-[1fr_auto_1fr]">
+    <div className="min-w-0 rounded-lg border border-red-200 bg-red-50/50 p-3"><p className="mb-2 text-xs font-semibold text-red-800">{beforeLabel ?? t("Valor atual")}</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div>
+    <ArrowRight size={16} aria-hidden="true" className="self-center text-muted max-sm:rotate-90" />
+    <div className="min-w-0 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3"><p className="mb-2 text-xs font-semibold text-emerald-800">{afterLabel ?? t("Novo valor")}</p><div className="whitespace-pre-wrap break-words text-sm">{after}</div></div>
+  </div>;
 }
 
 export function ContextHelp({title,children,className=""}:{title:string;children:ReactNode;className?:string}) {

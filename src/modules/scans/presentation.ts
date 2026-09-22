@@ -2,6 +2,14 @@ import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 import { valueLabel, type Occurrence } from "./schema";
 import { textContext } from "./text-context";
 
+export function imageFilename(url: string) {
+  try {
+    const path = new URL(url).pathname.split("/").at(-1) ?? "";
+    const filename = decodeURIComponent(path).replace(/^[a-f0-9]{24}_/i, "");
+    return filename || "Image";
+  } catch { return "Image"; }
+}
+
 type Node = DefaultTreeAdapterMap["node"];
 function textContent(node: Node): string {
   if ("tagName" in node && ["script", "style", "template"].includes(node.tagName)) return "";
@@ -12,7 +20,7 @@ function textContent(node: Node): string {
 
 export function occurrencePresentation(o: Pick<Occurrence, "canonical" | "field_type" | "field_name" | "source_value" | "start_pos" | "end_pos" | "raw_match">) {
   const media = o.canonical.type === "link" || o.canonical.type === "image";
-  let title = media ? o.field_name : valueLabel(o.canonical);
+  let title = o.canonical.type === "image" ? imageFilename(o.canonical.url) : media ? o.field_name : valueLabel(o.canonical);
   if (media && o.field_type === "RichText") {
     const visit = (node: Node) => {
       if ("tagName" in node) {

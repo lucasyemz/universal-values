@@ -1,4 +1,5 @@
-import { StatusBadge } from "@/components/ui";
+import { ImageChangePreview, ImagePreview } from "./image-change-preview";
+import { Diff, StatusBadge } from "@/components/ui";
 import { InlineRevert } from "./inline-revert";
 import { getText } from "@/i18n/server";
 import type { Occurrence } from "@/modules/scans/schema";
@@ -11,14 +12,13 @@ export async function ReviewedOccurrence({ occurrence, history, outcome }: { occ
     <div className="mt-2"><StatusBadge status={outcome?.status ?? "reviewed"} label={outcome?.status === "reverted" ? t("Revertido") : undefined}/>{outcome?.message && !["applied", "already_applied", "reverted"].includes(outcome.status) && <p className="mt-2 text-sm">{t(outcome.message)}</p>}</div>
     <p className="mt-1 text-sm text-muted">{occurrence.collection_name} · {t("Revisado · Somente leitura")}</p>
     {history ? <>
-      <div className="mt-3 grid gap-4 md:grid-cols-2">
-        <div><h4 className="text-sm font-medium">{t("Valor original do scan")}</h4><pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded bg-slate-50 p-3 text-sm">{occurrence.source_value}</pre></div>
-        <div><h4 className="text-sm font-medium">{t("Resultado verificado da operação")}</h4><pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded bg-blue-50 p-3 text-sm">{history.after}</pre></div>
-      </div>
+      {history.image && <ImageChangePreview before={history.image.before} after={history.image.after}/>}
+      {occurrence.canonical.type !== "image" && <Diff beforeLabel={t("Valor original do scan")} afterLabel={t("Resultado verificado da operação")} before={<div className="max-h-80 overflow-auto">{occurrence.source_value}</div>} after={<div className="max-h-80 overflow-auto">{history.after}</div>}/>}
+      {occurrence.canonical.type === "image" && !history.image && <ImagePreview url={occurrence.canonical.url} label={t("Valor original do scan")}/>}
       {!history.reverted && history.reversible && <InlineRevert requestId={history.requestId} sources={[occurrence.source_key]} />}
     </> : <>
       <p className="mt-3 text-sm text-muted">{t("Revisado sem alteração verificada neste scan. Valor original abaixo.")}</p>
-      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-sm">{occurrence.source_value}</pre>
+      {occurrence.canonical.type === "image" ? <ImagePreview url={occurrence.canonical.url} label={t("Valor original do scan")}/> : <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-sm">{occurrence.source_value}</pre>}
     </>}
   </section>;
 }

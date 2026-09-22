@@ -58,7 +58,12 @@ export async function getChangeProgress(input: unknown) {
     const health = await client.rpc("cms_worker_last_seen", {});
     if (health.error && !["PGRST202", "42883"].includes(health.error.code)) throw new Error("Worker health unavailable");
     const worker = health.error ? "missing" as const : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" as const : "offline" as const;
-    return { ok: true as const, worker, progress: { verified: request.results.filter(r => ["applied", "already_applied"].includes(r.status)).length, issues: request.results.filter(r => !["applied", "already_applied"].includes(r.status)).length, cursor: request.cursor, total: request.total, status: request.status, paused: request.background_paused ?? false, error: request.worker_error } };
+    let queuePosition: number | null = null;
+    if (request.status === "confirmed" && request.queue_order) {
+      const earlier = await client.from("cms_change_requests").select("id", { count: "exact", head: true }).eq("actor_id", request.actor_id).eq("status", "confirmed").lt("queue_order", request.queue_order);
+      if (!earlier.error && earlier.count !== null) queuePosition = earlier.count + 1;
+    }
+    return { ok: true as const, worker, progress: { queuePosition, verified: request.results.filter(r => ["applied", "already_applied"].includes(r.status)).length, issues: request.results.filter(r => !["applied", "already_applied"].includes(r.status)).length, cursor: request.cursor, total: request.total, status: request.status, paused: request.background_paused ?? false, error: request.worker_error } };
   } catch { return { ok: false as const, message: "Não foi possível atualizar o progresso. O processamento no servidor independe desta tela." }; }
 }
 

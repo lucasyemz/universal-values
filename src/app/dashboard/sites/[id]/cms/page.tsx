@@ -1,3 +1,4 @@
+import { TabLink } from "@/components/ui/tab-link";
 import { getText } from "@/i18n/server";
 import { FreshLink } from "@/components/ui/fresh-link";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default async function SitePage({ params, searchParams }: {
     <Notice>{t("Conteúdo preparado no Webflow. Rascunhos e alterações ainda não publicadas podem aparecer aqui.")}</Notice>
     <section className="mt-8"><h2 className="text-xl font-semibold">{t("Coleções")}</h2>
       {!view.collections.length ? <EmptyState title={t("Nenhuma coleção disponível")} description={t("Confira as coleções e as permissões desta autorização no Webflow antes de iniciar um scan.")} /> :
-        <nav aria-label={t("Coleções")} className="ui-tabs mt-4">{view.collections.map((collection) => <Link key={collection.id} href={base + "?collection=" + collection.id} aria-current={view.details?.id === collection.id ? "page" : undefined} className="ui-tab">{collection.displayName}</Link>)}</nav>}
+        <nav aria-label={t("Coleções")} className="ui-tabs mt-4">{view.collections.map((collection) => <TabLink key={collection.id} href={base + "?collection=" + collection.id} aria-current={view.details?.id === collection.id ? "page" : undefined} className="ui-tab">{collection.displayName}</TabLink>)}</nav>}
     </section>
     {view.details && view.page && <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight">{view.details.displayName}</h2>

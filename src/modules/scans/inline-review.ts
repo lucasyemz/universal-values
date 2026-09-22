@@ -8,6 +8,7 @@ export function createInlineReview(uuid:()=>string, now=()=>Date.now()) {
   const publish=(next:ReviewState)=>{state=next;listeners.forEach(fn=>fn());};
   return {
     getSnapshot:()=>state,
+    finish(){if(state.stage!=="confirmed")return;revision++;ids.clear();publish({key:"",stage:"idle"});},
     subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn);};},
     invalidate(key:string){if(state.stage==="confirming"||state.stage==="confirmed")return;revision++;publish({key,stage:key?"preparing":"idle"});},
     async prepare(key:string, action:(id:string)=>Promise<PreviewResult>) {

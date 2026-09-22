@@ -4,7 +4,7 @@ import { useText } from "@/i18n/use-text";
 import Image from "next/image";
 import { useState } from "react";
 
-function Preview({ url, label }: { url: string; label: string }) {
+export function ImagePreview({ url, label }: { url: string; label: string }) {
   const t = useText();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "failed">("loading");
@@ -18,11 +18,11 @@ function Preview({ url, label }: { url: string; label: string }) {
   </figure>;
 }
 
-export function ImageChangePreview({ before, after }: { before: string; after: string }) {
+export function ImageChangePreview({ before, after, newOnly = false }: { before: string; after: string; newOnly?: boolean }) {
   const t = useText();
 
-  return <div className="mt-4 grid gap-4 sm:grid-cols-2" aria-label={t("Comparação das imagens")}>
-    <Preview key={`before:${before}`} url={before} label={t("Imagem anterior")} />
-    <Preview key={`after:${after}`} url={after} label={t("Nova imagem")} />
+  return <div className={"mt-4 grid gap-4 " + (newOnly ? "" : "sm:grid-cols-2")} aria-label={t("Comparação das imagens")}>
+    {!newOnly && <ImagePreview key={`before:${before}`} url={before} label={t("Imagem anterior")} />}
+    {(!newOnly || before !== after) && <ImagePreview key={`after:${after}`} url={after} label={t("Nova imagem")} />}
   </div>;
 }

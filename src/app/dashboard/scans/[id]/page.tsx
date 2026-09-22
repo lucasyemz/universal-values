@@ -1,5 +1,6 @@
+import { TabLink } from "@/components/ui/tab-link";
 import { filterSavedGroup, savedGroupSchema } from "@/modules/scans/saved-search";
-import { RememberedLink } from "@/components/layout/navigation-state";
+import { RememberedLink, RememberedDetails } from "@/components/layout/navigation-state";
 import { visibleRevertGroups } from "@/modules/scans/review-history";
 import { resourceLink } from "@/modules/routes/links";
 import { ScanCollectionSummary } from "@/components/scans/collection-summary";
@@ -13,7 +14,8 @@ import { randomUUID } from "node:crypto";
 import { ManagedDivergence } from "@/components/scans/managed-divergence";
 import { CentralizeValue } from "@/components/scans/centralize-value";
 import { OccurrenceEditor } from "@/components/scans/occurrence-editor";
-import { occurrencePresentation } from "@/modules/scans/presentation";
+import { ImageThumbnail } from "@/components/scans/image-thumbnail";
+import { imageFilename, occurrencePresentation } from "@/modules/scans/presentation";
 import Link from "next/link";
 import { ScanProgress } from "@/components/scans/scan-progress";
 import { getScanSite, loadScanResults, scanProgress } from "@/modules/scans/service";
@@ -87,7 +89,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         </div>
 
       </form>
-      <nav aria-label={t("Filtrar por revisão")} className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <Link key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}), ...(groupKey ? { group: groupKey } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(reviewFilterLabels[option])} ({counts[option]})</Link>)}</nav>
+      <nav aria-label={t("Filtrar por revisão")} className="ui-tabs mt-5">{reviewFilterSchema.options.map((option) => <TabLink key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}), ...(groupKey ? { group: groupKey } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(reviewFilterLabels[option])} ({counts[option]})</TabLink>)}</nav>
 
       <ContextHelp title={t("Como funciona esta revisão")} className="mt-3"><p className="text-muted">{t("Cada grupo mantém o texto original encontrado. Variações de acentos e maiúsculas ficam em grupos separados para você revisar com precisão. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.")}</p><p className="text-sm text-muted">{t("Filtra grupos pelo valor, trecho, coleção, item ou campo já registrado, ignorando maiúsculas/minúsculas e acentos. Mantém juntas as ocorrências de cada grupo e não faz novas consultas ao Webflow. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.")}</p><p className="mt-3 text-sm text-muted">{t("Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Uma busca específica começa com os textos e números correspondentes pendentes, sem herdar revisões de outros scans. Trechos de Managed Values continuam protegidos. Edições externas aparecem como pendentes em um novo scan.")}</p><p>{t("Os valores aplicados são registros históricos verificados, não uma consulta ao CMS atual. Reverter exige prévia e confirmação nesta tela.")}</p></ContextHelp>
       {operation && <ReviewOperationControls id={operation} scanId={id} error={operationError}/>}
@@ -102,14 +104,19 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       {sections.filter(section => section.duplicates.length > 0).map((section) => <section key={section.type} className="mt-8">
         <SectionHeader title={t(section.label)} action={<span className="text-xs text-muted">{section.duplicates.length}  {t("grupos neste filtro")}</span>} />
         {!section.duplicates.length && <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted">{t("Nenhum grupo neste filtro. Experimente Todos ou limpe a pesquisa para conferir os demais resultados.")}</p>}
-        {section.duplicates.map((group) => <details open data-state-key={"group:" + JSON.stringify(group.occurrences[0]?.canonical)} key={filter + query + group.label} className="ui-card mt-5 overflow-hidden p-5 md:p-6"><summary className="cursor-pointer break-words font-semibold">{group.label} · {group.occurrences.length} {t("ocorrências")}</summary>
-          {group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <AiBatch scanId={id} groupId={group.occurrences[0]!.id}>
+        {section.duplicates.map((group, groupIndex) => <RememberedDetails initiallyOpen={groupIndex === 0} stateId={"group:" + JSON.stringify(group.occurrences[0]?.canonical)} key={filter + query + group.label} className="scan-workspace-group ui-card mt-4 p-4"><summary className="cursor-pointer break-words font-semibold">{group.occurrences[0]?.canonical.type === "image" ? <span className="inline-flex max-w-[95%] items-start gap-3 align-middle">
+            <ImageThumbnail url={group.occurrences[0].canonical.url} alt=""/>
+            <span className="min-w-0"><span className="block">{imageFilename(group.occurrences[0].canonical.url)}</span><span className="mt-1 block break-all text-xs font-normal text-muted">{group.occurrences[0].canonical.url}</span><span className="mt-2 block text-xs font-normal">{group.occurrences.length} {t("ocorrências")} · {group.occurrences[0].collection_name} → {group.occurrences[0].field_name}</span></span>
+          </span> : <>{group.label} · {group.occurrences.length} {t("ocorrências")}</>}</summary>
+          {group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <AiBatch selectionScoped scanId={id} groupId={group.occurrences[0]!.id}>
+          <OccurrenceEditor outcomes={view.outcomes} userId={scan.actor_id} editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.filter(o => !view.reviewedIds.includes(o.id)).map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
+          <details className="mt-4 rounded-lg border p-3 text-sm"><summary className="font-medium">{t("Mais ações do grupo")}</summary><div className="mt-3 space-y-3">
           {!view.reviewsMissing && <ReviewFlag scanId={id} pendingIds={group.occurrences.filter((o) => !view.reviewedIds.includes(o.id)).map((o) => o.id)} reviewedIds={group.occurrences.filter((o) => view.reviewedIds.includes(o.id)).map((o) => o.id)} />}
           <CentralizeValue scanId={scan.id} occurrences={group.occurrences.filter(o => !view.reviewedIds.includes(o.id))} linkedValues={view.linkedValues} />
-          <OccurrenceEditor outcomes={view.outcomes} userId={scan.actor_id} editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.filter(o => !view.reviewedIds.includes(o.id)).map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
+          </div></details>
           </AiBatch>}
           {group.occurrences.filter(o => view.reviewedIds.includes(o.id)).map(o => <ReviewedOccurrence key={o.id} occurrence={o} history={view.reviewHistory[o.id]} outcome={view.outcomes[o.id]} />)}
-        </details>)}
+        </RememberedDetails>)}
       </section>)}
 
     </section>}

@@ -1,5 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { beforeAll, afterAll, afterEach, describe, it, expect, vi } from "vitest";
 import { processWorkerTurn, workerPayloadSchema } from "../../src/modules/sync-worker/process";
@@ -17,8 +17,9 @@ async function rpc(sql:string,args:unknown[]=[],user:string|null=owner) {
 }
 beforeAll(async()=>{
   db=new PGlite(); await db.exec(`create role service_role nologin; create role anon nologin; create role authenticated nologin; create schema auth; create table auth.users(id uuid primary key); create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; grant usage on schema auth to anon,authenticated; grant execute on function auth.uid() to anon,authenticated;`);
-  for(const name of ["20260916000100_workspaces.sql","20260916000200_webflow_read_connection.sql","20260916000300_cms_scans_managed_values.sql","20260916000400_scan_links_images.sql","20260916000500_confirmed_cms_changes.sql","20260916000600_cms_change_reverts.sql","20260917000800_text_removal_changes.sql","20260918001200_managed_value_sync.sql","20260918001300_managed_value_protection.sql","20260918001400_managed_value_resolution.sql","20260919001500_background_cms_worker.sql"]) await db.exec(readFileSync(new URL("../../supabase/migrations/"+name,import.meta.url),"utf8"));
+  for(const name of readdirSync("supabase/migrations").filter(name=>name.endsWith(".sql")).sort()) await db.exec(readFileSync(new URL("../../supabase/migrations/"+name,import.meta.url),"utf8"));
   await db.query("insert into auth.users values($1),($2)",[owner,other]);
+  await db.query("insert into app_private.admins(user_id,reason) values($1,'Worker fixture')",[owner]);
   await db.query("insert into public.workspaces(id,name) values($1,'Test')",[workspace]);
   await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspace,owner]);
   await db.query("insert into public.webflow_connections(id,workspace_id,actor_id,state_hash,status) values($1,$2,$3,$4,'ready')",[connection,workspace,owner,"b".repeat(64)]);
@@ -143,4 +144,13 @@ describe("durable CMS worker",()=>{
     expect(p.updateField).toHaveBeenCalledTimes(1);
   });
 
+});
+
+it("executes queued confirmed operations sequentially through the real worker gateway",async()=>{
+ const first=await queued(),second=await queued(),p=provider();
+ expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:first.id,status:"applied"});
+ expect(await processWorkerTurn(gateway,p.connect)).toEqual({idle:true});
+ await expire(first.id);
+ expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:first.id,status:"applied"});
+ expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:second.id});
 });

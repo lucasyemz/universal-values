@@ -1,3 +1,4 @@
+import { withAppliedSources } from "./applied-source";
 import "server-only";
 import { z } from "zod";
 import type { requireUser } from "@/modules/auth/service";
@@ -23,5 +24,12 @@ export async function loadReviewState(client: Awaited<ReturnType<typeof requireU
   }
   const reviewHistory = reviewedChanges(occurrences, requests);
   const reviewedIds = [...new Set([...z.array(z.object({ occurrence_id: z.uuid() })).parse(reviews.data ?? []).map((row) => row.occurrence_id), ...Object.keys(reviewHistory)])];
-  return {reviewedIds, reviewHistory, reviewsMissing, outcomes: reviewOutcomes(occurrences, requests)};
+  const currentOccurrences = withAppliedSources(occurrences, [...requests].sort((a,b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)).filter(r => ["completed", "cancelled"].includes(r.status ?? "") && !r.reverts_request_id).map(r => ({...r, changes: r.changes.filter((c): c is typeof c & {after: NonNullable<typeof c.after>} => !!c.after)})));
+  const outcomes = reviewOutcomes(occurrences, requests);
+  // A conflict against the old scan can be superseded by a proven local baseline.
+  for (const row of currentOccurrences) {
+    const original = occurrences.find(o => o.id === row.id);
+    if (outcomes[row.id]?.status === "conflict" && original?.source_value !== row.source_value) delete outcomes[row.id];
+  }
+  return {currentOccurrences, reviewedIds, reviewHistory, reviewsMissing, outcomes};
 }
