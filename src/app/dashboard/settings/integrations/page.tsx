@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("integrations");
+}
+
 import { getText } from "@/i18n/server";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui";

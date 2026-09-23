@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("value");
+}
+
 import { getText } from "@/i18n/server";
 import { RememberedLink } from "@/components/layout/navigation-state";
 import { siteLink } from "@/modules/routes/links";

@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("factsVersion");
+}
+
 import { getText } from "@/i18n/server";
 import { FreshLink } from "@/components/ui/fresh-link";
 import { SiteContext } from "@/components/layout/app-shell";

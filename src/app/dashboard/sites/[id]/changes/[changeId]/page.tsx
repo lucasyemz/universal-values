@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("staticChange");
+}
+
 import {DesignerImagePreview} from "@/components/designer-image-preview";
 import {observedImage} from "@/modules/static-text/image-edit";
 import { observedLink } from "@/modules/static-text/link-edit";

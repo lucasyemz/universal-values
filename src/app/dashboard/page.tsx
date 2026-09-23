@@ -1,3 +1,12 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+import { redirect } from "next/navigation";
+import { workspaceLink } from "@/modules/routes/links";
+import { entryWorkspace } from "@/modules/workspaces/entry";
+
+export async function generateMetadata() {
+  return dashboardMetadata("home");
+}
+
 import { getText } from "@/i18n/server";
 import { PlanUsage } from "@/components/layout/plan-usage";
 import { quotaMessage } from "@/modules/plans/errors";
@@ -7,11 +16,13 @@ import { getWorkspaceNavigation } from "@/components/layout/workspace-data";
 import { Card, EmptyState, Notice, PageHeader, SectionHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
-export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string }> }) {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ error?: string; created?: string; workspaces?: string }> }) {
   const t = await getText();
 
   const workspaces = await getWorkspaceNavigation();
   const params = await searchParams;
+  const destination = entryWorkspace(workspaces, params);
+  if (destination) redirect(await workspaceLink(destination));
   return <main className="ui-page">
     <PageHeader eyebrow={t("Seu centro de controle")} title={t("Visão geral")} description={t("Informações consistentes. Mudanças sob seu controle. Escolha um workspace para acessar seus sites.")} actions={<Link className="ui-btn ui-btn-primary" href="/dashboard/settings/webflow?new=1"><Plus size={16} />{t("Criar workspace")}</Link>} />
     {params.error && <Notice tone="danger" title={t("Não foi possível concluir")}>{quotaMessage(params.error) ?? t("Confira os dados e gere uma nova prévia se necessário.")}</Notice>}

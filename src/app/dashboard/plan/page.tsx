@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("plan");
+}
+
 import { AdminCapacity } from "@/components/admin-capacity";
 import { FreshLink } from "@/components/ui/fresh-link";
 import { GeminiUsage } from "@/components/ai/usage";

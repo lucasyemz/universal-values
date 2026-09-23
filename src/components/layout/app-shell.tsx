@@ -49,13 +49,13 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const pageTitle = current?.title ?? (routeWorkspace ? workspaces.find(w => w.id === routeWorkspace)?.name : pathname === "/dashboard" ? t("Visão geral") : pathname === "/dashboard/plan" ? t("Plano e consumo") : pathname === "/dashboard/settings/integrations" ? t("Integrações") : t("Revisão"));
   const close = () => dialog.current?.close();
   const sidebar = <>
-    <Link href="/dashboard" onClick={close} className="mb-8 inline-flex"><Brand /></Link>
-    <label className="mb-6 block text-[11px] font-semibold uppercase tracking-wider text-faint">{t("Workspace")} <select aria-label={t("Selecionar workspace")} value={workspaceId ?? ""} className="mt-2 w-full normal-case tracking-normal" onChange={(event) => { close(); router.push(event.target.value ? "/dashboard/workspaces/" + event.target.value + "/sites" : "/dashboard"); }}>
+    <Link href="/dashboard?view=overview" onClick={close} className="mb-8 inline-flex"><Brand /></Link>
+    <label className="mb-6 block text-[11px] font-semibold uppercase tracking-wider text-faint">{t("Workspace")} <select aria-label={t("Selecionar workspace")} value={workspaceId ?? ""} className="mt-2 w-full normal-case tracking-normal" onChange={(event) => { close(); router.push(event.target.value ? "/dashboard/workspaces/" + event.target.value + "/sites" : "/dashboard?view=overview"); }}>
         <option value="">{workspaceError ? t("Workspaces indisponíveis") : t("Todos os workspaces")}</option>{workspaces.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
       </select>
     </label>
     <nav aria-label={t("Navegação principal")} className="space-y-1">
-      <Link onClick={close} href="/dashboard" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />{t("Visão geral")}</Link>
+      <Link onClick={close} href="/dashboard?view=overview" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />{t("Visão geral")}</Link>
       {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Sites")}</Link>}
       {siteBase && <><p title={siteName} className="truncate px-3 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">{siteName}</p>
         <RememberedLink onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span><ChevronDown size={14} className="shrink-0 text-faint" aria-hidden="true" /></RememberedLink>
@@ -81,7 +81,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
       <div className="flex min-h-16 items-center justify-between gap-3 border-b bg-surface px-4 md:px-8">
         <div className="flex min-w-0 flex-1 items-center gap-3 py-3"><button type="button" className="ui-btn ui-btn-ghost shrink-0 lg:hidden" aria-label={t("Abrir menu")} onClick={() => dialog.current?.showModal()}><Menu size={19} /></button>
           <nav aria-label="Breadcrumb" className="min-w-0"><ol className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-            <li><Link href="/dashboard" className="text-muted hover:text-accent">{t("Workspace")}</Link></li>
+            <li><Link href="/dashboard?view=overview" className="text-muted hover:text-accent">{t("Workspace")}</Link></li>
             {siteBase ? <>
               {workspaceId && <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><Link href={"/dashboard/workspaces/" + workspaceId + "/sites"} title={activeWorkspace?.name ?? t("Sites do workspace")} className="max-w-36 truncate text-muted hover:text-accent sm:max-w-52">{activeWorkspace?.name ?? t("Sites do workspace")}</Link></li>}
               <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span title={siteName} className="max-w-36 truncate text-muted sm:max-w-52">{siteName}</span></li>

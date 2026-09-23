@@ -1,5 +1,14 @@
 import type { WebflowSite } from "./schemas";
 
+export function webflowPreviewUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const trusted = url.hostname === "screenshots.webflow.com" || url.hostname === "website-files.com" || url.hostname.endsWith(".website-files.com");
+    return url.protocol === "https:" && trusted && !url.username && !url.password && !url.port ? url.href : null;
+  } catch { return null; }
+}
+
 // Use provider metadata, never the ReplaceAll slug or the display name.
 export function webflowSiteUrl(site: Pick<WebflowSite, "shortName" | "customDomains">): string | null {
   for (const domain of site.customDomains ?? []) {

@@ -6,6 +6,7 @@ export const siteSchema = z.object({
   id: webflowIdSchema, displayName: z.string().min(1).max(255), shortName: z.string(),
   locales: z.object({ primary: localeSchema.nullish(), secondary: z.array(localeSchema).optional() }).nullish(),
   customDomains: z.array(z.object({ url: z.string() })).optional(),
+  previewUrl: z.string().nullish(),
 });
 export const sitesSchema = z.object({ sites: z.array(siteSchema) });
 export const collectionSchema = z.object({

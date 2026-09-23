@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("scans");
+}
+
 import { redirect } from "next/navigation";
 
 export default async function SitePage({ params }: { params: Promise<{ id: string }> }) {

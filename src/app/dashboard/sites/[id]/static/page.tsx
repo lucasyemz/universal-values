@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("staticPages");
+}
+
 import { getText } from "@/i18n/server";
 import { LegacySiteSection } from "@/components/sites/legacy-site-section";
 import { designerSite } from "@/modules/static-text/dashboard-service";

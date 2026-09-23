@@ -2,6 +2,17 @@ import "server-only";
 import { cache } from "react";
 import { requireUser } from "@/modules/auth/service";
 import { resourcePath, type ResourceKind } from "./resources";
+import { workspacePath } from "@/modules/sites/workspace-url";
+
+export const workspaceLink = cache(async (workspaceId: string) => {
+ const { client, user } = await requireUser();
+ const [account, workspace] = await Promise.all([
+  client.from("account_routes").select("slug").eq("user_id", user.id).maybeSingle(),
+  client.from("workspace_routes").select("slug,is_primary").eq("workspace_id", workspaceId).eq("account_id", user.id).maybeSingle(),
+ ]);
+ if (!account.data || !workspace.data) throw new Error("Endereço indisponível.");
+ return workspacePath(account.data.slug, workspace.data);
+});
 
 const siteNamespace = cache(async (siteId:string|null,accountId:string) => {
  const {client}=await requireUser();

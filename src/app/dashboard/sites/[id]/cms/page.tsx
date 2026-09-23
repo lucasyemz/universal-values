@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("cms");
+}
+
 import { TabLink } from "@/components/ui/tab-link";
 import { getText } from "@/i18n/server";
 import { FreshLink } from "@/components/ui/fresh-link";

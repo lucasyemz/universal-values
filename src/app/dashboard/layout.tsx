@@ -1,3 +1,7 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { robots: { index: false, follow: false } };
+
 import { NavigationState } from "@/components/layout/navigation-state";
 import { AiWork } from "@/components/ai/work";
 import { AiProvider } from "@/components/ai/provider";

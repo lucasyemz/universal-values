@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("scan");
+}
+
 import { TabLink } from "@/components/ui/tab-link";
 import { filterSavedGroup, savedGroupSchema } from "@/modules/scans/saved-search";
 import { RememberedLink, RememberedDetails } from "@/components/layout/navigation-state";

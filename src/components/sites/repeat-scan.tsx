@@ -11,7 +11,7 @@ export function RepeatScan({ scan, operationId, digest, newScanHref, number, ite
   const t = useText();
   const [customize, setCustomize] = useState(false);
   const [state, action] = useActionState(runAgain, {});
-  if (customize) return <div><button className="ui-btn mb-4" onClick={() => setCustomize(false)}>{t("Voltar ao resumo")}</button><NewScanWizard siteId={scan.site_id} operationId={operationId} collections={scan.plan.map(entry => ({ id: entry.id, displayName: entry.name }))} initialPlan={scan.plan} /><Link prefetch={false} className="ui-btn mt-4" href={newScanHref}>{t("Escolher outras coleções no Webflow")}</Link></div>;
+  if (customize) return <div><button className="ui-btn mb-4" onClick={() => setCustomize(false)}>{t("Voltar ao resumo")}</button><NewScanWizard siteId={scan.site_id} operationId={operationId} collections={scan.plan.map(entry => ({ id: entry.id, displayName: entry.name }))} initialPlan={scan.plan} staticHref={newScanHref.replace(/\/scans\/new$/, "/static")} /><Link prefetch={false} className="ui-btn mt-4" href={newScanHref}>{t("Escolher outras coleções no Webflow")}</Link></div>;
   return <section className="ui-card max-w-3xl space-y-4 p-6">
     <h2 className="text-lg font-semibold">{t("Repetir scan")} #{number}</h2>
     <p className="text-sm text-muted">{t("Configuração salva em")} {new Date(scan.created_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })} UTC</p>

@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("change");
+}
+
 import { redirect } from "next/navigation";
 import { loadChangeRequest } from "@/modules/scans/change-service";
 import { ChangeDetails } from "@/components/scans/change-details";

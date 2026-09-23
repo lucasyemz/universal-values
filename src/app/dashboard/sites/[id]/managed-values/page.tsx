@@ -1,3 +1,9 @@
+import { dashboardMetadata } from "@/modules/dashboard/metadata";
+
+export async function generateMetadata() {
+  return dashboardMetadata("values");
+}
+
 import { TabLink } from "@/components/ui/tab-link";
 import { siteLink } from "@/modules/routes/links";
 import { ManagedValueContext } from "@/components/managed-value-context";
