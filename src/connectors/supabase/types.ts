@@ -10,6 +10,7 @@ type ReadTable<Row> = {
 export type Database = {
   public: {
     Tables: {
+      site_transfers: ReadTable<{id:string;site_id:string;target_connection:string;target_workspace:string;site_name:string;source_name:string;target_name:string;confirmed_at:string|null}>;
       dashboard_resource_routes: ReadTable<{kind: string; resource_id: string; scope_id: string; account_id: string; site_id: string | null; number: number}>;
       global_fact_versions: ReadTable<{ site_id: string; version: number; facts: Json; actor_id: string; preview_id: string; created_at: string }>;
       global_fact_previews: ReadTable<{ id: string; site_id: string; actor_id: string; base_version: number; facts: Json; created_at: string; expires_at: string; confirmed_version: number | null; archived_at: string | null }>;
@@ -36,6 +37,10 @@ export type Database = {
     };
     Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      preview_site_transfer: {Args:{p_id:string;p_site:string;p_target:string;p_connection:string};Returns:string};
+      confirm_site_transfer: {Args:{p_id:string};Returns:string};
+      mcp_read: {Args:{p_token:string;p_action:string;p_args?:Json};Returns:Json};
+      manage_mcp_token: {Args:{p_action:string;p_id?:string;p_workspace?:string;p_hash?:string;p_name?:string};Returns:Json};
       webflow_metadata: {Args:{p_site:string;p_action?:string;p_kind?:string;p_collection?:string;p_generation?:string;p_lease?:string;p_data?:Json;p_error?:string;p_retry?:number};Returns:Json};
       managed_binding_summaries: { Args: { p_ids: string[] }; Returns: Json };
       managed_context_page: { Args: { p_id: string; p_site: string; p_page: number }; Returns: Json };

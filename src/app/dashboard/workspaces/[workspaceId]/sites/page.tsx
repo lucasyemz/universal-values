@@ -5,7 +5,6 @@ export async function generateMetadata() {
 }
 
 import { getText } from "@/i18n/server";
-import { MetadataRefresh } from "@/components/sites/metadata-refresh";
 import { SiteCard } from "@/components/sites/site-card";
 import { siteLink, workspaceLink } from "@/modules/routes/links";
 import { FreshLink } from "@/components/ui/fresh-link";
@@ -34,7 +33,7 @@ export default async function WorkspaceSitesPage({ params, searchParams }: {
     {view.missingMigration ? <p role="status" className="mt-8 rounded border border-amber-200 bg-amber-50 p-5">{t("A configuração de sites ainda está pendente. Aplique a migration Webflow indicada no README para continuar.")}</p> : <>
       <section aria-label={t("Sites conectados")} className="mt-8">
         <SectionHeader title={t("Sites vinculados")} description={t("{0} sites neste workspace", view.sites.length)} />
-        {view.sites.length ? <ul className="grid gap-6 lg:grid-cols-2">{view.sites.map(site => <li key={site.id}><SiteCard name={previews[site.id]?.name ?? site.display_name} href={destinations[site.id]!} url={previews[site.id]?.url ?? null} image={previews[site.id]?.image ?? null} connected={view.connections.some(connection => connection.id === site.connection_id)} /><MetadataRefresh siteId={site.id} kind="site" fetchedAt={previews[site.id]?.fetchedAt}/></li>)}</ul> : <EmptyState title={t("Conecte seu primeiro site")} description={t("Encontre informações repetidas no CMS e revise o que deseja atualizar.")} action={<Link href={settings} className="ui-btn ui-btn-primary">{t("Conectar Webflow")}</Link>} />}
+        {view.sites.length ? <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{view.sites.map(site => <li key={site.id} className="min-w-0"><SiteCard fetchedAt={previews[site.id]?.fetchedAt ?? null} siteId={site.id} settings={settings} name={previews[site.id]?.name ?? site.display_name} href={destinations[site.id]!} url={previews[site.id]?.url ?? null} image={previews[site.id]?.image ?? null} connected={view.connections.some(connection => connection.id === site.connection_id)} /></li>)}</ul> : <EmptyState title={t("Conecte seu primeiro site")} description={t("Encontre informações repetidas no CMS e revise o que deseja atualizar.")} action={<Link href={settings} className="ui-btn ui-btn-primary">{t("Conectar Webflow")}</Link>} />}
       </section>
 
     </>}

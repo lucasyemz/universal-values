@@ -227,6 +227,7 @@ A evolução da auditoria **Global Facts** é uma frente separada: coleta de pá
 | Conteúdo estático | [Designer](docs/static-text-designer-poc.md) · [Conexão ao dashboard](docs/designer-dashboard.md) |
 | Integridade de informações | [Global Facts](docs/global-facts.md) |
 | IA | [Sugestões Gemini](docs/ai-suggestions.md) |
+| Agentes MCP (somente leitura) | [Configuração, ferramentas e segurança](docs/mcp.md) · [Plano E1/E2](docs/phase-e-ai-mcp-plan.md) |
 | Plano e consumo | [Limites e administração](docs/free-plan.md) |
 | Interface e navegação | [Padrão de UI](docs/dashboard-designer-ui-pattern.md) · [URLs](docs/dashboard-urls.md) · [Idiomas](docs/internationalization.md) |
 | Otimização | [Auditoria e roadmap](docs/api-ux-cost-audit.md) · [Fase A](docs/dashboard-phase-a.md) |
