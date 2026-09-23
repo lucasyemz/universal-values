@@ -1,4 +1,5 @@
 "use server";
+import {kickConfirmedOperation} from "@/modules/sync-worker/kick";
 import { z } from "zod";
 import { unstable_rethrow } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -34,6 +35,7 @@ export async function confirmInlineChanges(input: unknown) {
     if (result.error?.code === "23505" && result.error.message.includes("one_confirmed_change_per_site")) return { ok:false as const, refresh:true, message:"A fila de alterações ainda não está habilitada no banco. Aplique a migration 20260922000300_cms_change_queue.sql." };
     if (result.error?.message === "Managed value already queued") return { ok:false as const, refresh:true, message:"Este Managed Value já tem uma alteração na fila. Aguarde a conclusão antes de preparar outra versão." };
     if (result.error) return { ok:false as const, refresh:true, message:quotaMessage(quotaErrorCode(result.error)) ?? "Não foi possível confirmar. A conexão, os vínculos ou a versão podem ter mudado, ou há outra operação ativa." };
+    await kickConfirmedOperation(parsed.data.id);
     if (view.request.scan_id) revalidatePath("/dashboard/scans/" + view.request.scan_id);
     if (view.request.managed_value_id) revalidatePath("/dashboard/managed-values/" + view.request.managed_value_id);
     return { ok:true as const, id:parsed.data.id };

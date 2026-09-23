@@ -1,0 +1,15 @@
+import {beforeEach,it,expect,vi} from 'vitest';
+vi.mock('server-only',()=>({}));
+const {readMetadata,rpc}=vi.hoisted(()=>({readMetadata:vi.fn(),rpc:vi.fn()}));
+vi.mock('./metadata-service',()=>({readMetadata}));
+vi.mock('@/modules/auth/service',()=>({requireUser:async()=>({client:{rpc}})}));
+import {readBatchSchema} from './batch-schema';
+import {WebflowError} from '@/connectors/webflow/client';
+const id='a'.repeat(24),context={site:{id:'b'.repeat(24),displayName:'Site',shortName:'site'},collections:[{id,displayName:'Collection',slug:'collection'}],collectionId:id},details={...context.collections[0]!,fields:[]};
+const reader={collection:vi.fn()};
+const saved={site:{connection_id:'connection',webflow_site_id:context.site.id},generation:'generation',denied:false,fresh:true,data:{site:context.site,details}};
+beforeEach(()=>{vi.clearAllMocks();readMetadata.mockResolvedValue(saved);reader.collection.mockResolvedValue(details);rpc.mockImplementation(async(_name,args)=>({data:{status:args.p_action==='claim'?'claimed':'saved'},error:null}));});
+it('warm schema avoids only the schema provider read',async()=>{expect(await readBatchSchema('site','connection',reader,context)).toEqual(details);expect(reader.collection).not.toHaveBeenCalled();expect(rpc).not.toHaveBeenCalled();});
+it('expired or missing schema is fetched once and stored with the fresh ownership context',async()=>{readMetadata.mockResolvedValue({...saved,fresh:false});await readBatchSchema('site','connection',reader,context);expect(reader.collection).toHaveBeenCalledTimes(1);expect(rpc).toHaveBeenLastCalledWith('webflow_metadata',expect.objectContaining({p_action:'finish',p_data:{site:context.site,collections:context.collections,details}}));});
+it('replaced connections and foreign collections reject even a warm schema',async()=>{await expect(readBatchSchema('site','other',reader,context)).rejects.toThrow('source_changed');await expect(readBatchSchema('site','connection',reader,{...context,collections:[]})).rejects.toThrow('source_changed');expect(reader.collection).not.toHaveBeenCalled();});
+it('429 propagates without retries and invalidation rejects late saves',async()=>{readMetadata.mockResolvedValue({...saved,fresh:false});reader.collection.mockRejectedValueOnce(new WebflowError('rate_limit',120));await expect(readBatchSchema('site','connection',reader,context)).rejects.toMatchObject({kind:'rate_limit',retryAfter:120});expect(reader.collection).toHaveBeenCalledTimes(1);expect(rpc).toHaveBeenLastCalledWith('webflow_metadata',expect.objectContaining({p_error:'rate_limit',p_retry:120}));rpc.mockImplementation(async(_name,args)=>({data:{status:'claimed'},error:args.p_action==='finish'?{message:'changed'}:null}));await expect(readBatchSchema('site','connection',reader,context)).rejects.toThrow('source_changed');});

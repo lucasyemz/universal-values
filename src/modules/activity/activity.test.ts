@@ -36,13 +36,13 @@ describe("read-only activity query", () => {
       return q;
     };
     const changes = query([row]); const scans = query([]); const sites = query([{ id, display_name: "Meu site" }]);
-    const rpc = vi.fn().mockResolvedValue({ data: new Date().toISOString(), error: null });
+    const rpc = vi.fn().mockResolvedValue({ data: {state:"processing",nextAt:null}, error: null });
     const from = vi.fn((table: string) => table === "cms_operation_summaries" ? changes : table === "cms_scans" ? scans : sites);
     vi.mocked(requireUser).mockResolvedValue({ user: { id }, client: { from, rpc } } as unknown as Awaited<ReturnType<typeof requireUser>>);
-    expect(await getActivity({ changes: [id], scans: [] })).toMatchObject({ ok: true, worker: "online", items: [{ site: "Meu site", href: "/dashboard/account/sites/project/scans/1?filter=reviewed&operation=1" }] });
+    expect(await getActivity({ changes: [id], scans: [] })).toMatchObject({ ok: true, worker: "processing", items: [{ site: "Meu site", href: "/dashboard/account/sites/project/scans/1?filter=reviewed&operation=1" }] });
     expect(changes.eq).toHaveBeenCalledWith("actor_id", id); expect(scans.eq).toHaveBeenCalledWith("actor_id", id);
     expect(changes.select).toHaveBeenCalledWith("id,site_id,status,cursor,total,background_paused,scan_id,managed_value_id,issues");
     expect(changes.or).toHaveBeenCalledWith(`status.eq.confirmed,id.in.(${id})`);
-    expect(rpc).toHaveBeenCalledExactlyOnceWith("cms_worker_last_seen", {});
+    expect(rpc).toHaveBeenCalledExactlyOnceWith("cms_worker_status", {});
   });
 });

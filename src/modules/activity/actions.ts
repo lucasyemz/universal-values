@@ -1,4 +1,5 @@
 "use server";
+import {workerHealthSchema} from "@/modules/sync-worker/health";
 import { operationLinks, resourceLinks } from "@/modules/routes/links";
 import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
@@ -14,7 +15,7 @@ export async function getActivity(input: unknown) {
     const [changes, scans, health] = await Promise.all([
       client.from("cms_operation_summaries").select("id,site_id,status,cursor,total,background_paused,scan_id,managed_value_id,issues").eq("actor_id", user.id).or(changesFilter).order("created_at", { ascending: false }).limit(50),
       client.from("cms_scans").select("id,site_id,status,items_read,occurrences_count").eq("actor_id", user.id).or(scansFilter).order("created_at", { ascending: false }).limit(50),
-      client.rpc("cms_worker_last_seen", {}),
+      client.rpc("cms_worker_status", {}),
     ]);
     if (changes.error || scans.error) throw new Error("Activity unavailable");
     const changeRows = z.array(changeRow).parse(changes.data);
@@ -25,7 +26,7 @@ export async function getActivity(input: unknown) {
     const names = new Map(sites.data?.map(site => [site.id, site.display_name]));
     const [changeLinks,scanLinks] = await Promise.all([operationLinks(changeRows.map(row=>row.id)),resourceLinks("scans",scanRows.map(row=>row.id))]);
     const items = [...changeRows.map(row => ({...changeActivity(row, names.get(row.site_id) ?? "Site"),href:changeLinks[row.id]!})), ...scanRows.map(row => ({...scanActivity(row, names.get(row.site_id) ?? "Site"),href:scanLinks[row.id]!}))];
-    const worker = health.error ? "unknown" : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" : "offline";
+    const worker = health.error ? "unknown" as const : workerHealthSchema.parse(health.data).state;
     return { ok: true as const, items, worker, limited: changeRows.length === 50 || scanRows.length === 50 };
   } catch { return { ok: false as const, message: "Não foi possível atualizar os processos. Tentaremos novamente automaticamente." }; }
 }

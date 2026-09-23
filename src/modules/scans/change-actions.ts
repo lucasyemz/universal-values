@@ -1,4 +1,6 @@
 "use server";
+import {workerHealthSchema} from "@/modules/sync-worker/health";
+import {kickConfirmedOperation} from "@/modules/sync-worker/kick";
 import { operationProgressSchema } from "./progress";
 import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
 
@@ -45,6 +47,7 @@ export async function confirmChanges(form: FormData) {
   const { client } = await requireUser();
   const result = await client.rpc("confirm_cms_changes", { p_id: parsed.data.id });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
+  if (!result.error) await kickConfirmedOperation(parsed.data.id);
   if (!result.error && request.managed_resolution) revalidatePath("/dashboard/scans/" + request.managed_resolution.scanId);
   if (!result.error && request.managed_value_id) revalidatePath("/dashboard/managed-values/" + request.managed_value_id);
   redirect("/dashboard/changes/" + parsed.data.id + (result.error ? "?error=confirmation" : ""));
@@ -58,9 +61,9 @@ export async function getChangeProgress(input: unknown) {
     const result = await client.rpc("operation_progress", {p_id:parsed.data.id});
     if(result.error) throw new Error("Progress unavailable");
     const progress=operationProgressSchema.parse(result.data);
-    const health = await client.rpc("cms_worker_last_seen", {});
+    const health = await client.rpc("cms_worker_status", {p_id:parsed.data.id});
     if (health.error && !["PGRST202", "42883"].includes(health.error.code)) throw new Error("Worker health unavailable");
-    const worker = health.error ? "missing" as const : health.data && Date.now() - Date.parse(health.data) < 180000 ? "online" as const : "offline" as const;
+    const worker = health.error ? "missing" as const : workerHealthSchema.parse(health.data).state;
     return { ok: true as const, worker, progress };
   } catch { return { ok: false as const, message: "Não foi possível atualizar o progresso. O processamento no servidor independe desta tela." }; }
 }

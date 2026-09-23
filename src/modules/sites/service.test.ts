@@ -32,7 +32,9 @@ function setupDatabase(connectionWorkspace = workspace, role = "owner") {
       };
       return chain;
     },
-    rpc: vi.fn().mockResolvedValue({ data: encryptToken("test-token", ["webflow", connection, connectionWorkspace, actor].join(":"), key), error: null }),
+    rpc: vi.fn().mockImplementation(async (name:string,args:{p_site?:string}) => ({error:null,data:name === 'webflow_metadata' ? {
+      site:{...rows.sites as object,id:args.p_site},actorId:actor,generation:localSite,status:'ready',entry:{data:{site:{id:remoteSite,displayName:'Site',shortName:'site'},collections:[{id:collection,displayName:'Products',slug:'products'}]},fetchedAt:new Date().toISOString(),error:null,retryAt:null}
+    }:encryptToken("test-token", ["webflow", connection, connectionWorkspace, actor].join(":"), key)})),
   };
   requireUser.mockResolvedValue({ user: { id: actor }, client });
   return client;
@@ -104,12 +106,12 @@ describe("dashboard provider-cost baseline (2026-09-22)", () => {
       return Response.json({ id: collection, displayName: "Products", slug: "products", fields: [] });
     });
   }
-  it("new scan configuration currently costs two Webflow reads and one credential access", async () => {
+  it("new scan configuration uses saved collections without provider or credential access", async () => {
     const client = setupDatabase(); provider();
     await loadScanCollections(localSite);
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).not.toHaveBeenCalled();
     expect(client.rpc).toHaveBeenCalledTimes(1);
-    expect(client.rpc).toHaveBeenCalledWith("read_webflow_credential", { p_id: connection });
+    expect(client.rpc.mock.calls.every(([name]) => name === "webflow_metadata")).toBe(true);
   });
   it("opening the same CMS collection twice repeats all four reads", async () => {
     const client = setupDatabase(); provider();
@@ -118,13 +120,13 @@ describe("dashboard provider-cost baseline (2026-09-22)", () => {
     expect(fetcher).toHaveBeenCalledTimes(8);
     expect(client.rpc).toHaveBeenCalledTimes(2);
   });
-  it("site URL display shares a read per connection but repeats it on the next load", async () => {
+  it("site URL display uses saved metadata on every load", async () => {
     const client = setupDatabase(); provider();
     const sites = [localSite, "55555555-5555-4555-8555-555555555555"].map(id => ({ id, workspace_id: workspace, connection_id: connection, webflow_site_id: remoteSite, display_name: "Site" }));
     await loadWorkspaceSiteUrls(sites, [{ id: connection }]);
-    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(fetcher).not.toHaveBeenCalled();
     await loadWorkspaceSiteUrls(sites, [{ id: connection }]);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(client.rpc).toHaveBeenCalledTimes(2);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(client.rpc.mock.calls.every(([name]) => name === "webflow_metadata")).toBe(true);
   });
 });

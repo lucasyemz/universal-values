@@ -1,5 +1,8 @@
 # Edição central e sincronização de Managed Values
 
+> Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Detalhes](phase-c-provider-plan.md).
+
+
 ## Ativação
 
 No mesmo projeto Supabase configurado em `.env.local`, aplique `supabase/migrations/20260918001200_managed_value_sync.sql` pelo SQL Editor ou pelo fluxo de migrations adotado. Não reaplique migrations antigas. A migration inicializa os valores observados dos vínculos existentes e preserva seu histórico. Nenhuma migration foi aplicada remotamente durante esta implementação.

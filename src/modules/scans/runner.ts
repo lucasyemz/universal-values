@@ -1,16 +1,19 @@
+import type { BatchMetadataContext } from "@/modules/sites/batch-schema";
+import { collectionDetailsSchema } from "@/connectors/webflow/schemas";
 import { z } from "zod";
 import type { WebflowReader } from "@/connectors/webflow/client";
 import { detectPage } from "./detect";
 import { occurrenceInputSchema, SCAN_LIMITS, type Scan } from "./schema";
 
 // One bounded unit of work. Persistent leases/cursors are handled by the service.
-export async function readScanBatch(scan: Scan, siteId: string, reader: Pick<WebflowReader, "sites" | "collections" | "collection" | "items">) {
+export async function readScanBatch(scan: Scan, siteId: string, reader: Pick<WebflowReader, "sites" | "collections" | "collection" | "items">, schema?: (context:BatchMetadataContext)=>Promise<z.infer<typeof collectionDetailsSchema>>) {
   const planned = scan.plan[scan.collection_index];
   if (!planned) return { rows: [], itemsRead: 0, nextCollection: scan.plan.length, nextOffset: 0, truncated: false, skippedFields: 0 };
   const [sites, collections] = await Promise.all([reader.sites(), reader.collections(siteId)]);
-  if (!sites.some((site) => site.id === siteId)) throw new Error("source_changed");
+  const authorizedSite=sites.find(site=>site.id===siteId);
+  if (!authorizedSite) throw new Error("source_changed");
   if (!collections.some((collection) => collection.id === planned.id)) throw new Error("source_changed");
-  const [details, page] = await Promise.all([reader.collection(planned.id), reader.items(planned.id, scan.item_offset)]);
+  const [details, page] = await Promise.all([schema ? schema({site:authorizedSite,collections,collectionId:planned.id}) : reader.collection(planned.id), reader.items(planned.id, scan.item_offset)]);
   if (details.id !== planned.id || page.pagination.offset !== scan.item_offset || page.items.length > 25 ||
       (page.items.length === 0 && page.pagination.offset < page.pagination.total)) throw new Error("invalid_page");
   const remaining = (scan.item_limit ?? SCAN_LIMITS.items) - scan.items_read;

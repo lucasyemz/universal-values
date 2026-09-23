@@ -1,3 +1,4 @@
+import { providerRequest, type ProviderScope } from "./telemetry";
 import { z } from "zod";
 import { checkedJson, WebflowError } from "./client";
 import { itemsSchema, webflowIdSchema } from "./schemas";
@@ -11,16 +12,16 @@ const updateSchema = z.strictObject({
 
 // Only staged CMS fields. Publishing and live endpoints are intentionally absent.
 export class WebflowWriter {
-  constructor(private readonly token: string, private readonly fetcher: typeof fetch = fetch) {}
+  constructor(private readonly token: string, private readonly fetcher: typeof fetch = fetch, private readonly scope?:ProviderScope) {}
   async updateField(input: z.input<typeof updateSchema>) {
     const data = updateSchema.parse(input);
     let response: Response;
     try {
-      response = await this.fetcher("https://api.webflow.com/v2/collections/" + data.collectionId + "/items/" + data.itemId + "?skipInvalidFiles=false", {
+      response = await providerRequest(this.fetcher,"/collections/" + data.collectionId + "/items/" + data.itemId + "?skipInvalidFiles=false", {
         method: "PATCH", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15000),
         headers: { Authorization: "Bearer " + this.token, "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify({ ...(data.locale ? { cmsLocaleId: data.locale } : {}), fieldData: { [data.field]: data.value, ...(data.slug !== undefined ? { slug: data.slug } : {}) } }),
-      });
+      },this.scope);
     } catch { throw new WebflowError("unavailable"); }
     const item = await checkedJson(response, itemsSchema.shape.items.element);
     if (item.id !== data.itemId || (data.locale && item.cmsLocaleId !== data.locale)) throw new WebflowError("invalid_response");

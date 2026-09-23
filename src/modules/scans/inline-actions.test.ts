@@ -33,3 +33,9 @@ it("surfaces database conflicts without dispatching a write",async()=>{
  expect(await confirmInlineChanges({id,digest:inlinePreview(fixture()).digest,confirmed:true})).toMatchObject({ok:false,refresh:true});
  expect(rpc).toHaveBeenCalledTimes(1);
 });
+
+it("keeps confirmed success if the independent worker kick fails",async()=>{
+ rpc.mockImplementation(async(name:string)=>{if(name==='request_cms_worker_kick')throw new Error('network');return {error:null};});
+ expect(await confirmInlineChanges({id,digest:inlinePreview(fixture()).digest,confirmed:true})).toEqual({ok:true,id});
+ expect(rpc.mock.calls.map(([name])=>name)).toEqual(['confirm_cms_changes','request_cms_worker_kick']);
+});

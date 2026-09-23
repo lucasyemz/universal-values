@@ -39,7 +39,7 @@ export async function processWorkerTurn(database: WorkerDatabase, connect: (payl
       dispatch: async () => (await database.step(r.id, r.cursor, lease, "dispatch")) === true,
     });
     await database.step(r.id, r.cursor, lease, "finish", result, wait);
-    return { idle: false as const, id: r.id, status: result.status };
+    return { idle: false as const, id: r.id, status: result.status, complete:r.cursor+1>=r.total };
   } catch {
     // If finish committed but its response was lost, pause can be rejected as a
     // stale cursor. The next iteration will discover the durable DB position.

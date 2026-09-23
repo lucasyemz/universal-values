@@ -1,3 +1,4 @@
+import { providerRequest, type ProviderScope } from "./telemetry";
 import { parseWebflowRateLimit } from "./rate-limit";
 import { z } from "zod";
 import type { WebflowConfig } from "./config";
@@ -43,15 +44,15 @@ export async function exchangeCode(config: WebflowConfig, code: string, fetcher:
 }
 
 export class WebflowReader {
-  constructor(private readonly token: string, private readonly fetcher: typeof fetch = fetch) {}
+  constructor(private readonly token: string, private readonly fetcher: typeof fetch = fetch, private readonly scope?:ProviderScope) {}
 
   protected async get<T>(path: string, schema: z.ZodType<T>) {
     let response: Response;
     try {
-      response = await this.fetcher("https://api.webflow.com/v2" + path, {
+      response = await providerRequest(this.fetcher,path, {
         method: "GET", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15000),
         headers: { Authorization: "Bearer " + this.token, Accept: "application/json" },
-      });
+      },this.scope);
     } catch {
       throw new WebflowError("unavailable");
     }
@@ -59,10 +60,10 @@ export class WebflowReader {
   }
 
   async rateLimit(siteId: string) {
-    const response = await this.fetcher("https://api.webflow.com/v2/sites/" + webflowIdSchema.parse(siteId), {
+    const response = await providerRequest(this.fetcher,"/sites/" + webflowIdSchema.parse(siteId), {
       method: "GET", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15000),
       headers: { Authorization: "Bearer " + this.token, Accept: "application/json" },
-    });
+    },this.scope);
     if (!response.ok && response.status !== 429) throw new WebflowError("unavailable");
     return parseWebflowRateLimit(response.headers);
   }

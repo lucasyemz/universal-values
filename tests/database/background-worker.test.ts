@@ -2,6 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { beforeAll, afterAll, afterEach, describe, it, expect, vi } from "vitest";
+import { processWorkerBatch } from "../../src/modules/sync-worker/batch";
 import { processWorkerTurn, workerPayloadSchema } from "../../src/modules/sync-worker/process";
 import { encryptToken } from "../../src/connectors/webflow/crypto";
 import type { Json } from "../../src/connectors/supabase/types";
@@ -153,4 +154,68 @@ it("executes queued confirmed operations sequentially through the real worker ga
  await expire(first.id);
  expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:first.id,status:"applied"});
  expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:second.id});
+});
+
+describe("conditional gate and scoped health",()=>{
+ const gate=async()=>(await db.query<{ready:boolean}>("select public.cms_worker_has_runnable() ready")).rows[0]!.ready;
+ const health=async(id:string|null=null,user=owner)=>((await rpc("select public.cms_worker_status($1) state",[id],user)).rows[0] as {state:{state:string}}).state;
+ it("idle does not require a heartbeat; future, leased, cooldown and paused work are distinct",async()=>{
+  await db.exec("delete from public.cms_worker_health");expect(await health()).toMatchObject({state:'idle'});expect(await gate()).toBe(false);
+  const f=await queued();expect(await gate()).toBe(true);expect(await health(f.id)).toMatchObject({state:'queued'});
+  await db.query("update public.cms_change_requests set background_next_at=now()+interval '1 minute' where id=$1",[f.id]);expect(await gate()).toBe(false);expect(await health(f.id)).toMatchObject({state:'waiting'});
+  await expire(f.id);await gateway.claim(randomUUID());expect(await gate()).toBe(false);expect(await health(f.id)).toMatchObject({state:'processing'});
+  await expire(f.id);await db.query("update public.cms_change_requests set retry_at=now()+interval '2 minutes' where id=$1",[f.id]);expect(await gate()).toBe(false);expect(await health(f.id)).toMatchObject({state:'cooldown'});
+  await db.query("update public.cms_change_requests set retry_at=null,background_paused=true where id=$1",[f.id]);expect(await gate()).toBe(false);expect(await health(f.id)).toMatchObject({state:'attention'});
+  await db.query("update public.cms_change_requests set worker_error='processing_error' where id=$1",[f.id]);expect(await health(f.id)).toMatchObject({state:'worker_error'});
+  await expect(health(f.id,other)).rejects.toThrow('Operation unavailable');expect(await health(null,other)).toMatchObject({state:'idle'});
+ });
+ it("uses exact FIFO blockers and includes stale dispatched attempts without claiming",async()=>{
+  const first=await queued(),second=await queued();
+  await db.query("update public.cms_change_requests set background_paused=true where id=$1",[first.id]);expect(await gate()).toBe(false);
+  await db.query("update public.cms_change_requests set background_paused=false,dispatched=true,background_next_at=now()-interval '5 minutes',lease_until=now()-interval '4 minutes' where id=$1",[first.id]);
+  expect(await gate()).toBe(true);expect(await health(first.id)).toMatchObject({state:'stalled'});expect(await health(second.id)).toMatchObject({state:'waiting'});
+  const before=await db.query("select lease_token,cursor,dispatched from public.cms_change_requests where id=$1",[first.id]);await gate();expect((await db.query("select lease_token,cursor,dispatched from public.cms_change_requests where id=$1",[first.id])).rows).toEqual(before.rows);
+  const p=provider();expect(await processWorkerTurn(gateway,p.connect)).toMatchObject({id:first.id,status:'uncertain'});expect(p.updateField).not.toHaveBeenCalled();
+ });
+ it("lets revoked work reach authoritative claim validation instead of hiding it forever",async()=>{
+  const f=await queued();await db.query("update public.webflow_connections set status='revoked' where id=$1",[connection]);
+  try{expect(await gate()).toBe(true);expect(await gateway.claim(randomUUID())).toBeNull();expect(await gate()).toBe(false);expect(await health(f.id)).toMatchObject({state:'worker_error'});}finally{await db.query("update public.webflow_connections set status='ready' where id=$1",[connection]);}
+ });
+});
+describe('authenticated best-effort worker kick',()=>{
+ it('does not kick previews, rejects foreign users and bounds duplicate confirmation kicks',async()=>{
+  await db.exec("create table if not exists public.test_edge_kicks(id bigserial); create or replace function public.invoke_cms_edge_worker(p_mode text default 'run') returns bigint language sql as $$ insert into public.test_edge_kicks default values returning id $$;");
+  const f=await queued(false);
+  expect((await rpc('select public.request_cms_worker_kick($1) kicked',[f.id])).rows).toEqual([{kicked:false}]);
+  await rpc('select public.confirm_cms_changes($1)',[f.id]);
+  await expect(rpc('select public.request_cms_worker_kick($1)',[f.id],other)).rejects.toThrow('Operation unavailable');
+  expect((await rpc('select public.request_cms_worker_kick($1) kicked',[f.id])).rows).toEqual([{kicked:true}]);
+  await rpc('select public.confirm_cms_changes($1)',[f.id]);
+  expect((await rpc('select public.request_cms_worker_kick($1) kicked',[f.id])).rows).toEqual([{kicked:false}]);
+  expect((await db.query('select count(*)::int n from public.test_edge_kicks')).rows).toEqual([{n:1}]);
+  expect((await db.query('select status from public.cms_change_requests where id=$1',[f.id])).rows).toEqual([{status:'confirmed'}]);
+ });
+ it('keeps confirmation valid after failed acceleration and allows cron claim',async()=>{
+  const f=await queued();await db.exec("create or replace function public.invoke_cms_edge_worker(p_mode text default 'run') returns bigint language plpgsql as $$ begin raise exception 'private infrastructure failure'; end $$;");
+  expect((await rpc('select public.request_cms_worker_kick($1) kicked',[f.id])).rows).toEqual([{kicked:false}]);
+  expect((await db.query('select status from app_private.cms_worker_kicks where request_id=$1',[f.id])).rows).toEqual([{status:'failed'}]);
+  expect((await rpc('select public.request_cms_worker_kick($1) kicked',[f.id])).rows).toEqual([{kicked:false}]);
+  expect(workerPayloadSchema.parse(await gateway.claim(randomUUID())).request.id).toBe(f.id);
+ });
+});
+
+describe('bounded batch with the real SQL gateway',()=>{
+ it('finishes a small operation with separate claims, dispatch markers and results',async()=>{
+  const f=await queued(),p=provider();let remaining=90000;
+  const run=vi.fn(()=>processWorkerTurn(gateway,p.connect));
+  const result=await processWorkerBatch(run,{remaining:()=>remaining,sleep:async(ms)=>{expect(ms).toBe(5000);remaining-=ms;await expire(f.id);}});
+  expect(result).toMatchObject({processed:2,status:'applied'});expect(run).toHaveBeenCalledTimes(2);expect(p.updateField).toHaveBeenCalledTimes(2);
+  expect((await db.query("select status,cursor,jsonb_array_length(results) results from public.cms_change_requests where id=$1",[f.id])).rows).toEqual([{status:'completed',cursor:2,results:2}]);
+  expect((await db.query("select count(*)::int n from public.cms_change_audit where request_id=$1 and action='worker_claimed'",[f.id])).rows).toEqual([{n:2}]);
+ });
+ it('does not process a second field after uncertain dispatch reconciliation',async()=>{
+  const f=await queued(),lease=randomUUID(),p=provider();await gateway.claim(lease);await gateway.step(f.id,0,lease,'dispatch');await expire(f.id);
+  const run=vi.fn(()=>processWorkerTurn(gateway,p.connect));const sleep=vi.fn();
+  expect(await processWorkerBatch(run,{remaining:()=>90000,sleep})).toMatchObject({processed:1,status:'uncertain'});expect(sleep).not.toHaveBeenCalled();expect(p.updateField).not.toHaveBeenCalled();
+ });
 });

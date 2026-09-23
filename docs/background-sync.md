@@ -2,11 +2,11 @@
 
 ## Modelo de hospedagem: Supabase Free
 
-O executor de produção é uma Supabase Edge Function (`cms-worker`), acionada pelo Supabase Cron a cada minuto. Cada chamada processa no máximo **um campo** e encerra. Não exige Background Worker pago no Render nem computador ligado. O dashboard precisa de hospedagem própria; esta configuração resolve o executor CMS.
+O executor de produção é uma Supabase Edge Function (`cms-worker`), acionada pelo Supabase Cron a cada minuto. O código da Phase D processa até **três campos sequenciais** por chamada e encerra; sua implantação remota ainda está pendente. Não exige Background Worker pago no Render nem computador ligado. O dashboard precisa de hospedagem própria; esta configuração resolve o executor CMS.
 
-A primeira etapa normalmente começa no próximo minuto; operações com vários campos avançam em chamadas posteriores. Cooldown, falhas, concorrência e limites do provedor podem aumentar essa espera. O perfil inicial prioriza simplicidade e limites previsíveis, não alto volume.
+Após confirmação, a Phase D tenta antecipar a execução uma vez por operação. Se isso falhar, o Cron recupera a operação no próximo ciclo; operações maiores continuam em chamadas posteriores. Cooldown, falhas, concorrência e limites do provedor podem aumentar essa espera. O perfil inicial prioriza simplicidade e limites previsíveis, não alto volume.
 
-No Free, a documentação consultada informa 500 mil invocações incluídas e limite de 150 segundos por execução. Um agendamento por minuto consome cerca de 43.200 chamadas em 30 dias, mesmo sem operações. As cotas são compartilhadas com outras funções e recursos do projeto; não há garantia de gratuidade para qualquer volume. Projeto pausado, cotas esgotadas ou falhas do serviço interrompem o processamento até recuperação.
+No Free, a documentação consultada informa 500 mil invocações incluídas e limite de 150 segundos por execução. No modelo anterior, um agendamento por minuto consumia cerca de 43.200 chamadas em 30 dias, mesmo sem operações. Na Phase D, um EXISTS SQL evita a chamada Edge quando não existe trabalho executável; não reserva trabalho nem acessa credenciais. As cotas são compartilhadas com outras funções e recursos do projeto; não há garantia de gratuidade para qualquer volume. Projeto pausado, cotas esgotadas ou falhas do serviço interrompem o processamento até recuperação.
 
 Fontes: [agendamento](https://supabase.com/docs/guides/functions/schedule-functions), [cotas](https://supabase.com/docs/guides/platform/billing-on-supabase), [limites](https://supabase.com/docs/guides/functions/limits).
 
@@ -16,13 +16,13 @@ Fontes: [agendamento](https://supabase.com/docs/guides/functions/schedule-functi
 - `supabase/config.toml` define a função e seu entrypoint.
 - `supabase/cron/cms-worker.sql` prepara a chamada via Vault + pg_net e um job inicialmente **desativado**. Reexecutar o script preserva a ativação existente e não duplica o job.
 - A função exige `x-worker-secret`, um segredo privado de 64 caracteres hexadecimais. Chaves públicas e sessões comuns não autorizam execução. `verify_jwt = false` desativa somente o verificador JWT do gateway: o handler faz sua própria autenticação antes de acessar o banco.
-- A fila da migration 015 continua sendo usada. Não há migration de tabelas nova nesta etapa; o SQL do Cron é uma configuração separada de infraestrutura.
+- A fila da migration 015 continua sendo usada. A Phase D acrescenta as migrations `20260923000600_worker_efficiency.sql` e `20260923000700_worker_kick.sql`; o SQL do Cron continua sendo uma configuração separada de infraestrutura.
 
 ## Ativação no Supabase
 
 ### 1. Conferir a fila e o banco
 
-Mantenha as migrations 001–015 aplicadas. A migration 015 foi verificada no ambiente durante a ativação local; confira o estado do projeto de destino. Não recrie a chave `WEBFLOW_TOKEN_ENCRYPTION_KEY`: os tokens existentes dependem dela.
+Mantenha as migrations anteriores aplicadas. Para implantar a Phase D, aplique também 006/007 de 23/09, reinstale o SQL do Cron e publique o novo bundle Edge, somente com aprovação explícita. Essas etapas da Phase D ainda não foram executadas remotamente. A migration 015 foi verificada no ambiente durante a ativação local; confira o estado do projeto de destino. Não recrie a chave `WEBFLOW_TOKEN_ENCRYPTION_KEY`: os tokens existentes dependem dela.
 
 Revise as operações confirmadas antes de ativar o Cron. A ativação permite processar as que já foram confirmadas e não estão pausadas. Prévias não são executadas.
 
@@ -113,7 +113,7 @@ Pausar impede novas chamadas agendadas; uma chamada já enviada pode terminar. A
 
 O executor compartilha o mesmo código do worker local. A identidade é obtida da operação armazenada; a chamada HTTP aceita apenas `{"mode":"run"}` ou `{"mode":"check"}`, sem IDs de usuários ou operações. A RPC restrita a service_role valida propriedade, conexão, status, lease e cursor.
 
-Cada invocação chama `processWorkerTurn` uma única vez. As chamadas de rede têm prazo compartilhado de 90 segundos e mantêm seus timeouts individuais. Isso deixa margem para o limite de 150 segundos, mas encerramentos por CPU, memória ou infraestrutura ainda são possíveis. Não há laço infinito nem tarefa desacoplada da resposta HTTP.
+Cada invocação chama `processWorkerTurn` até três vezes, em série, mantendo reserva, despacho e resultado independentes por campo. Entre campos há pelo menos cinco segundos; uma nova etapa só começa com pelo menos 60 segundos disponíveis no orçamento. Conclusão, fila vazia, cooldown, conflito, falha ou incerteza interrompem o lote. A margem não garante que um campo lento termine; a recuperação por lease e reconciliação continua obrigatória. As chamadas de rede têm prazo compartilhado de 90 segundos e mantêm seus timeouts individuais. Isso deixa margem para o limite de 150 segundos, mas encerramentos por CPU, memória ou infraestrutura ainda são possíveis. Não há laço infinito nem tarefa desacoplada da resposta HTTP.
 
 A marca de despacho é persistida antes do PATCH. Se o processo morrer após o envio, a próxima chamada aguarda a lease expirar e reconcilia o estado por leitura, sem reenviar uma escrita de resultado incerto. Conflito, falha ou incerteza pausa as etapas restantes; a retomada exige a confirmação existente no dashboard. O histórico e a auditoria são os mesmos do executor Node. Nenhum site é publicado automaticamente.
 
@@ -121,9 +121,9 @@ A confirmação de Managed Values salva o valor central desejado; somente a exec
 
 ## Monitoramento e painel
 
-O painel flutuante aparece quando há processos ativos, pendências ou conclusão recente. Pode ser minimizado e lembra a preferência neste navegador. Consulta a fila a cada 15 segundos com atividade e 60 segundos sem atividade; pausa as consultas quando a aba está oculta ou offline; isso não acelera o Cron, que executa a cada minuto.
+O painel flutuante aparece quando há processos ativos, pendências ou conclusão recente. Pode ser minimizado e lembra a preferência neste navegador. Consulta a fila a cada 15 segundos apenas com trabalho ativo e a cada 60 segundos quando ociosa, pausada, aguardando ou precisando de atenção; pausa as consultas quando a aba está oculta ou offline; isso não acelera o Cron, que executa a cada minuto.
 
-O heartbeat vem do gateway de reserva. Ausência de sinal por três minutos indica executor indisponível. Confira também os logs da Edge Function e `net._http_response`: sucesso do job Cron significa que a requisição HTTP foi enfileirada, não que o CMS foi atualizado. O modo `check` não atualiza heartbeat.
+A saúde é calculada pela fila autorizada: ociosa, aguardando agendamento/operação anterior, processando, executável atrasada, cooldown do provedor ou erro. Também distingue atenção manual e trabalho pronto. Ausência de heartbeat com fila vazia não indica falha. Trabalho executável atrasado por três minutos gera alerta. O progresso usa DTO estreito e só atualiza a rota inteira quando há mudança significativa; estados terminais encerram a consulta. Confira também os logs da Edge Function e `net._http_response`: sucesso do job Cron significa que a requisição HTTP foi enfileirada, não que o CMS foi atualizado. O modo `check` não atualiza heartbeat.
 
 Scans de leitura ainda dependem da página de execução aberta, e a extensão Designer mantém seu fluxo. Esta etapa cobre somente alterações CMS: scans confirmados para edição, Managed Values, resoluções e reversões.
 
@@ -135,7 +135,7 @@ Para desenvolvimento, mantenha `.env.local` com `NEXT_PUBLIC_SUPABASE_URL`, `SUP
 
 O bundle também foi carregado em Deno com transporte simulado, validando autenticação privada e diagnóstico sem acesso ao CMS. Para repetir após compilar: `npx deno run --allow-env --config supabase/functions/cms-worker/deno.json scripts/edge-worker-smoke.mjs`.
 
-Os testes automatizados verificam autenticação HTTP, diagnóstico sem execução, limite de uma etapa, payload inválido e erros sem segredos; os testes do executor com PostgreSQL/PGlite cobrem reserva exclusiva, recuperação após despacho, perda de resposta após commit, pausa/retomada, cooldown, cancelamento e revogação. O teste SQL do agendamento usa substitutos locais para Vault/Cron/pg_net; a integração real depende da instalação acima.
+Os testes automatizados verificam autenticação HTTP, diagnóstico sem execução, lotes sequenciais limitados por tempo, interrupção em incerteza, payload inválido e erros sem segredos; os testes do executor com PostgreSQL/PGlite cobrem reserva exclusiva, recuperação após despacho, perda de resposta após commit, pausa/retomada, cooldown, cancelamento e revogação. O teste SQL do agendamento usa substitutos locais para Vault/Cron/pg_net; a integração real depende da instalação acima.
 
 A preparação local não equivale à publicação ou ativação remota. O teste final deve ser feito com alteração explicitamente confirmada pelo usuário em um site de testes.
 
@@ -146,3 +146,9 @@ No projeto `nxibjpprjorchjeoudss` (Universal Value), a função `cms-worker` foi
 O diagnóstico direto retornou 401 sem credencial e 200 no modo autenticado `check`. A chamada de diagnóstico por Vault + pg_net também retornou 200, sem timeout. O job `cms-worker-every-minute` (ID 1, usuário postgres) foi ativado somente após conferir a fila vazia. Nenhum worker Node local estava em execução. Não foram criadas ou confirmadas alterações CMS para validar a implantação.
 
 Primeira execução automática observada: 20/09/2026 18:55 UTC, Cron `succeeded`, resposta HTTP 200 `{"ok":true,"idle":true}`, heartbeat atualizado às 18:55:02 UTC e zero operações pendentes. Isso confirma a infraestrutura em fila vazia; a próxima alteração real deve ser preparada e confirmada pelo usuário pelo fluxo normal.
+
+## Phase D — Cron and Edge deployment, 2026-09-23
+
+With explicit user authorization, rebuilt and deployed `cms-worker` to `nxibjpprjorchjeoudss`, then installed `supabase/cron/cms-worker.sql`. Verified job1 remains active on `* * * * *`, the invocation function contains the conditional runnable gate, and authenticated callers cannot invoke the private scheduler directly. The queue reported no runnable work before deployment. The authenticated `check` diagnostic through Vault/pg_net returned HTTP200, `{"ok":true,"mode":"check"}`, without timeout (request4244). No customer-content test operation or manual run was submitted. Secrets were preserved.
+
+This supersedes the pending Cron/Edge deployment notes above. Batching under real provider load and dashboard browser interactions remain untested; the diagnostic does not validate a customer write.

@@ -1,3 +1,4 @@
+import type { ProviderScope } from "@/connectors/webflow/telemetry";
 import { cache } from "react";
 import "server-only";
 import { webflowSiteUrl, webflowPreviewUrl } from "@/connectors/webflow/site-url";
@@ -36,7 +37,7 @@ export async function getConnection(id: string) {
   return connectionSchema.parse(data);
 }
 
-export async function getConnectionReader(id: string) {
+export async function getConnectionReader(id: string, scope?:ProviderScope) {
   const connection = await getConnection(id);
   const { client } = await requireWorkspaceOwner(connection.workspace_id);
   const config = getWebflowConfig();
@@ -45,7 +46,7 @@ export async function getConnectionReader(id: string) {
   if (quotaErrorCode(error)) throw new Error(quotaMessage(quotaErrorCode(error)));
   if (error || !data) throw new Error("Credencial indisponível.");
   const token = decryptToken(data, credentialContext(connection), config.encryptionKey);
-  return { connection, reader: new WebflowReader(token), writer: new WebflowWriter(token) };
+  return { connection, reader: new WebflowReader(token,fetch,scope), writer: new WebflowWriter(token,fetch,scope) };
 }
 
 export async function loadWorkspaceSites(workspaceId: string) {
@@ -87,7 +88,7 @@ export async function loadSiteContent(id: string, collectionId?: string, offset 
   if (result.error) throw new Error("Site indisponível.");
   if (!result.data) notFound();
   const site = linkedSiteSchema.parse(result.data);
-  const { reader, connection } = await getConnectionReader(site.connection_id);
+  const { reader, connection } = await getConnectionReader(site.connection_id,{action:"cms_live",siteId:site.id,workspaceId:site.workspace_id});
   if (connection.workspace_id !== site.workspace_id) notFound();
   // Revalidate site access and collection ownership before using a multi-site token.
   const authorizedSites = await reader.sites();
@@ -119,21 +120,16 @@ export async function settingsAvailableSites(connections: {id:string}[], request
 }
 
 export async function loadWorkspaceSitePreviews(sites: z.infer<typeof linkedSiteSchema>[], connections: {id:string}[]) {
+  const { readMetadata } = await import("./metadata-service");
   const active = new Set(connections.map(connection => connection.id));
-  const ids = [...new Set(sites.map(site => site.connection_id))].filter(id => active.has(id));
-  // One read per linked authorization, not one read per site or historical grant.
-  const results = await Promise.allSettled(ids.map(async id => {
-    const { reader } = await getConnectionReader(id);
-    return { id, sites: await reader.sites() };
+  const previews: Record<string, { url: string | null; image: string | null; name: string; fetchedAt: string | null }> = {};
+  await Promise.all(sites.filter(site => active.has(site.connection_id)).map(async site => {
+    const saved = await readMetadata(site.id);
+    const remote = saved.data?.site;
+    if (remote?.id === site.webflow_site_id) previews[site.id] = {
+      url: webflowSiteUrl(remote), image: webflowPreviewUrl(remote.previewUrl), name: remote.displayName, fetchedAt: saved.entry?.fetchedAt ?? null,
+    };
   }));
-  const previews: Record<string, { url: string | null; image: string | null }> = {};
-  for (const result of results) {
-    if (result.status === "rejected") { unstable_rethrow(result.reason); continue; }
-    for (const site of sites.filter(site => site.connection_id === result.value.id)) {
-      const remote = result.value.sites.find(remote => remote.id === site.webflow_site_id);
-      if (remote) previews[site.id] = { url: webflowSiteUrl(remote), image: webflowPreviewUrl(remote.previewUrl) };
-    }
-  }
   return previews;
 }
 

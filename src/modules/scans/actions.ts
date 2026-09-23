@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
-import { getConnectionReader } from "@/modules/sites/service";
+import { loadScanCollections } from "./service";
 import { confirmScanSchema, planSchema, processScanSchema, valuePreviewInputSchema, valuePreviewValidationError } from "./schema";
 import { getScan, getScanSite, loadValuePreview, processBatch } from "./service";
 
@@ -17,13 +17,10 @@ export async function previewScan(form: FormData) {
     redirect(siteId.success ? "/dashboard/sites/" + siteId.data + "/scans/new?error=scope" : "/dashboard?error=invalid");
   }
   const site = await getScanSite(input.data.siteId);
-  const { reader, connection } = await getConnectionReader(site.connection_id);
-  if (connection.workspace_id !== site.workspace_id) redirect("/dashboard?error=invalid");
   let plan;
   let truncated;
   try {
-    if (!(await reader.sites()).some((s) => s.id === site.webflow_site_id)) throw new Error("Access revoked");
-    const collections = (await reader.collections(site.webflow_site_id)).sort((a,b) => a.id.localeCompare(b.id));
+    const collections = (await loadScanCollections(site.id)).sort((a,b) => a.id.localeCompare(b.id));
     const selected = collections.filter((c) => input.data.collectionIds.includes(c.id));
     if (selected.length !== new Set(input.data.collectionIds).size) throw new Error("Invalid selection");
     plan = planSchema.parse(selected.map((c) => ({ id: c.id, name: c.displayName.slice(0,255), types: input.data.types, ...(input.data.placeholders ? { placeholders: true } : {}), ...(input.data.searchText ? { searchText: input.data.searchText, searchOptions: input.data.searchOptions } : {}) })));

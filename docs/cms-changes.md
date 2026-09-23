@@ -1,5 +1,8 @@
 # Alterações confirmadas no CMS
 
+> Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Detalhes](phase-c-provider-plan.md).
+
+
 ## Ativar
 
 1. Aplique `supabase/migrations/20260916000500_confirmed_cms_changes.sql` após as quatro anteriores. A quinta migration não foi aplicada automaticamente ao Supabase remoto.

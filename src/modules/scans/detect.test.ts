@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { detectPage, detectText } from "./detect";
 import { groupOccurrences, type Occurrence, type Scan } from "./schema";
 import { readScanBatch } from "./runner";
@@ -76,6 +76,17 @@ function reader(items = [item], total = 1) {
   };
 }
 describe("bounded scan batches", () => {
+  it("warm schema keeps fresh source and item reads, exact results and rejects moved resources", async () => {
+    const baseline=await readScanBatch(scan,"site",reader());
+    const live=reader();const warm={sites:vi.fn(live.sites),collections:vi.fn(live.collections),collection:vi.fn(live.collection),items:vi.fn(live.items)};
+    const schema=vi.fn(async()=>details);
+    expect(await readScanBatch(scan,"site",warm,schema)).toEqual(baseline);
+    expect(warm.sites).toHaveBeenCalledTimes(1);expect(warm.collections).toHaveBeenCalledTimes(1);expect(warm.items).toHaveBeenCalledTimes(1);expect(warm.collection).not.toHaveBeenCalled();
+    schema.mockClear();warm.items.mockClear();warm.collections.mockResolvedValue([]);
+    await expect(readScanBatch(scan,"site",warm,schema)).rejects.toThrow("source_changed");
+    expect(schema).not.toHaveBeenCalled();expect(warm.items).not.toHaveBeenCalled();
+  });
+
   it("persists the selected detection types into batch behavior", async () => {
     const result = await readScanBatch({ ...scan, plan: [{ id: collectionId, name: "Planos", types: ["money"] }] }, "site", reader());
     expect(result.rows).toHaveLength(1);

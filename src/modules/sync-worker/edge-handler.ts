@@ -7,7 +7,7 @@ const inputSchema = z.strictObject({ mode: z.enum(["check", "run"]) });
 type Dependencies = {
   secret: string | undefined;
   check(): Promise<void>;
-  run(): Promise<{ idle: boolean; status?: string }>;
+  run(): Promise<{ idle: boolean; status?: string;processed?:number }>;
 };
 
 export async function handleWorkerRequest(request: Request, dependencies: Dependencies): Promise<Response> {
@@ -38,6 +38,6 @@ export async function handleWorkerRequest(request: Request, dependencies: Depend
   try {
     if (input.mode === "check") { await dependencies.check(); return reply(200, { ok: true, mode: "check" }); }
     const result = await dependencies.run();
-    return reply(result.status === "worker_error" ? 503 : 200, { ok: result.status !== "worker_error", idle: result.idle, ...(result.status ? { status: result.status } : {}) });
+    return reply(result.status === "worker_error" ? 503 : 200, { ok: result.status !== "worker_error", idle: result.idle, ...(result.status ? { status: result.status } : {}),...(result.processed!==undefined?{processed:result.processed}:{}) });
   } catch { return reply(503, { error: "worker_unavailable" }); }
 }

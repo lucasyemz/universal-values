@@ -6,6 +6,8 @@ let sql: string;
 beforeAll(async () => {
   await db.exec(`
     create role anon; create role authenticated; create role service_role;
+    create table public.runnable_test(ready boolean); insert into public.runnable_test values(false);
+    create function public.cms_worker_has_runnable() returns boolean language sql as $$ select ready from public.runnable_test $$;
     create schema vault; create schema net; create schema cron;
     create table vault.decrypted_secrets(name text primary key, decrypted_secret text);
     create table net.calls(id bigserial primary key, url text, headers jsonb, body jsonb, timeout_milliseconds integer);
@@ -22,7 +24,7 @@ beforeAll(async () => {
   `);
   sql = (await readFile("supabase/cron/cms-worker.sql", "utf8")).replace(/^create extension.*;$/gm, "");
   await db.exec(sql);
-});
+},30000);
 afterAll(async () => db.close());
 describe("Edge Cron installation (mock platform extensions)", () => {
   it("starts disabled and preserves activation when reinstalled", async () => {
@@ -37,6 +39,13 @@ describe("Edge Cron installation (mock platform extensions)", () => {
     await db.query("select public.invoke_cms_edge_worker('check')");
     expect((await db.query("select url,body,timeout_milliseconds from net.calls")).rows).toEqual([{ url: "https://example.supabase.co/functions/v1/cms-worker", body: { mode: "check" }, timeout_milliseconds: 110000 }]);
     await expect(db.query("select public.invoke_cms_edge_worker('invalid')")).rejects.toThrow("Invalid worker mode");
+  });
+  it("skips idle HTTP dispatch and never reserves work in the gate",async()=>{
+    const before=(await db.query<{n:number}>("select count(*)::int n from net.calls")).rows[0]!.n;
+    expect((await db.query("select public.invoke_cms_edge_worker() result")).rows).toEqual([{result:null}]);
+    expect((await db.query<{n:number}>("select count(*)::int n from net.calls")).rows[0]!.n).toBe(before);
+    await db.exec("update public.runnable_test set ready=true");await db.query("select public.invoke_cms_edge_worker()");
+    expect((await db.query<{n:number}>("select count(*)::int n from net.calls")).rows[0]!.n).toBe(before+1);
   });
   it("does not allow public, authenticated or service-role callers to invoke the scheduler", async () => {
     for (const role of ["anon", "authenticated", "service_role"]) {

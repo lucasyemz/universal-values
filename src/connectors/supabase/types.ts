@@ -36,6 +36,7 @@ export type Database = {
     };
     Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      webflow_metadata: {Args:{p_site:string;p_action?:string;p_kind?:string;p_collection?:string;p_generation?:string;p_lease?:string;p_data?:Json;p_error?:string;p_retry?:number};Returns:Json};
       managed_binding_summaries: { Args: { p_ids: string[] }; Returns: Json };
       managed_context_page: { Args: { p_id: string; p_site: string; p_page: number }; Returns: Json };
       operation_progress: { Args: { p_id: string }; Returns: Json };
@@ -50,6 +51,8 @@ export type Database = {
       claim_background_cms: { Args: { p_lease: string | null }; Returns: Json };
       background_cms_step: { Args: { p_id: string; p_cursor: number; p_lease: string; p_action: string; p_result?: Json; p_wait?: number }; Returns: Json };
       resume_background_cms: { Args: { p_id: string; p_cursor: number }; Returns: string };
+      request_cms_worker_kick: { Args: {p_id:string}; Returns: boolean };
+      cms_worker_status: { Args: {p_id?:string}; Returns: Json };
       cms_worker_last_seen: { Args: Record<string, never>; Returns: string | null };
       preview_managed_value_resolution: { Args: { p_id: string; p_binding_id: string; p_scan_id: string; p_occurrence_ids: string[]; p_mode: string; p_version: number }; Returns: string };
       preview_managed_value_archive: { Args: { p_id: string; p_value_id: string }; Returns: string };

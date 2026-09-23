@@ -1,3 +1,4 @@
+import { readBatchSchema } from "@/modules/sites/batch-schema";
 import { cache } from "react";
 import { loadReviewState } from "./review-state";
 import "server-only";
@@ -44,12 +45,12 @@ export function scanProgress(scan: Scan) {
   };
 }
 export async function loadScanCollections(siteId: string) {
-  const site = await getScanSite(siteId);
-  const { reader, connection } = await getConnectionReader(site.connection_id);
-  if (connection.workspace_id !== site.workspace_id) throw new Error("Site indisponível.");
-  if (!(await reader.sites()).some((s) => s.id === site.webflow_site_id)) throw new Error("Site indisponível.");
-  return reader.collections(site.webflow_site_id);
+  const { readMetadata } = await import("@/modules/sites/metadata-service");
+  const saved = await readMetadata(siteId, "collections");
+  if (!saved.fresh || !saved.data?.collections) throw new Error("Refresh collections from Webflow before preparing a scan.");
+  return saved.data.collections;
 }
+
 export async function loadSiteScans(siteId: string) {
   const site = await getScanSite(siteId);
   const { client } = await requireUser();
@@ -100,9 +101,9 @@ export async function processBatch(id: string, revision: number) {
   if (claim.error) throw new Error("Não foi possível reservar o lote.");
   if (!claim.data) return scanProgress(await getScan(id));
   try {
-    const { reader, connection } = await getConnectionReader(scan.connection_id);
+    const { reader, connection } = await getConnectionReader(scan.connection_id,{action:"scan_batch",siteId:site.id,workspaceId:site.workspace_id});
     if (connection.workspace_id !== site.workspace_id) throw new Error("source_changed");
-    const batch = await readScanBatch(scan, site.webflow_site_id, reader);
+    const batch = await readScanBatch(scan, site.webflow_site_id, reader, context=>readBatchSchema(site.id,scan.connection_id,reader,context));
     const saved = await client.rpc("save_cms_scan_batch", {
       p_id: id, p_revision: revision, p_lease: lease, p_rows: batch.rows,
       p_items: batch.itemsRead, p_next_collection: batch.nextCollection, p_next_offset: batch.nextOffset,

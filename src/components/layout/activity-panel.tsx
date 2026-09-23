@@ -1,4 +1,7 @@
 "use client";
+import {workerHealthMessage,type WorkerState} from "@/modules/sync-worker/health";
+import {createPoller} from "@/modules/polling/scheduler";
+import {activityDelay,ACTIVITY_CHANGED} from "@/modules/activity/polling";
 import { useAiWork } from "@/components/ai/work";
 import { useText } from "@/i18n/use-text";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -24,7 +27,7 @@ export function ActivityPanel({ userId }: { userId: string }) {
   const [openOverride, setOpen] = useState<boolean | null>(null);
   const [items, setItems] = useState<Activity[]>([]);
   const [error, setError] = useState("");
-  const [worker, setWorker] = useState("unknown");
+  const [worker, setWorker] = useState<WorkerState>("unknown");
   const [limited, setLimited] = useState(false);
   const visibility = useRef<ActivityVisibility>({ items: [], completedAt: {} });
   const tracked = useRef({ changes: [] as string[], scans: [] as string[] });
@@ -36,34 +39,33 @@ export function ActivityPanel({ userId }: { userId: string }) {
   const open = openOverride ?? storedOpen;
   useEffect(() => {
     let disposed = false;
-    let inFlight = false;
-    let timer: ReturnType<typeof setTimeout>;
-    const poll = async () => {
-      if (disposed || inFlight) return;
-      if (document.hidden || !navigator.onLine) { timer = setTimeout(poll, 60000); return; }
-      inFlight = true;
-      try {
-        const result = await getActivity(tracked.current);
-        if (disposed) return;
-        if (result.ok) {
-          visibility.current = updateActivityVisibility(visibility.current, result.items, Date.now());
-          setWorker(result.worker); setLimited(result.limited); setError("");
-        } else setError(result.message);
-      } catch { if (!disposed) setError("A conexão foi interrompida. O progresso exibido pode estar desatualizado."); }
-      inFlight = false;
-      if (!disposed) {
-        visibility.current = updateActivityVisibility(visibility.current, visibility.current.items, Date.now());
-        const visible = visibility.current.items;
-        setItems(visible);
-        tracked.current = { changes: visible.filter(i => i.kind === "change").map(i => i.id), scans: visible.filter(i => i.kind === "scan").map(i => i.id) };
-        timer = setTimeout(poll, visible.length ? 15000 : 60000);
-      }
+    let health:WorkerState="unknown";
+    let expiry:ReturnType<typeof setTimeout>|undefined;
+    const updateVisible=()=>{
+      visibility.current=updateActivityVisibility(visibility.current,visibility.current.items,Date.now());
+      const visible=visibility.current.items;setItems(visible);
+      tracked.current={changes:visible.filter(i=>i.kind==='change').map(i=>i.id),scans:visible.filter(i=>i.kind==='scan').map(i=>i.id)};
+      clearTimeout(expiry);
+      const ends=visible.filter(i=>i.state==='done').map(i=>visibility.current.completedAt[`${i.kind}:${i.id}`]!+15000);
+      if(ends.length)expiry=setTimeout(updateVisible,Math.max(1,Math.min(...ends)-Date.now()));
+      return visible;
     };
-    const wake = () => { clearTimeout(timer); void poll(); };
-    document.addEventListener("visibilitychange", wake);
-    window.addEventListener("online", wake);
-    void poll();
-    return () => { disposed = true; clearTimeout(timer); document.removeEventListener("visibilitychange", wake); window.removeEventListener("online", wake); };
+    const poller=createPoller(async()=>{
+      try {
+        const result=await getActivity(tracked.current);
+        if(disposed)return null;
+        if(result.ok){
+          visibility.current=updateActivityVisibility(visibility.current,result.items,Date.now());
+          health=result.worker;setWorker(result.worker);setLimited(result.limited);setError("");
+        }else setError(result.message);
+      }catch{if(!disposed)setError("A conexão foi interrompida. O progresso exibido pode estar desatualizado.");}
+      if(disposed)return null;
+      return activityDelay(updateVisible(),health);
+    },()=>!document.hidden&&navigator.onLine);
+    const wake=()=>poller.wake();
+    document.addEventListener("visibilitychange",wake);window.addEventListener("online",wake);window.addEventListener("offline",wake);window.addEventListener(ACTIVITY_CHANGED,wake);
+    poller.wake();
+    return()=>{disposed=true;poller.stop();clearTimeout(expiry);document.removeEventListener("visibilitychange",wake);window.removeEventListener("online",wake);window.removeEventListener("offline",wake);window.removeEventListener(ACTIVITY_CHANGED,wake);};
   }, [pathname]);
   function toggle(value: boolean) {
     setOpen(value);
@@ -77,7 +79,7 @@ export function ActivityPanel({ userId }: { userId: string }) {
       <div className="flex items-center justify-between border-b p-4"><div><h2 id="activity-title" className="font-semibold">{t("Seus processos")}</h2><p className="text-xs text-muted">{t("Acompanhe enquanto navega")}</p></div><button type="button" className="ui-btn ui-btn-ghost" aria-label={t("Minimizar processos")} onClick={() => toggle(false)}><ChevronDown size={18} /></button></div>
       <div className="overflow-y-auto p-4">
         {error && <p role="status" className="mb-3 text-sm text-amber-800">{t(error)}</p>}
-        {items.some(i => i.kind === "change" && i.state === "active") && worker !== "online" && <p className="mb-3 rounded-lg bg-subtle p-3 text-xs text-amber-800">{worker === "offline" ? t("Worker sem sinal recente. As alterações continuam salvas na fila.") : t("Não foi possível verificar a disponibilidade do worker.")}</p>}
+        {items.some(i=>i.kind==='change'&&i.state!=='done')&&<p className="mb-3 rounded-lg bg-subtle p-3 text-xs">{t(workerHealthMessage(worker))}</p>}
         {aiJob && <section className="mb-3 rounded-xl border p-3" aria-label={t("Geração com IA")}>
           <p className="text-sm font-semibold">{t("Geração com IA")}</p>
           <p role="status" className="mt-2 text-xs">{aiJob.state === "stopping" ? t("Parando após a solicitação atual…") : aiJob.state === "running" ? t("Gerando…") : t("Processo de IA encerrado")}</p>

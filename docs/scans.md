@@ -1,5 +1,12 @@
 # Scan de CMS e Managed Values
 
+## Phase C — estrutura persistida (23/09/2026)
+
+Aplique a migration `20260923000500_webflow_metadata_cache.sql` uma vez antes de usar o fluxo atualizado. Abrir Sites, Novo scan, revisar a configuração e navegar pela estrutura do Explorer não consulta o Webflow nem lê credenciais. Use **Refresh from Webflow** para atualizar a estrutura ausente/expirada; o horário salvo fica visível. O TTL inicial de 15 minutos não substitui autorização.
+
+Os lotes confirmados continuam validando sites e coleções ao vivo e lendo os itens atuais. Apenas o schema pode ser reutilizado durante esse prazo. Reconexão, revogação, troca de credencial/conexão e atualização explícita invalidam os escopos pertinentes. O Explorer carrega itens somente pela ação explícita e identifica a hora da consulta. As garantias de edição não mudam. Veja [plano e medições da Phase C](phase-c-provider-plan.md).
+
+
 ## Ativar
 
 1. Aplique `supabase/migrations/20260916000300_cms_scans_managed_values.sql` no SQL Editor do projeto de desenvolvimento. As duas migrations anteriores precisam estar aplicadas; não as execute novamente.

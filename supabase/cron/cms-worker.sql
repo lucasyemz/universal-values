@@ -1,4 +1,4 @@
--- Run as postgres in the Supabase SQL editor after migration 015.
+-- Run as postgres in the Supabase SQL editor after migration 20260923000600.
 -- Creates the schedule DISABLED on first installation. Re-running preserves its state.
 begin;
 create extension if not exists pg_cron;
@@ -9,6 +9,8 @@ returns bigint language plpgsql security definer set search_path = '' as $$
 declare project_url text; cron_secret text;
 begin
   if p_mode is null or p_mode not in ('check', 'run') then raise exception 'Invalid worker mode'; end if;
+  -- Read-only existence check; the claim gateway still owns leases and authorization.
+  if p_mode='run' and not public.cms_worker_has_runnable() then return null; end if;
   select decrypted_secret into project_url from vault.decrypted_secrets where name = 'cms_worker_project_url';
   select decrypted_secret into cron_secret from vault.decrypted_secrets where name = 'cms_worker_cron_secret';
   if project_url is null or project_url !~ '^https://[a-z0-9]+\.supabase\.co$'

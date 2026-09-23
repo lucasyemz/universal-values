@@ -26,7 +26,7 @@ describe("bounded Edge worker", () => {
     expect(await (await handleWorkerRequest(request('{"mode":"check"}'), d)).json()).toEqual({ ok: true, mode: "check" });
     expect(d.check).toHaveBeenCalledOnce(); expect(d.run).not.toHaveBeenCalled();
   });
-  it("runs only one step per invocation and excludes identity from responses", async () => {
+  it("runs one bounded batch per invocation and excludes identity from responses", async () => {
     const d = deps();
     expect(await (await handleWorkerRequest(request(), d)).json()).toEqual({ ok: true, idle: false, status: "applied" });
     expect(d.run).toHaveBeenCalledOnce();
