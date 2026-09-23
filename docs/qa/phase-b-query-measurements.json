@@ -1,0 +1,394 @@
+{
+  "environment": "Local PGlite, real migrations, synthetic owners and content. Not production latency. See tests/database/phase-b-*.test.ts.",
+  "measurements": {
+    "phase-b-baseline": {
+      "fixture": "2 owners, 6 scans, 6000 occurrences, 1600-character snapshots, 100 groups/scan",
+      "oneScanRows": 1000,
+      "oneScanBytes": 2217594,
+      "fiveScanRows": 5000,
+      "fiveScanBytes": 11087970,
+      "plan": [
+        {
+          "QUERY PLAN": "Limit  (cost=2532.33..2533.58 rows=500 width=1888) (actual time=8.733..10.874 rows=1000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=253"
+        },
+        {
+          "QUERY PLAN": "  ->  Sort  (cost=2532.33..2533.58 rows=500 width=1888) (actual time=8.728..9.351 rows=1000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Sort Key: scan_occurrences.id"
+        },
+        {
+          "QUERY PLAN": "        Sort Method: quicksort  Memory: 2024kB"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=253"
+        },
+        {
+          "QUERY PLAN": "        ->  Bitmap Heap Scan on scan_occurrences  (cost=15.91..2509.92 rows=500 width=1888) (actual time=0.197..1.221 rows=1000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "              Recheck Cond: (scan_id = '33b31f15-ba2f-4198-9d1a-0542f3af162b'::uuid)"
+        },
+        {
+          "QUERY PLAN": "              Filter: (ANY (workspace_id = (hashed SubPlan 6).col1))"
+        },
+        {
+          "QUERY PLAN": "              Heap Blocks: exact=250"
+        },
+        {
+          "QUERY PLAN": "              Buffers: shared hit=253"
+        },
+        {
+          "QUERY PLAN": "              ->  Bitmap Index Scan on scan_occurrences_scan_idx  (cost=0.00..15.78 rows=1000 width=0) (actual time=0.113..0.113 rows=1000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                    Index Cond: (scan_id = '33b31f15-ba2f-4198-9d1a-0542f3af162b'::uuid)"
+        },
+        {
+          "QUERY PLAN": "                    Index Searches: 1"
+        },
+        {
+          "QUERY PLAN": "                    Buffers: shared hit=2"
+        },
+        {
+          "QUERY PLAN": "              SubPlan 6"
+        },
+        {
+          "QUERY PLAN": "                ->  Result  (cost=0.04..1.07 rows=1 width=16) (actual time=0.023..0.027 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      One-Time Filter: ((InitPlan 5).col1 = (InitPlan 4).col1)"
+        },
+        {
+          "QUERY PLAN": "                      Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 4"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.002..0.002 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 5"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.009..0.010 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      ->  Seq Scan on workspace_members m  (cost=0.04..1.07 rows=1 width=16) (actual time=0.005..0.006 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                            Filter: (user_id = (InitPlan 4).col1)"
+        },
+        {
+          "QUERY PLAN": "                            Rows Removed by Filter: 1"
+        },
+        {
+          "QUERY PLAN": "                            Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.302 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 11.431 ms"
+        }
+      ]
+    },
+    "phase-b-summaries": {
+      "rows": 5,
+      "bytes": 581,
+      "plan": [
+        {
+          "QUERY PLAN": "Function Scan on scan_review_summaries  (cost=0.25..10.25 rows=1000 width=72) (actual time=29.587..29.599 rows=5.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=2555"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.036 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 29.649 ms"
+        }
+      ]
+    },
+    "phase-b-activity-baseline": {
+      "fixture": "300 CMS + 300 static events; page20/page-size5, 1600-character static source; no events bodies (conservative)",
+      "rows": 202,
+      "bytes": 215932,
+      "plan": [
+        {
+          "QUERY PLAN": "Limit  (cost=335.94..336.19 rows=101 width=101) (actual time=0.565..0.806 rows=101.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "  InitPlan 1"
+        },
+        {
+          "QUERY PLAN": "    ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.033..0.108 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  ->  Sort  (cost=335.92..336.30 rows=150 width=101) (actual time=0.562..0.744 rows=101.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Sort Key: cms_change_requests.created_at DESC, cms_change_requests.id"
+        },
+        {
+          "QUERY PLAN": "        Sort Method: top-N heapsort  Memory: 30kB"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "        ->  Seq Scan on cms_change_requests  (cost=0.00..330.50 rows=150 width=101) (actual time=0.195..0.389 rows=300.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "              Filter: ((actor_id = (InitPlan 1).col1) AND (site_id = '4f0b9710-9842-44fc-a406-52d046bf3d08'::uuid) AND (ANY (workspace_id = (hashed SubPlan 7).col1)))"
+        },
+        {
+          "QUERY PLAN": "              Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "              SubPlan 7"
+        },
+        {
+          "QUERY PLAN": "                ->  Result  (cost=0.04..1.06 rows=1 width=16) (actual time=0.013..0.017 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      One-Time Filter: ((InitPlan 6).col1 = (InitPlan 5).col1)"
+        },
+        {
+          "QUERY PLAN": "                      Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 5"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.001..0.002 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 6"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.002..0.003 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      ->  Seq Scan on workspace_members  (cost=0.04..1.06 rows=1 width=16) (actual time=0.005..0.006 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                            Filter: ((user_id = (InitPlan 5).col1) AND (role = 'owner'::text))"
+        },
+        {
+          "QUERY PLAN": "                            Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=5"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.384 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.936 ms"
+        }
+      ]
+    },
+    "phase-b-activity-comparison": {
+      "beforeRows": 202,
+      "beforeBytes": 215932,
+      "afterRows": 6,
+      "afterBytes": 1681,
+      "beforePlan": [
+        {
+          "QUERY PLAN": "Limit  (cost=335.94..336.19 rows=101 width=101) (actual time=0.565..0.806 rows=101.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "  InitPlan 1"
+        },
+        {
+          "QUERY PLAN": "    ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.033..0.108 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  ->  Sort  (cost=335.92..336.30 rows=150 width=101) (actual time=0.562..0.744 rows=101.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "        Sort Key: cms_change_requests.created_at DESC, cms_change_requests.id"
+        },
+        {
+          "QUERY PLAN": "        Sort Method: top-N heapsort  Memory: 30kB"
+        },
+        {
+          "QUERY PLAN": "        Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "        ->  Seq Scan on cms_change_requests  (cost=0.00..330.50 rows=150 width=101) (actual time=0.195..0.389 rows=300.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "              Filter: ((actor_id = (InitPlan 1).col1) AND (site_id = '4f0b9710-9842-44fc-a406-52d046bf3d08'::uuid) AND (ANY (workspace_id = (hashed SubPlan 7).col1)))"
+        },
+        {
+          "QUERY PLAN": "              Buffers: shared hit=9"
+        },
+        {
+          "QUERY PLAN": "              SubPlan 7"
+        },
+        {
+          "QUERY PLAN": "                ->  Result  (cost=0.04..1.06 rows=1 width=16) (actual time=0.013..0.017 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      One-Time Filter: ((InitPlan 6).col1 = (InitPlan 5).col1)"
+        },
+        {
+          "QUERY PLAN": "                      Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 5"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.001..0.002 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      InitPlan 6"
+        },
+        {
+          "QUERY PLAN": "                        ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.002..0.003 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                      ->  Seq Scan on workspace_members  (cost=0.04..1.06 rows=1 width=16) (actual time=0.005..0.006 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                            Filter: ((user_id = (InitPlan 5).col1) AND (role = 'owner'::text))"
+        },
+        {
+          "QUERY PLAN": "                            Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "Planning:"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=5"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.384 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 0.936 ms"
+        }
+      ],
+      "afterPlan": [
+        {
+          "QUERY PLAN": "Function Scan on site_activity_page  (cost=0.25..10.25 rows=1000 width=209) (actual time=8.058..8.063 rows=6.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=95"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.046 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 8.095 ms"
+        }
+      ]
+    },
+    "phase-b-progress": {
+      "rows": 1,
+      "bytes": 198,
+      "plan": [
+        {
+          "QUERY PLAN": "Result  (cost=0.00..0.26 rows=1 width=32) (actual time=2.746..2.772 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=24"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.119 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 2.878 ms"
+        }
+      ]
+    },
+    "phase-b-managed-baseline": {
+      "rows": 1000,
+      "bytes": 2189001,
+      "plan": [
+        {
+          "QUERY PLAN": "Seq Scan on managed_value_bindings  (cost=0.00..1320.00 rows=500 width=1931) (actual time=0.132..0.914 rows=1000.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Filter: ((managed_value_id = 'b85c16ca-5bcc-4841-80d3-3ee8a47f1def'::uuid) AND (ANY (workspace_id = (hashed SubPlan 6).col1)))"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=251"
+        },
+        {
+          "QUERY PLAN": "  SubPlan 6"
+        },
+        {
+          "QUERY PLAN": "    ->  Result  (cost=0.04..1.05 rows=1 width=16) (actual time=0.101..0.104 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "          One-Time Filter: ((InitPlan 5).col1 = (InitPlan 4).col1)"
+        },
+        {
+          "QUERY PLAN": "          Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "          InitPlan 4"
+        },
+        {
+          "QUERY PLAN": "            ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.006..0.006 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "          InitPlan 5"
+        },
+        {
+          "QUERY PLAN": "            ->  Result  (cost=0.00..0.02 rows=1 width=16) (actual time=0.029..0.030 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "          ->  Seq Scan on workspace_members m  (cost=0.04..1.05 rows=1 width=16) (actual time=0.005..0.006 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "                Filter: (user_id = (InitPlan 4).col1)"
+        },
+        {
+          "QUERY PLAN": "                Buffers: shared hit=1"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.265 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 1.378 ms"
+        }
+      ]
+    },
+    "phase-b-managed-projection": {
+      "rows": 10,
+      "bytes": 18388,
+      "plan": [
+        {
+          "QUERY PLAN": "Result  (cost=0.00..0.26 rows=1 width=32) (actual time=30.690..30.739 rows=1.00 loops=1)"
+        },
+        {
+          "QUERY PLAN": "  Buffers: shared hit=520"
+        },
+        {
+          "QUERY PLAN": "Planning Time: 0.068 ms"
+        },
+        {
+          "QUERY PLAN": "Execution Time: 31.356 ms"
+        }
+      ]
+    }
+  }
+}

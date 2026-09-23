@@ -1,4 +1,5 @@
 "use client";
+import type { ScanListRow } from "@/modules/scans/list-summary";
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, FileText, ImageIcon, Link2, RotateCw, ScanLine, Search } from "lucide-react";
@@ -6,11 +7,11 @@ import { useText } from "@/i18n/use-text";
 import { StatusBadge, EmptyState } from "@/components/ui";
 import { RememberedLink } from "@/components/layout/navigation-state";
 import { ScanCollectionCell } from "./collection-cell";
-import { detectionLabels, searchedScanTypes, type Scan } from "@/modules/scans/schema";
+import { detectionLabels, searchedScanTypes } from "@/modules/scans/schema";
 import { filterScanHistory, type ScanReviewCounts } from "@/modules/scans/history-filter";
 import { siteDate } from "@/modules/sites/presentation";
 
-export function ScanHistoryList({ scans, links, counts }: { scans: Scan[]; links: Record<string, string>; counts: Record<string, ScanReviewCounts | null> }) {
+export function ScanHistoryList({ scans, links, counts }: { scans: ScanListRow[]; links: Record<string, string>; counts: Record<string, ScanReviewCounts | null> }) {
  const t = useText();
  const [filter, setFilter] = useState<"all" | "pending" | "reviewed">("all");
  const [query, setQuery] = useState("");

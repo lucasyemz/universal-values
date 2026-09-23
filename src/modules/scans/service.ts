@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { loadReviewState } from "./review-state";
 import "server-only";
 import { isIndependentManagedText } from "./managed-protection";
@@ -13,7 +14,7 @@ import { WebflowError } from "@/connectors/webflow/client";
 import { groupOccurrences, groupScanResults, occurrenceSchema, savedValueSchema, scanSchema, valuePreviewSchema, type Scan } from "./schema";
 import { readScanBatch } from "./runner";
 
-export async function getScanSite(id: string) {
+export const getScanSite = cache(async (id: string) => {
   if (!z.uuid().safeParse(id).success) notFound();
   const { client } = await requireUser();
   const result = await client.from("sites").select("id,workspace_id,connection_id,webflow_site_id,display_name").eq("id", id).maybeSingle();
@@ -22,7 +23,7 @@ export async function getScanSite(id: string) {
   const site = linkedSiteSchema.parse(result.data);
   await requireWorkspaceOwner(site.workspace_id);
   return site;
-}
+});
 export async function getScan(id: string) {
   if (!z.uuid().safeParse(id).success) notFound();
   const { client, user } = await requireUser();

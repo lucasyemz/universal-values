@@ -1,29 +1,26 @@
 import { afterEach, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ load: vi.fn(), link: vi.fn() }));
-vi.mock("./sync-service", () => ({ loadManagedSyncValue: mocks.load }));
+vi.mock("server-only",()=>({}));
+const mocks = vi.hoisted(() => ({ rpc: vi.fn(), link: vi.fn() }));
+vi.mock("@/modules/auth/service", () => ({ requireUser:async()=>({client:{rpc:mocks.rpc}}) }));
 vi.mock("@/modules/routes/links", () => ({ resourceLink: mocks.link }));
 import { loadManagedContext } from "./context-actions";
 const siteId = "11111111-1111-4111-8111-111111111111", valueId = "22222222-2222-4222-8222-222222222222";
+const value={id:valueId,site_id:siteId,name:"Example",canonical:{type:"text",text:"Example"},created_at:new Date().toISOString(),version:1};
 afterEach(() => { vi.resetAllMocks(); vi.unstubAllGlobals(); });
-it("returns a bounded page of saved sources, keeps uncertainty and makes no external request", async () => {
-  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
-  mocks.load.mockResolvedValue({ value: { id: valueId, site_id: siteId }, bindings: Array.from({ length: 25 }, (_, n) => ({ id: n, source_value: "saved", uncertain: n === 10 })), history: [] });
-  mocks.link.mockResolvedValue("/dashboard/alice/sites/site/managed-values/1");
-  const view = await loadManagedContext({ siteId, valueId, page: 2 });
-  expect(view.ok).toBe(true);
-  if (view.ok) { expect(view.sources).toHaveLength(10); expect(view.sources[0]?.uncertain).toBe(true); expect(view.total).toBe(25); expect(view.hasMore).toBe(true); }
-  expect(fetcher).not.toHaveBeenCalled();
+it("requests only a bounded saved-source page and makes no provider request", async () => {
+ const fetcher=vi.fn();vi.stubGlobal("fetch",fetcher);
+ mocks.rpc.mockResolvedValue({data:{value,disabled:false,total:25,page:2,hasMore:true,sources:[{id:valueId,field:"title",collection:"c",item:"i",locale:"",value:"saved",uncertain:true,verifiedAt:null}]},error:null});
+ mocks.link.mockResolvedValue("/dashboard/alice/sites/site/managed-values/1");
+ const view=await loadManagedContext({siteId,valueId,page:2});
+ expect(view).toMatchObject({ok:true,total:25,hasMore:true,sources:[{uncertain:true}]});
+ expect(mocks.rpc).toHaveBeenCalledExactlyOnceWith("managed_context_page",{p_id:valueId,p_site:siteId,p_page:2});expect(fetcher).not.toHaveBeenCalled();
 });
-it("does not expose another site's value or accept invalid paging", async () => {
-  mocks.load.mockResolvedValue({ value: { site_id: "other" } });
-  expect(await loadManagedContext({ siteId, valueId, page: 1 })).toEqual({ ok: false });
-  expect(await loadManagedContext({ siteId, valueId, page: 0 })).toEqual({ ok: false });
-  expect(mocks.load).toHaveBeenCalledTimes(1); expect(mocks.link).not.toHaveBeenCalled();
+it("fails closed for missing migration, foreign values and invalid paging",async()=>{
+ mocks.rpc.mockResolvedValue({error:{code:"PGRST202"}});
+ expect(await loadManagedContext({siteId,valueId,page:1})).toEqual({ok:false});
+ expect(await loadManagedContext({siteId,valueId,page:0})).toEqual({ok:false});expect(mocks.rpc).toHaveBeenCalledTimes(1);expect(mocks.link).not.toHaveBeenCalled();
 });
-it("keeps archived, uncertain-history and active-operation editing safeguards", async () => {
-  for (const extra of [{ value: { id: valueId, site_id: siteId, archived_at: "today" }, archivedBindings: [] }, { activeOperation: { status: "confirmed" } }, { missingMigration: true }]) {
-    mocks.load.mockResolvedValue({ value: { id: valueId, site_id: siteId }, bindings: [{ id: "binding" }], history: [], ...extra });
-    const view = await loadManagedContext({ siteId, valueId, page: 1 });
-    expect(view.ok && view.disabled).toBe(true);
-  }
+it("preserves server-disabled editing and source totals beyond the 50-source UI threshold",async()=>{
+ mocks.rpc.mockResolvedValue({data:{value,disabled:true,total:51,page:1,hasMore:true,sources:[]},error:null});
+ expect(await loadManagedContext({siteId,valueId,page:1})).toMatchObject({ok:true,disabled:true,total:51});
 });

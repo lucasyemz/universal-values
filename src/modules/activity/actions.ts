@@ -12,7 +12,7 @@ export async function getActivity(input: unknown) {
     const changesFilter = "status.eq.confirmed" + (parsed.data.changes.length ? `,id.in.(${parsed.data.changes.join(",")})` : "");
     const scansFilter = "status.in.(running,paused)" + (parsed.data.scans.length ? `,id.in.(${parsed.data.scans.join(",")})` : "");
     const [changes, scans, health] = await Promise.all([
-      client.from("cms_change_requests").select("id,site_id,status,cursor,total,background_paused,scan_id,managed_value_id,results").eq("actor_id", user.id).or(changesFilter).order("created_at", { ascending: false }).limit(50),
+      client.from("cms_operation_summaries").select("id,site_id,status,cursor,total,background_paused,scan_id,managed_value_id,issues").eq("actor_id", user.id).or(changesFilter).order("created_at", { ascending: false }).limit(50),
       client.from("cms_scans").select("id,site_id,status,items_read,occurrences_count").eq("actor_id", user.id).or(scansFilter).order("created_at", { ascending: false }).limit(50),
       client.rpc("cms_worker_last_seen", {}),
     ]);

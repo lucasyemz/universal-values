@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Scan } from "@/modules/scans/schema";
 
-export function ScanCollectionCell({scan,href}:{scan:Scan;href:string}) {
+export function ScanCollectionCell({scan,href}:{scan:Pick<Scan,"plan">;href:string}) {
   return <ul className="flex max-w-xs flex-wrap gap-1.5">
     {scan.plan.map(collection => <li key={collection.id} className="min-w-0 max-w-full">
       <Link

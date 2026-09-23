@@ -34,8 +34,14 @@ export type Database = {
       workspace_previews: ReadTable<{ id: string; actor_id: string; name: string; created_at: string; expires_at: string; workspace_id: string | null; confirmed_at: string | null }>;
       audit_events: ReadTable<{ id: string; actor_id: string; workspace_id: string | null; preview_id: string; action: string; created_at: string }>;
     };
-    Views: { [_ in never]: never };
+    Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      managed_binding_summaries: { Args: { p_ids: string[] }; Returns: Json };
+      managed_context_page: { Args: { p_id: string; p_site: string; p_page: number }; Returns: Json };
+      operation_progress: { Args: { p_id: string }; Returns: Json };
+      site_overview_summary: { Args: { p_site: string }; Returns: Json };
+      site_activity_page: { Args: { p_site: string; p_filter?: string; p_offset?: number; p_cursor?: Json; p_previous?: boolean }; Returns: Json };
+      scan_review_summaries: { Args: { p_ids: string[] }; Returns: Json };
       gemini_usage_status: { Args: Record<string, never>; Returns: Json };
       gemini_connection: { Args: { p_action: string; p_id?: string; p_ciphertext?: string }; Returns: Json };
       select_account_plan: { Args: { p_id: string; p_plan: string; p_expected: string }; Returns: undefined };

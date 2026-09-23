@@ -1,3 +1,4 @@
+import { cache } from "react";
 import "server-only";
 import { webflowSiteUrl, webflowPreviewUrl } from "@/connectors/webflow/site-url";
 import { quotaErrorCode, quotaMessage } from "@/modules/plans/errors";
@@ -11,7 +12,7 @@ import { decryptToken } from "@/connectors/webflow/crypto";
 import { webflowIdSchema } from "@/connectors/webflow/schemas";
 import { connectionSchema, linkedSiteSchema, sitePreviewSchema } from "./schema";
 
-export async function requireWorkspaceOwner(workspaceId: string) {
+export const requireWorkspaceOwner = cache(async (workspaceId: string) => {
   if (!z.uuid().safeParse(workspaceId).success) notFound();
   const { client, user } = await requireUser();
   const { data, error } = await client.from("workspace_members").select("role")
@@ -19,7 +20,7 @@ export async function requireWorkspaceOwner(workspaceId: string) {
   if (error) throw new Error("Não foi possível verificar o acesso.");
   if (data?.role !== "owner") notFound();
   return { client, user };
-}
+});
 
 export function credentialContext(connection: { id: string; workspace_id: string; actor_id: string }) {
   return ["webflow", connection.id, connection.workspace_id, connection.actor_id].join(":");
