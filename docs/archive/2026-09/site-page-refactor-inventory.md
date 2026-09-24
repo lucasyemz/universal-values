@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Inventário da página do site — 20/09/2026
 
 ## Escopo e decisão de entrada

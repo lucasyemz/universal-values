@@ -2,13 +2,8 @@ import { parseFragment, type DefaultTreeAdapterMap } from "parse5";
 import { valueLabel, type Occurrence } from "./schema";
 import { textContext } from "./text-context";
 
-export function imageFilename(url: string) {
-  try {
-    const path = new URL(url).pathname.split("/").at(-1) ?? "";
-    const filename = decodeURIComponent(path).replace(/^[a-f0-9]{24}_/i, "");
-    return filename || "Image";
-  } catch { return "Image"; }
-}
+import { imageFilename } from "./image-filename";
+export { imageFilename } from "./image-filename";
 
 type Node = DefaultTreeAdapterMap["node"];
 function textContent(node: Node): string {

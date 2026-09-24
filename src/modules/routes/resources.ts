@@ -24,8 +24,11 @@ export function legacyResource(path: string) {
   for(const [kind,pattern] of patterns){const match=pattern.exec(path);if(match && uuidPattern.test(match[1]!))return {kind,id:match[1]!};}
   return null;
 }
-export function resourcePath(kind:ResourceKind,number:number,account:string,site?:string) {
-  const base=site?`/dashboard/${account}/sites/${site}`:`/dashboard/${account}`;
+export function sitePath(workspace: string, site: string) {
+  return `/dashboard/${workspace}/sites/${site}`;
+}
+export function resourcePath(kind:ResourceKind,number:number,namespace:string,site?:string) {
+  const base=site?sitePath(namespace,site):`/dashboard/${namespace}`;
   return `${base}/${resourceSuffix[kind]}/${number}`;
 }
 export function internalResourcePath(kind:ResourceKind,id:string,siteId?:string) {

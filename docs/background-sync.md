@@ -2,11 +2,11 @@
 
 ## Modelo de hospedagem: Supabase Free
 
-O executor de produção é uma Supabase Edge Function (`cms-worker`), acionada pelo Supabase Cron a cada minuto. O código da Phase D processa até **três campos sequenciais** por chamada e encerra; sua implantação remota ainda está pendente. Não exige Background Worker pago no Render nem computador ligado. O dashboard precisa de hospedagem própria; esta configuração resolve o executor CMS.
+O executor de produção é uma Supabase Edge Function (`cms-worker`), acionada pelo Supabase Cron a cada minuto. O executor processa até **três campos sequenciais** por chamada e encerra. O registro de implantação em 23/09/2026 está ao final; confira o estado real do ambiente antes de operar. Não exige Background Worker pago no Render nem computador ligado. O dashboard precisa de hospedagem própria; esta configuração resolve o executor CMS.
 
 Após confirmação, a Phase D tenta antecipar a execução uma vez por operação. Se isso falhar, o Cron recupera a operação no próximo ciclo; operações maiores continuam em chamadas posteriores. Cooldown, falhas, concorrência e limites do provedor podem aumentar essa espera. O perfil inicial prioriza simplicidade e limites previsíveis, não alto volume.
 
-No Free, a documentação consultada informa 500 mil invocações incluídas e limite de 150 segundos por execução. No modelo anterior, um agendamento por minuto consumia cerca de 43.200 chamadas em 30 dias, mesmo sem operações. Na Phase D, um EXISTS SQL evita a chamada Edge quando não existe trabalho executável; não reserva trabalho nem acessa credenciais. As cotas são compartilhadas com outras funções e recursos do projeto; não há garantia de gratuidade para qualquer volume. Projeto pausado, cotas esgotadas ou falhas do serviço interrompem o processamento até recuperação.
+Cotas e limites comerciais dependem do plano vigente do provedor; consulte as fontes abaixo antes de dimensionar a hospedagem. No modelo anterior, um agendamento por minuto consumia cerca de 43.200 chamadas em 30 dias, mesmo sem operações. Na Phase D, um EXISTS SQL evita a chamada Edge quando não existe trabalho executável; não reserva trabalho nem acessa credenciais. As cotas são compartilhadas com outras funções e recursos do projeto; não há garantia de gratuidade para qualquer volume. Projeto pausado, cotas esgotadas ou falhas do serviço interrompem o processamento até recuperação.
 
 Fontes: [agendamento](https://supabase.com/docs/guides/functions/schedule-functions), [cotas](https://supabase.com/docs/guides/platform/billing-on-supabase), [limites](https://supabase.com/docs/guides/functions/limits).
 
@@ -22,7 +22,7 @@ Fontes: [agendamento](https://supabase.com/docs/guides/functions/schedule-functi
 
 ### 1. Conferir a fila e o banco
 
-Mantenha as migrations anteriores aplicadas. Para implantar a Phase D, aplique também 006/007 de 23/09, reinstale o SQL do Cron e publique o novo bundle Edge, somente com aprovação explícita. Essas etapas da Phase D ainda não foram executadas remotamente. A migration 015 foi verificada no ambiente durante a ativação local; confira o estado do projeto de destino. Não recrie a chave `WEBFLOW_TOKEN_ENCRYPTION_KEY`: os tokens existentes dependem dela.
+Mantenha as migrations anteriores aplicadas. Para implantar a Phase D, aplique também 006/007 de 23/09, reinstale o SQL do Cron e publique o novo bundle Edge, somente com aprovação explícita. A implantação de 23/09/2026 registrou essas etapas; um novo ambiente ainda precisa da configuração completa. A migration 015 foi verificada no ambiente durante a ativação local; confira o estado do projeto de destino. Não recrie a chave `WEBFLOW_TOKEN_ENCRYPTION_KEY`: os tokens existentes dependem dela.
 
 Revise as operações confirmadas antes de ativar o Cron. A ativação permite processar as que já foram confirmadas e não estão pausadas. Prévias não são executadas.
 
@@ -113,7 +113,7 @@ Pausar impede novas chamadas agendadas; uma chamada já enviada pode terminar. A
 
 O executor compartilha o mesmo código do worker local. A identidade é obtida da operação armazenada; a chamada HTTP aceita apenas `{"mode":"run"}` ou `{"mode":"check"}`, sem IDs de usuários ou operações. A RPC restrita a service_role valida propriedade, conexão, status, lease e cursor.
 
-Cada invocação chama `processWorkerTurn` até três vezes, em série, mantendo reserva, despacho e resultado independentes por campo. Entre campos há pelo menos cinco segundos; uma nova etapa só começa com pelo menos 60 segundos disponíveis no orçamento. Conclusão, fila vazia, cooldown, conflito, falha ou incerteza interrompem o lote. A margem não garante que um campo lento termine; a recuperação por lease e reconciliação continua obrigatória. As chamadas de rede têm prazo compartilhado de 90 segundos e mantêm seus timeouts individuais. Isso deixa margem para o limite de 150 segundos, mas encerramentos por CPU, memória ou infraestrutura ainda são possíveis. Não há laço infinito nem tarefa desacoplada da resposta HTTP.
+Cada invocação chama `processWorkerTurn` até três vezes, em série, mantendo reserva, despacho e resultado independentes por campo. Entre campos há pelo menos cinco segundos; uma nova etapa só começa com pelo menos 60 segundos disponíveis no orçamento. Conclusão, fila vazia, cooldown, conflito, falha ou incerteza interrompem o lote. A margem não garante que um campo lento termine; a recuperação por lease e reconciliação continua obrigatória. As chamadas de rede têm prazo compartilhado de 90 segundos e mantêm seus timeouts individuais. Esse orçamento é do aplicativo; encerramentos pelos limites de CPU, memória ou infraestrutura do provedor ainda são possíveis. Não há laço infinito nem tarefa desacoplada da resposta HTTP.
 
 A marca de despacho é persistida antes do PATCH. Se o processo morrer após o envio, a próxima chamada aguarda a lease expirar e reconcilia o estado por leitura, sem reenviar uma escrita de resultado incerto. Conflito, falha ou incerteza pausa as etapas restantes; a retomada exige a confirmação existente no dashboard. O histórico e a auditoria são os mesmos do executor Node. Nenhum site é publicado automaticamente.
 

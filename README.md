@@ -90,7 +90,7 @@ Gemini é conectado pelo próprio usuário na área de integrações. A chave n�
 
 Instalar dependências, iniciar o app e executar os testes **não aplica migrations remotas**. Os guias de funcionalidades registram etapas históricas; não configure um banco novo aplicando somente a migration citada em um guia antigo.
 
-> **Atualizações do executor:** mudanças de banco e worker devem ser implantadas de forma compatível. A migration `20260922000400_applied_scan_sources.sql` exige atualizar também o worker CMS ativo. Veja [edições sequenciais](docs/sequential-scan-edits.md).
+> **Atualizações do executor:** mudanças de banco e worker devem ser implantadas de forma compatível. A migration `20260922000400_applied_scan_sources.sql` exige atualizar também o worker CMS ativo. Veja [edições sequenciais](docs/cms-changes.md).
 
 ### 4. Inicie o dashboard
 
@@ -131,7 +131,7 @@ No Webflow Designer, abra uma página e inicie o App por **Launch development ap
 - `npm run designer:bundle` gera `extensions/webflow-designer/bundle.zip` para instalação manual.
 - Para um bundle de produção, defina `DESIGNER_DASHBOARD_URL` no ambiente do terminal **antes do build**. O script não carrega essa variável de `.env.local`.
 
-Abrir a extensão fora do Designer não dá acesso ao site. A sessão autorizada é restrita ao site e pode ser revogada no dashboard. Consulte [conexão e histórico central](docs/designer-dashboard.md) e [escopo técnico do Designer](docs/static-text-designer-poc.md), incluindo as atualizações ao final do documento.
+Abrir a extensão fora do Designer não dá acesso ao site. A sessão autorizada é restrita ao site e pode ser revogada no dashboard. Consulte [o guia do Designer](docs/designer-dashboard.md) para conexão, escopo, limitações e segurança.
 
 ## Worker CMS
 
@@ -143,7 +143,7 @@ Operações CMS confirmadas são executadas em segundo plano. Fechar o navegador
 | Processo Node compilado | `npm run worker:build`, seguido de `npm run worker:start`. |
 | Supabase hospedado | `npm run worker:edge:build`, deploy da Edge Function e configuração do Cron. |
 
-O build da Edge Function não publica nem ativa o agendamento. Configuração de segredos, Cron e recuperação estão no [guia de execução em segundo plano](docs/background-sync.md). A fila de operações confirmadas está documentada em [CMS change queue](docs/cms-change-queue.md).
+O build da Edge Function não publica nem ativa o agendamento. Configuração de segredos, Cron e recuperação estão no [guia de execução em segundo plano](docs/background-sync.md). A fila de operações confirmadas está documentada em [CMS change queue](docs/cms-changes.md).
 
 ## Arquitetura
 
@@ -202,36 +202,11 @@ Os testes cobrem regras de negócio e contratos de banco, incluindo isolamento, 
 
 Eles não substituem validação de OAuth real, cookies, elementos do Designer, concorrência entre conexões PostgreSQL ou execução em um site de teste. Consulte [AGENTS.md](AGENTS.md) antes de contribuir.
 
-## Etapa atual e próximos passos
+## Estado e documentação
 
-A **Fase A de melhorias do dashboard com dados persistidos** está implementada: busca salva, repetição de scans, preservação da navegação, contexto e edição de Managed Values. Também foram adicionados ajustes de revisão, fila CMS e suporte a edições sequenciais.
+As fases A–D estão implementadas: UX com dados salvos, consultas estreitas, cache explícito de metadados e eficiência do worker/polling. A fase E inclui somente serviços compartilhados e MCP de leitura (E1/E2). SEO, leitura de embeds e paginação por grupos permanecem fora do escopo entregue.
 
-O roteiro de otimização está organizado em:
-
-1. **Fase B — Banco:** reduzir consultas e volume carregado, melhorar agregações e paginação.
-2. **Fase C — Webflow:** reduzir leituras de metadados com cache e invalidação adequados.
-3. **Fase D — Executor:** otimizar acompanhamento de progresso e trabalho ocioso.
-
-A evolução da auditoria **Global Facts** é uma frente separada: coleta de páginas publicadas, extração de dados estruturados e relatório associado à versão aprovada da referência. Melhorias semânticas com IA permanecem uma possibilidade futura.
-
-## Documentação
-
-| Assunto | Guia |
-| --- | --- |
-| Retomada e troca de máquina | [Handoff](docs/HANDOFF.md) |
-| Conexão com Webflow | [OAuth e configuração](docs/webflow.md) |
-| Pesquisa no CMS | [Scans](docs/scans.md) · [Busca textual](docs/text-search.md) |
-| Alterações e revisão | [Edição CMS](docs/cms-changes.md) · [Prévia inline](docs/inline-review.md) |
-| Execução e fila | [Worker](docs/background-sync.md) · [Fila CMS](docs/cms-change-queue.md) · [Edições sequenciais](docs/sequential-scan-edits.md) |
-| Valores centralizados | [Managed Values](docs/managed-value-sync.md) |
-| Conteúdo estático | [Designer](docs/static-text-designer-poc.md) · [Conexão ao dashboard](docs/designer-dashboard.md) |
-| Integridade de informações | [Global Facts](docs/global-facts.md) |
-| IA | [Sugestões Gemini](docs/ai-suggestions.md) |
-| Agentes MCP (somente leitura) | [Configuração, ferramentas e segurança](docs/mcp.md) · [Plano E1/E2](docs/phase-e-ai-mcp-plan.md) |
-| Plano e consumo | [Limites e administração](docs/free-plan.md) |
-| Interface e navegação | [Padrão de UI](docs/dashboard-designer-ui-pattern.md) · [URLs](docs/dashboard-urls.md) · [Idiomas](docs/internationalization.md) |
-| Otimização | [Auditoria e roadmap](docs/api-ux-cost-audit.md) · [Fase A](docs/dashboard-phase-a.md) |
-| Identidade | [Guia da marca](docs/brand-guide.md) · [Landing page](docs/landing-page.md) |
+Use o [índice de documentação](docs/README.md) para os guias atuais, as [regras do produto](docs/product-rules.md), a [arquitetura](docs/architecture.md) e o [padrão de URLs](docs/dashboard-urls.md). Planos antigos e evidências datadas ficam no [arquivo histórico](docs/archive/2026-09/README.md); não são instruções vigentes de implantação.
 
 ---
 

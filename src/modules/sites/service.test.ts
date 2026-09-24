@@ -94,7 +94,7 @@ describe("CMS authorization boundary", () => {
   });
 });
 
-// Baseline for docs/api-ux-cost-audit.md. Replace these expectations with the
+// Baseline for docs/archive/2026-09/api-ux-cost-audit.md. Replace these expectations with the
 // cheaper budgets when the corresponding optimization phase ships.
 describe("dashboard provider-cost baseline (2026-09-22)", () => {
   function provider() {

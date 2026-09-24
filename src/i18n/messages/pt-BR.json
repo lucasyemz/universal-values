@@ -1593,5 +1593,14 @@
   "Não foi possível verificar o acesso ao Webflow. Tente novamente mais tarde.": "Não foi possível verificar o acesso ao Webflow. Tente novamente mais tarde.",
   "Autorize este site no workspace de destino primeiro.": "Autorize este site no workspace de destino primeiro.",
   "Não foi possível confirmar a transferência. Conclua as operações ativas e confira a conexão de destino.": "Não foi possível confirmar a transferência. Conclua as operações ativas e confira a conexão de destino.",
-  "Selecione": "Selecione"
+  "Selecione": "Selecione",
+  "Locais afetados": "Locais afetados",
+  "Editar valores individualmente": "Editar valores individualmente",
+  "Informe uma URL válida para visualizar a nova imagem.": "Informe uma URL válida para visualizar a nova imagem.",
+  "Conferir e aplicar": "Conferir e aplicar",
+  "Onde aparece": "Onde aparece",
+  "Selecione as ocorrências que deseja editar.": "Selecione as ocorrências que deseja editar.",
+  "Selecionar": "Selecionar",
+  "Conferir": "Conferir",
+  "Ações do grupo": "Ações do grupo"
 }

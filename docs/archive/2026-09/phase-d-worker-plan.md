@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Phase D — polling and background worker efficiency
 
 Scope: Phase D only. Phase C accepted and deployed. No Phase E, AI/MCP, provider-monitor reads, publishing or remote migration deployment. Read AGENTS, Phase C plan, API audit, background sync, CMS changes and Managed Value sync. Existing uncommitted Phase C work is preserved.

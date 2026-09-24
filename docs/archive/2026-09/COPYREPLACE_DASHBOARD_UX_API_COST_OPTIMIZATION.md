@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # CopyReplace — Dashboard UX & API Cost Optimization Plan for Codex
 
 > **Purpose:** Make CopyReplace substantially faster and easier to use while **reducing unnecessary Webflow/API/LLM traffic**.
@@ -1428,7 +1430,7 @@ Add a section similar to:
 Codex should first produce:
 
 ```text
-docs/api-ux-cost-audit.md
+docs/archive/2026-09/api-ux-cost-audit.md
 ```
 
 No behavior changes yet.
@@ -1673,7 +1675,7 @@ Reduce user steps and perceived latency while also reducing unnecessary Webflow,
 Do not optimize by weakening safety.
 
 Before coding, create:
-docs/api-ux-cost-audit.md
+docs/archive/2026-09/api-ux-cost-audit.md
 
 For each current dashboard route and major action, document:
 1. the user task

@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Phase E — E1 + E2 implementation plan
 
 Scope approved: shared contracts and seven read-only MCP tools only. No E3 resources, E4 previews, REST transport, write tools, semantic analysis or webhooks in this patch. Dashboard remains usable independently. Read AGENTS, README, API audit, Phase A–D reports and scans/CMS/Managed Value/background documentation. Older guide behavior is superseded by executable contracts and later phase reports.

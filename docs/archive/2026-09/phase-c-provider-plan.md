@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Phase C — provider-read reduction plan
 
 Baseline `7ffa64d`. Phase C only; no AI, worker/Cron, polling, publishing, write conflict/readback changes. Read the audit, Phase B report, scans, CMS changes, Managed Value sync and AGENTS. W=Webflow HTTP request, I=credential RPC; normal navigation costs exclude explicitly confirmed scan execution. E/G delta must stay zero.

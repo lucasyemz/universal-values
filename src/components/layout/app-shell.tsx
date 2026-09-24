@@ -18,7 +18,7 @@ export function SiteContext({ title, siteName, siteId, workspaceId }: Omit<Conte
   useEffect(() => { set({ title, siteName, siteId, workspaceId, pathname }); return () => set(null); }, [set, title, siteName, siteId, workspaceId, pathname]);
   return null;
 }
-export function AppShell({ children, workspaces, email, workspaceError, plan }: { children: ReactNode; workspaces: { id: string; name: string }[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
+export function AppShell({ children, workspaces, email, workspaceError, plan }: { children: ReactNode; workspaces: { id: string; name: string; href:string }[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
   const t = useText();
 
   const pathname = usePathname();
@@ -31,7 +31,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const [context, setContext] = useState<Context | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const current = context?.pathname === pathname ? context : null;
-  const routeWorkspace = pathname.match(/\/workspaces\/([^/]+)\/sites/)?.[1];
+  const routeWorkspace = workspaces.find(w=>pathname===w.href || pathname===w.href.replace(/sites$/,"settings/webflow"))?.id ?? pathname.match(/\/workspaces\/([^/]+)\/sites/)?.[1];
   const workspaceId = routeWorkspace ?? current?.workspaceId ?? (workspaces.length === 1 ? workspaces[0]?.id : undefined);
   const activeWorkspace = workspaces.find(workspace => workspace.id === workspaceId);
   const siteId = current?.siteId;
@@ -50,13 +50,13 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const close = () => dialog.current?.close();
   const sidebar = <>
     <Link href="/dashboard?view=overview" onClick={close} className="mb-8 inline-flex"><Brand /></Link>
-    <label className="mb-6 block text-[11px] font-semibold uppercase tracking-wider text-faint">{t("Workspace")} <select aria-label={t("Selecionar workspace")} value={workspaceId ?? ""} className="mt-2 w-full normal-case tracking-normal" onChange={(event) => { close(); router.push(event.target.value ? "/dashboard/workspaces/" + event.target.value + "/sites" : "/dashboard?view=overview"); }}>
+    <label className="mb-6 block text-[11px] font-semibold uppercase tracking-wider text-faint">{t("Workspace")} <select aria-label={t("Selecionar workspace")} value={workspaceId ?? ""} className="mt-2 w-full normal-case tracking-normal" onChange={(event) => { close(); router.push(workspaces.find(w=>w.id===event.target.value)?.href ?? "/dashboard?view=overview"); }}>
         <option value="">{workspaceError ? t("Workspaces indisponíveis") : t("Todos os workspaces")}</option>{workspaces.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
       </select>
     </label>
     <nav aria-label={t("Navegação principal")} className="space-y-1">
       <Link onClick={close} href="/dashboard?view=overview" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />{t("Visão geral")}</Link>
-      {workspaceId && <Link onClick={close} href={"/dashboard/workspaces/" + workspaceId + "/sites"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Sites")}</Link>}
+      {workspaceId && <Link onClick={close} href={activeWorkspace?.href ?? "/dashboard?view=overview"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Sites")}</Link>}
       {siteBase && <><p title={siteName} className="truncate px-3 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">{siteName}</p>
         <RememberedLink onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span><ChevronDown size={14} className="shrink-0 text-faint" aria-hidden="true" /></RememberedLink>
         <ul aria-label={t("Páginas de ") + siteName} className="ml-5 space-y-1 border-l pl-2">
@@ -83,7 +83,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
           <nav aria-label="Breadcrumb" className="min-w-0"><ol className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
             <li><Link href="/dashboard?view=overview" className="text-muted hover:text-accent">{t("Workspace")}</Link></li>
             {siteBase ? <>
-              {workspaceId && <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><Link href={"/dashboard/workspaces/" + workspaceId + "/sites"} title={activeWorkspace?.name ?? t("Sites do workspace")} className="max-w-36 truncate text-muted hover:text-accent sm:max-w-52">{activeWorkspace?.name ?? t("Sites do workspace")}</Link></li>}
+              {workspaceId && <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><Link href={activeWorkspace?.href ?? "/dashboard?view=overview"} title={activeWorkspace?.name ?? t("Sites do workspace")} className="max-w-36 truncate text-muted hover:text-accent sm:max-w-52">{activeWorkspace?.name ?? t("Sites do workspace")}</Link></li>}
               <li className="flex min-w-0 max-w-full items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" /><span title={siteName} className="max-w-36 truncate text-muted sm:max-w-52">{siteName}</span></li>
               <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{isOverview ? <span aria-current="page" className="font-medium">{t("Visão geral do site")}</span> : <RememberedLink href={siteBase + "/overview"} className="text-muted hover:text-accent">{t("Visão geral do site")}</RememberedLink>}</li>
               {activeSection && <li className="flex items-center gap-2"><ChevronRight size={13} className="shrink-0 text-faint" aria-hidden="true" />{pathname === siteBase + "/" + activeSection.path ? <span aria-current="page" className="font-medium">{activeSection.label}</span> : <RememberedLink href={siteBase + "/" + activeSection.path} className="text-muted hover:text-accent">{activeSection.label}</RememberedLink>}</li>}

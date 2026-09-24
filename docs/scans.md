@@ -1,102 +1,35 @@
-# Scan de CMS e Managed Values
+# CMS scans and saved search
 
-## Phase C — estrutura persistida (23/09/2026)
+## Start and scope
 
-Aplique a migration `20260923000500_webflow_metadata_cache.sql` uma vez antes de usar o fluxo atualizado. Abrir Sites, Novo scan, revisar a configuração e navegar pela estrutura do Explorer não consulta o Webflow nem lê credenciais. Use **Refresh from Webflow** para atualizar a estrutura ausente/expirada; o horário salvo fica visível. O TTL inicial de 15 minutos não substitui autorização.
+Open a site's New Scan, choose collections/types or a specific term, review the saved plan and explicitly start. Opening or reviewing uses persisted structure and consumes no scan quota/provider requests. Show structure freshness; **Refresh from Webflow** is explicit when absent/expired. Run Again loads the previous DB configuration, shows a summary and offers Run again / Customize; current execution checks still apply.
 
-Os lotes confirmados continuam validando sites e coleções ao vivo e lendo os itens atuais. Apenas o schema pode ser reutilizado durante esse prazo. Reconexão, revogação, troca de credencial/conexão e atualização explícita invalidam os escopos pertinentes. O Explorer carrega itens somente pela ação explícita e identifica a hora da consulta. As garantias de edição não mudam. Veja [plano e medições da Phase C](phase-c-provider-plan.md).
+CMS scans read supported fields in selected collections, including draft items. They do not crawl public HTML or prove whole-site coverage. Archived items and the system slug field are excluded. Supported detection includes text, numeric values, prices, phones, dates, links and images/galleries; example/placeholder text can be found without repetition. Generic repeated-value groups require repeated occurrences; specific-term and placeholder findings may be singletons.
 
+Links/images compare exact URLs, preserving case, query strings, fragments and trailing slashes. HTML entities may be decoded for extraction; this is not URL normalization. Do not resolve relative links, fetch destinations or compare images visually. Rich Text parsing does not execute HTML. `href`/`src` extraction is supported; embeds, background images and `srcset` are not covered.
 
-## Ativar
+## Exact text and numbers
 
-1. Aplique `supabase/migrations/20260916000300_cms_scans_managed_values.sql` no SQL Editor do projeto de desenvolvimento. As duas migrations anteriores precisam estar aplicadas; não as execute novamente.
-2. Reinicie `npm run dev`.
-3. Entre como o proprietário que autorizou a conexão Webflow.
-4. Abra **Gerenciar sites → Explorar CMS → Scans e Managed Values**, escolha CMS, os tipos de informação e de 1 a 20 coleções; clique em **Preparar scan**. Páginas estáticas ainda não estão disponíveis.
-5. Revise as coleções, os limites e o armazenamento de trechos. Confirme **Iniciar scan**.
-6. Ao concluir, edite as ocorrências individualmente ou preencha um valor para todas as ocorrências de um mesmo grupo de valores iguais.
-7. Revise e confirme a aplicação no CMS, conforme [o guia de alterações](cms-changes.md). Esse fluxo exige a quinta migration e reconexão com escrita.
+Specific search is literal, not regex. Case, accent and whole-word options are independent. Normalization is for comparison only; saved mappings preserve exact original ranges. Rich Text text search cannot cross unsupported tag/entity boundaries or search attributes as text. HTML replacements escape inserted content and retain unselected markup.
 
-A terceira migration deve estar aplicada no Supabase remoto. O responsável confirmou sua aplicação em 16/09/2026. O desenvolvimento e os testes não executam migrations remotas.
+Numeric fields support exact numeric-term matching (2000 does not match 12000), keeping the provider's numeric type. Unsupported/unsafe numeric forms must not silently lose precision. Text offsets are stored as Unicode code points; do not replace them with JavaScript UTF-16 indices. See detection and replacement tests for grapheme/range conversion.
 
-Os filtros são persistidos no plano revisado e valem para novos scans; scans antigos mantêm a detecção de todos os tipos. Selecionar menos coleções reduz a leitura. Selecionar tipos reduz as ocorrências armazenadas, mas não elimina a necessidade de ler os itens das coleções escolhidas. Não é necessária outra migration para esses filtros.
+## Results and review
 
-## Escopo de detecção
+Pending / Reviewed / All filter the already-formed groups. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Managed Values or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
 
-### Conteúdo revisado (flags)
+The local results filter searches saved labels/context; it never invents editable ranges from context. Quick Search on Overview uses only compatible completed/limited saved scans, explicitly showing date and collection scope. No match means only no match in that saved scan. Offer a targeted scan if exact editable evidence or coverage is missing; never start it automatically.
 
-Aplique `supabase/migrations/20260917000700_reviewed_scan_content.sql`. Nos resultados, **⚑ Marcar como revisado** abre uma prévia da marcação para confirmar. A marcação afeta apenas a exibição no dashboard, sem modificar o CMS nem salvar edições digitadas no formulário.
+Only checked eligible occurrences enter preview/application. Preserve validated drafts and selection by identity/snapshot/ranges; focus alone does not select. Selection or value changes invalidate confirmation. Image lists use thumbnails and readable filenames; previews avoid raw gallery JSON. See [CMS changes](cms-changes.md) and [Managed Values](managed-value-sync.md).
 
-Os filtros **Pendentes** (padrão), **Revisados** e **Todos** mostram os grupos correspondentes no scan aberto. Revisados continuam editáveis, e **Voltar para pendentes** remove a marcação com confirmação. Para mudar todas as ocorrências iguais, inclusive revisadas, abra **Todos**; o preenchimento em conjunto abrange somente as ocorrências exibidas.
+## Bounds and execution
 
-A marcação persiste por site, origem, valor canônico e snapshot completo do campo. Assim, um próximo scan esconde a mesma informação já revisada, mas mantém pendentes novos itens/fontes e campos modificados, inclusive mudanças de contexto, galeria ou posição. Todas as ocorrências do mesmo valor no mesmo campo/snapshot compartilham a marcação. Se o campo voltar exatamente a um snapshot já revisado, essa marcação volta a corresponder.
+Technical bounds: 20 collections, 500 items, 1,000 occurrences, 2,000 characters per field, 10 matches per field; each batch reads up to 25 items and stores up to 200 occurrences. Free plans additionally limit items to 100. Limits/skipped fields produce partial coverage, not an all-clear. Current source of truth: `src/modules/scans/schema.ts` and [plan policy](free-plan.md).
 
-O scan continua lendo e armazenando as ocorrências; a flag não pula leituras nem promete acelerar o scan. O agrupamento ocorre antes da filtragem: uma nova origem que repete um valor revisado continua visível como pendente, mesmo quando as demais origens do grupo estiverem escondidas. Cada ação é validada no servidor, isolada por workspace e registrada em `scan_review_operations`. Repetir uma ação antiga não desfaz uma escolha posterior. A marcação é manual; editar um valor não marca automaticamente o snapshot novo como revisado.
+The browser schedules batches at least five seconds apart; leaving the page stops scheduling and returning can resume. A 90-second lease plus revision protects atomic cursor/occurrence/audit persistence and deduplication. Provider reads may repeat after interruption without duplicating records. One active/paused scan per site; cancellation preserves evidence and requires confirmation. Reconnection invalidates continuation with the old connection.
 
-### Links e imagens
+Failures pause execution; 429 respects Retry-After. Fresh items and provider permission/source checks remain authoritative; only eligible metadata/schema is reused. The scan is not a transactionally consistent snapshot across provider pagination. There is no automatic retention/deletion policy for saved customer evidence.
 
-Aplique também `supabase/migrations/20260916000400_scan_links_images.sql` antes de selecionar **Links** ou **Imagens e galerias** em um novo scan. Scans anteriores não são recalculados.
+## Verification
 
-Suporte aos campos Link, Image/ImageRef e MultiImage, além dos atributos href de links e src de imagens em RichText. Rich Text é analisado com parser HTML, sem executar ou renderizar o conteúdo. Comentários, scripts e templates são ignorados. Não há leitura de srcset, imagens de fundo, componentes embutidos ou texto de CTA como categoria separada.
-
-A comparação usa a URL exata (entidades HTML são decodificadas). Preserva parâmetros, fragmentos, caixa e barras finais. Links relativos não são resolvidos contra o domínio. URLs diferentes da mesma imagem não são consideradas duplicadas; não há comparação visual ou download das imagens. O mesmo destino com rótulos de CTA diferentes aparece como repetição de link.
-
-A tela mostra grupos editáveis de valores repetidos dentro de cada tipo, incluindo repetições dentro da mesma galeria/Rich Text. Valores únicos não entram nesses grupos. O scan somente lê. Edições seguem o fluxo separado de prévia e confirmação descrito no [guia de alterações](cms-changes.md).
-
-Os resultados ficam separados por tipo selecionado, inclusive categorias sem ocorrências. Cada ocorrência aparece uma vez com título, URL/valor e campo para o novo valor. Você pode manter o valor atual, restaurar todos ou revisar as mudanças.
-
-O limite de 2.000 caracteres vale também para HTML e o JSON completo do campo de imagem/galeria; campos maiores são ignorados e geram cobertura parcial. Portanto, ausência de repetições não garante que todo o CMS ou o site tenha conteúdo único.
-
-- Para texto/números: campos Webflow `PlainText` e `Number`; o campo slug e itens arquivados são ignorados. Links e imagens usam os campos descritos acima.
-- BRL com indicação explícita `R$`, separador de milhar ponto e centavos com vírgula.
-- Datas ISO ou dia/mês/ano (pt-BR), com validação de calendário.
-- Telefones com prefixo internacional +, ou formato brasileiro com DDD entre parênteses. Não verifica se o número existe.
-- Campos numéricos viram valores do tipo `number`, sem inferir moeda ou unidade. Números fora da faixa segura ou em notação exponencial são ignorados e sinalizados.
-- Texto sem um desses padrões pode ser sugerido como texto integral, preservando maiúsculas e minúsculas e removendo somente espaços das extremidades. Limite de 200 caracteres para esse fallback.
-- Trechos em um mesmo campo são deduplicados como fonte para a contagem de repetições. Não vinculamos automaticamente conteúdos iguais.
-- Rascunhos são incluídos: os resultados representam conteúdo preparado no CMS, não necessariamente o site publicado.
-- Nenhuma página HTML pública é rastreada nesta etapa.
-
-## Limites explícitos
-
-Até 20 coleções, 500 itens retornados pela API e 1.000 ocorrências por scan. Cada lote lê até 25 itens, detecta até 200 ocorrências e usa até 10 correspondências por campo. Campos acima de 2.000 caracteres são ignorados. Os limites e descartes tornam o resultado **parcial**, sem afirmar cobertura completa.
-
-O usuário escolhe de 1 a 20 coleções antes da prévia; nenhuma vem marcada. Sugestões exibem até 100 ocorrências por grupo para seleção. O histórico mostra os 20 scans e 100 Managed Values mais recentes.
-
-## Processamento retomável
-
-O scan é um trabalho persistido em PostgreSQL. Cada chamada processa um lote; a página agenda as próximas chamadas com intervalo mínimo de 5 segundos. Não há processo independente em segundo plano: fechar a página interrompe o agendamento, e voltar permite retomar.
-
-Um lease de 90 segundos reserva o lote. A gravação exige a mesma revisão e o mesmo lease, salva ocorrências, cursor e auditoria atomicamente, e deduplica repetições. Requisições antigas não sobrescrevem o progresso. Um processo interrompido pode deixar a reserva ativa por até 90 segundos. Não é uma promessa de exatamente uma chamada GET ao Webflow: uma leitura pode ser repetida, mas não duplica seus registros.
-
-Falhas pausam o scan. HTTP 429 respeita Retry-After (entre 5 segundos e 24 horas); é necessário clicar em **Retomar scan** após uma pausa. Outros erros aguardam pelo menos 10 segundos. Uma nova conexão de site invalida a continuação do scan antigo: cancele e prepare outro.
-
-Um site só pode ter um scan em execução/pausado. Cancelamento exige confirmação, preserva os dados observados e libera o site para outro scan. Dados de scans cancelados não criam Managed Values.
-
-## Vínculos e segurança
-
-RLS isola contas. RPCs conferem identidade e propriedade; clientes não escrevem diretamente nas tabelas. Prévias expiram em 15 minutos. Não há chave service-role no fluxo.
-
-A confirmação salva o valor canônico, a origem estável (site, coleção, item, locale e campo), o conteúdo observado e as posições selecionadas. Posições usam pontos de código Unicode, compatíveis com PostgreSQL. Repetir uma confirmação devolve o mesmo Managed Value.
-
-Nesta versão, um campo do CMS pode pertencer a um único Managed Value. Várias ocorrências do mesmo valor no mesmo campo são reunidas em um vínculo. Outra seleção usando esse campo é bloqueada, inclusive em scans diferentes. Essa restrição evita substituições sobrepostas antes da implementação de sincronização.
-
-Os dados do scan não são uma fotografia transacional do Webflow: alterações externas durante paginação podem causar diferenças ou omissões. Criar um Managed Value organiza o conteúdo observado; a escrita confirmada relê a fonte e valida conflitos. O scan não altera nem publica conteúdo no Webflow.
-
-Prévias, progresso e criação têm auditoria. Não existe política automática de retenção/exclusão nesta etapa; planeje-a antes de produção, pois trechos podem conter dados de negócio.
-
-## Verificação
-
-`npm test` executa detecção e lotes com respostas Webflow simuladas e a migration em PostgreSQL embutido. Há testes para Unicode, padrões ambíguos, limites, paginação, RLS, leases, retomada, confirmação, fontes já gerenciadas e rollback de auditoria.
-
-Antes de produção, valide com um site real: fechar/reabrir a página no meio do scan, duas abas concorrentes, respostas 429, mais de 25 itens, dados alterados durante paginação e seleção de valores diferentes com o mesmo texto. O agendador do navegador e a concorrência entre conexões reais precisam dessa validação integrada.
-
-## Busca por texto específico
-
-Ao preparar um novo scan, o campo opcional **Texto específico** procura um trecho literal em PlainText e nos nós de texto de RichText. Preencher esse campo inclui o tipo texto automaticamente e substitui a detecção de textos inteiros pela detecção de menções. O termo fica salvo no plano, na prévia e no histórico; não exige migration adicional. Outros tipos selecionados continuam ativos; em caso de sobreposição, o trecho específico tem prioridade.
-
-A busca diferencia maiúsculas e minúsculas e não usa regex. Em RichText, não busca atributos, comentários, scripts ou trechos atravessando tags/entidades HTML. Mantém os limites existentes: campos até 2.000 caracteres e até 10 ocorrências por campo. A interface informa cobertura parcial quando os limites são atingidos. Apenas valores repetidos formam grupos de edição.
-
-Cada menção armazena seu intervalo exato no snapshot. É possível substituir uma ou todas as menções do grupo, preservando o restante do campo. O novo texto é escapado no HTML. A aplicação reutiliza prévia, confirmação explícita, detecção de conflitos, idempotência e auditoria existentes. Ver contexto mostra o conteúdo salvo sem executar HTML.
-
-**Pesquisar nos resultados** é um filtro independente dos valores e títulos já encontrados, sem diferenciar maiúsculas/minúsculas. Funciona com Pendentes/Revisados/Todos e mantém os grupos de valores iguais intactos. Não encontra menções ausentes de scans antigos: para isso, prepare um novo scan com Texto específico.
+Automated tests cover detection, Unicode, numeric matching, HTML, exact URLs, limits, leases, review/application state, RLS and audit rollback. Browser/provider concurrency, real OAuth, 429 and external edits require a designated test environment; do not claim them from mocks. Group-aware result pagination is [not yet implemented](design/group-pagination.md).

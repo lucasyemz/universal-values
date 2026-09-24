@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { requireUser } from "@/modules/auth/service";
-import { resourcePath, type ResourceKind } from "./resources";
+import { resourcePath, sitePath, type ResourceKind } from "./resources";
 import { workspacePath } from "@/modules/sites/workspace-url";
 
 export const workspaceLink = cache(async (workspaceId: string) => {
@@ -16,12 +16,17 @@ export const workspaceLink = cache(async (workspaceId: string) => {
 
 const siteNamespace = cache(async (siteId:string|null,accountId:string) => {
  const {client}=await requireUser();
- const [account,site]=await Promise.all([
-  client.from("account_routes").select("slug").eq("user_id",accountId).maybeSingle(),
-  siteId ? client.from("sites").select("slug").eq("id",siteId).maybeSingle() : Promise.resolve(null),
- ]);
- if(!account.data || siteId && !site?.data)throw new Error("Endereço indisponível.");
- return {account:account.data.slug,site:site?.data?.slug};
+ if (siteId) {
+  const site = await client.from("sites").select("slug,workspace_id").eq("id",siteId).eq("account_id",accountId).maybeSingle();
+  if (site.error || !site.data) throw new Error("Endereço indisponível.");
+  const workspace = await client.from("workspace_routes").select("slug").eq("workspace_id",site.data.workspace_id).eq("account_id",accountId).maybeSingle();
+  if (workspace.error || !workspace.data) throw new Error("Endereço indisponível.");
+  return { namespace:workspace.data.slug, site:site.data.slug };
+ }
+ const account = await client.from("account_routes").select("slug").eq("user_id",accountId).maybeSingle();
+ if (account.error || !account.data) throw new Error("Endereço indisponível.");
+ return { namespace:account.data.slug, site:undefined };
+
 });
 export async function resourceLinks(kind:ResourceKind,ids:string[]) {
  if(!ids.length)return {} as Record<string,string>;
@@ -30,7 +35,7 @@ export async function resourceLinks(kind:ResourceKind,ids:string[]) {
  if(result.error)throw new Error("Aplique a migration de URLs do dashboard para carregar os endereços.");
  return Object.fromEntries(await Promise.all((result.data??[]).map(async row=>{
   const namespace=await siteNamespace(row.site_id,row.account_id);
-  return [row.resource_id,resourcePath(kind,row.number,namespace.account,namespace.site)];
+  return [row.resource_id,resourcePath(kind,row.number,namespace.namespace,namespace.site)];
  })));
 }
 export const resourceLink=cache(async(kind:ResourceKind,id:string)=>{
@@ -56,5 +61,5 @@ export async function siteLink(siteId: string) {
  const { user } = await requireUser();
  const namespace = await siteNamespace(siteId, user.id);
  if (!namespace.site) throw new Error("Endereço indisponível.");
- return `/dashboard/${namespace.account}/sites/${namespace.site}`;
+ return sitePath(namespace.namespace,namespace.site);
 }

@@ -12,7 +12,7 @@ A conexão pertence ao usuário autenticado, dura 30 dias e sobrevive a logout, 
 
 ## Instalação
 
-Aplicar `supabase/migrations/20260921000100_gemini_connections.sql` em novos ambientes. Aplicada no projeto vinculado em 21/09/2026 pela Management API; este banco não possui histórico `supabase_migrations.schema_migrations`. A chave de criptografia já usada no Webflow deve estar configurada no servidor. A migration cria tabelas privadas e uma RPC autenticada, sempre vinculada a `auth.uid()`. Status público contém somente identificador e expiração; credenciais criptografadas só são obtidas no caminho de geração autenticado, após a reserva da cota.
+Configure novos ambientes com o esquema completo ([guia do banco](../supabase/README.md)). A migration `20260921000100_gemini_connections.sql` introduziu a conexão Gemini; o histórico remoto pode misturar aplicações manuais e CLI, portanto deve ser conferido antes de qualquer implantação. A chave de criptografia já usada no Webflow deve estar configurada no servidor. A migration cria tabelas privadas e uma RPC autenticada, sempre vinculada a `auth.uid()`. Status público contém somente identificador e expiração; credenciais criptografadas só são obtidas no caminho de geração autenticado, após a reserva da cota.
 
 ## Sugestões
 

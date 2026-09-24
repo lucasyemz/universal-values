@@ -1,3 +1,4 @@
+import { Layers } from "lucide-react";
 import { RememberedDetails, RememberedCheckbox } from "@/components/layout/navigation-state";
 import { selectionStateKey } from "@/modules/navigation/state";
 import { useText } from "@/i18n/use-text";
@@ -7,12 +8,12 @@ import { centralizationOptions, type LinkedValues } from "@/modules/scans/centra
 import type { Occurrence } from "@/modules/scans/schema";
 import { SubmitButton } from "@/components/ui/submit-button";
 
-export function CentralizeValue({ scanId, occurrences, linkedValues }: { scanId: string; occurrences: Occurrence[]; linkedValues: LinkedValues }) {
+export function CentralizeValue({ scanId, occurrences, linkedValues, menu = false }: { menu?: boolean; scanId: string; occurrences: Occurrence[]; linkedValues: LinkedValues }) {
   const t = useText();
 
   const { available, eligible } = centralizationOptions(occurrences, linkedValues);
-  return <RememberedDetails stateId={"centralize:" + occurrences[0]?.id} className="rounded-lg border p-4">
-    <summary className="cursor-pointer font-medium text-accent">{t("Centralizar valor")}</summary>
+  return <RememberedDetails stateId={"centralize:" + occurrences[0]?.id} className="group">
+    <summary className={menu ? "ui-nav-link flex w-full cursor-pointer list-none" : "ui-btn inline-flex cursor-pointer list-none group-open:bg-accent-soft"}><Layers size={17} aria-hidden="true"/>{t("Centralizar valor")}</summary>
     <p className="mt-3 text-sm text-muted">{t("Crie um Managed Value para atualizar este dado em suas fontes vinculadas. Selecione apenas ocorrências que representam a mesma informação de negócio. A marcação de conferência é independente.")}</p>
     {!eligible ? <p className="mt-3 text-sm">{t("Selecione ocorrências pendentes em pelo menos dois campos não gerenciados. Para atualizar um valor vinculado, abra seu Managed Value.")}</p> : <form action={previewManagedValue} className="mt-4 space-y-4">
       <input type="hidden" name="id" value={randomUUID()} />

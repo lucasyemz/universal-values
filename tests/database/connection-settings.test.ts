@@ -72,8 +72,8 @@ it('returns scoped Designer URLs with persistent change numbers and rejects anot
  const f=await fixture(),session=randomUUID(),hash='d'.repeat(64),change=randomUUID();
  await rpc(f.actor,'select public.authorize_designer_session($1,$2,$3)',[session,f.site,hash]);
  await db.query("insert into public.designer_changes(id,site_id,actor_id,session_id,plan,search_text) values($1,$2,$3,$4,$5::jsonb,'demo')",[change,f.site,f.actor,session,JSON.stringify({context:{pageName:'Home'},changes:[{id:'node',before:'a',after:'b'}]})]);
- const namespace=await db.query<{account:string;site:string}>("select a.slug account,s.slug site from public.sites s join public.account_routes a on a.user_id=s.account_id where s.id=$1",[f.site]);
- const base=`/dashboard/${namespace.rows[0]!.account}/sites/${namespace.rows[0]!.site}`;
+ const namespace=await db.query<{workspace:string;site:string}>("select w.slug workspace,s.slug site from public.sites s join public.workspace_routes w on w.account_id=s.account_id and w.workspace_id=s.workspace_id where s.id=$1",[f.site]);
+ const base=`/dashboard/${namespace.rows[0]!.workspace}/sites/${namespace.rows[0]!.site}`;
  const load=async(site='c'.repeat(24))=>(await db.query<{data:{dashboardPath:string;changesPath:string;recent:{href:string}[]}}>("select public.designer_gateway($1,$2,'home','{}') data",[hash,site])).rows[0]!.data;
  const data=await load();
  expect(data.dashboardPath).toBe(base+'/overview');expect(data.changesPath).toBe(base+'/changes?filter=static');

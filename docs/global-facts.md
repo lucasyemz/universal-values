@@ -4,12 +4,10 @@ Cada site tem uma sequência de referências aprovadas pelo owner do workspace. 
 
 ## Ativar
 
-1. Confira o projeto Supabase usado pelo `.env.local` e se a migration 010 já foi aplicada. Não reaplique migrations existentes.
-2. Aplique `supabase/migrations/20260918001000_global_facts.sql` pelo fluxo habitual de migrations/SQL Editor. É aditiva: cria tabelas e RPCs próprias, sem reescrever dados existentes. O usuário confirmou a aplicação remota da migration 010.
-3. Aplique também `supabase/migrations/20260918001100_archive_global_fact_previews.sql` para habilitar o arquivamento. Não reaplique a 010. A 011 ainda não foi aplicada remotamente pelo agente.
-4. No dashboard, abra um site e escolha **Global Facts** na sidebar. A tela funciona sem consultar a API Webflow.
-5. Cadastre os fatos e identifique sua fonte. Clique **Revisar primeira versão**, confira os valores e marque a confirmação. A prévia dura 15 minutos.
-6. Confira a versão aprovada no histórico. Para alterar, prepare e confirme uma nova versão.
+1. Configure o esquema completo seguindo [o guia do banco](../supabase/README.md). As migrations 010/011 introduziram versões e arquivamento; não constituem uma instalação completa nem comprovam o estado atual do ambiente.
+2. No dashboard, abra um site e escolha **Global Facts** na sidebar. A tela funciona sem consultar a API Webflow.
+3. Cadastre os fatos e identifique sua fonte. Clique **Revisar primeira versão**, confira os valores e marque a confirmação. A prévia dura 15 minutos.
+4. Confira a versão aprovada no histórico. Para alterar, prepare e confirme uma nova versão.
 
 Sem a migration a tela informa a configuração pendente, sem habilitar o formulário de escrita.
 
@@ -23,7 +21,7 @@ Sem a migration a tela informa a configuração pendente, sem habilitar o formul
 - `global_fact_versions` armazena snapshots completos e imutáveis. `global_fact_previews` preserva propostas. `global_fact_audit` registra prévia e confirmação com usuário e horário do banco.
 - Idempotência: o mesmo ID/payload retorna a mesma prévia; reutilizar ID com outro conteúdo falha. Repetir confirmação retorna a mesma versão, mesmo após expiração. A auditoria faz parte da mesma transação.
 - Confirmações bloqueiam a linha do site antes de avançar a versão. Duas prévias da mesma base não podem substituir silenciosamente o trabalho uma da outra: a segunda falha após a primeira confirmação.
-- A tela lista até 20 versões recentes e 20 prévias do autor por filtro (Pendentes/Arquivadas). Versões antigas permanecem acessíveis em `/dashboard/sites/<id>/facts/versions/<numero>`.
+- A tela lista até 20 versões recentes e 20 prévias do autor por filtro (Pendentes/Arquivadas). Versões antigas permanecem acessíveis em `/dashboard/{workspace}/sites/{site}/facts/versions/{number}`.
 - Esta referência não edita o Webflow, não publica conteúdo e não sincroniza Managed Values.
 
 ## Regras implementadas, ainda sem coletor de páginas

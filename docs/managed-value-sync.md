@@ -1,13 +1,11 @@
 # Edição central e sincronização de Managed Values
 
-> Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Detalhes](phase-c-provider-plan.md).
+> Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Contrato atual](architecture.md).
 
 
-## Ativação
+## Ambiente
 
-No mesmo projeto Supabase configurado em `.env.local`, aplique `supabase/migrations/20260918001200_managed_value_sync.sql` pelo SQL Editor ou pelo fluxo de migrations adotado. Não reaplique migrations antigas. A migration inicializa os valores observados dos vínculos existentes e preserva seu histórico. Nenhuma migration foi aplicada remotamente durante esta implementação.
-
-Execute `nvm use` e `npm run dev`. A conexão Webflow deve ter `cms:write`.
+Use o esquema completo e uma conexão com `cms:write`; confira o [guia do banco](../supabase/README.md). O editor usa a [prévia inline e fila compartilhadas](cms-changes.md), sem página extra obrigatória. Datas de migrations abaixo identificam a origem técnica, não uma lista de instalação parcial.
 
 ## Criar um valor central
 
@@ -37,13 +35,13 @@ Nos resultados de um scan concluído, abra “Centralizar valor” no grupo dese
 
 ## Proteção e arquivamento (migration 013)
 
-Aplique `supabase/migrations/20260918001300_managed_value_protection.sql` após a 012. Campos vinculados ficam bloqueados no editor do scan, incluindo preenchimento e remoção em grupo. O banco também rejeita prévias, confirmações e novos envios por scan/reversão que atinjam um campo vinculado. Uma centralização não pode ser confirmada enquanto há uma operação CMS confirmada no site. A proteção vale para o campo inteiro, inclusive outras ocorrências no mesmo campo.
+Campos vinculados são protegidos no servidor e na interface contra sobreposição, versões antigas e resultados incertos. A proteção atual permite apenas a exceção de texto independente descrita abaixo (migration 023); não bloqueia indiscriminadamente todo texto do campo. Outros tipos continuam protegidos. Prévias anteriores à centralização devem ser revalidadas na confirmação e no dispatch.
 
 Para remover um cadastro antigo, abra o Managed Value e use **Arquivar e liberar fontes → Revisar arquivamento → Confirmar arquivamento**. A prévia registra as fontes e expira em 15 minutos. A confirmação preserva o cadastro e o histórico, guarda as fontes liberadas e remove os vínculos ativos; não modifica o Webflow. Não há exclusão definitiva nem restauração automática. Operações ativas ou fontes com resultado incerto bloqueiam o arquivamento.
 
 Após liberar, execute um scan atualizado para capturar o conteúdo atual. Use **Centralizar valor** para criar o novo cadastro, selecionando pelo menos duas ocorrências iguais em dois campos distintos. O arquivamento não corrige divergências antigas: confira qual valor deve prevalecer antes de uma nova sincronização. Edições feitas diretamente no Webflow continuam sendo detectadas como conflitos; o bloqueio cobre os caminhos internos do aplicativo.
 
-Teste de regressão: centralize duas fontes; confirme que os inputs do scan ficam desabilitados e que o preenchimento em grupo as ignora. Uma prévia de edição preparada antes da centralização também deve ser rejeitada ao confirmar. Arquive pelo fluxo de prévia/confirmação, confira o histórico e confirme que as fontes voltaram a estar disponíveis no scan. Nenhum desses passos publica o site automaticamente.
+Teste de regressão: centralize duas fontes; confirme que ocorrências sobrepostas/protegidas ficam desabilitadas e são ignoradas pelo preenchimento em grupo; textos independentes seguem a regra de intervalos abaixo. Uma prévia de edição preparada antes da centralização também deve ser rejeitada ao confirmar. Arquive pelo fluxo de prévia/confirmação, confira o histórico e confirme que as fontes voltaram a estar disponíveis no scan. Nenhum desses passos publica o site automaticamente.
 
 ## Resolver alterações externas (migration 014)
 
@@ -74,3 +72,7 @@ A migration `20260920002300_managed_text_ranges.sql` calcula no banco uma evidê
 Esta liberação cobre edições de **texto**. Outros tipos seguem protegidos no campo vinculado. A centralização mantém a regra de um Managed Value por campo; criar outro vínculo independente no mesmo campo ainda não está disponível. A interface identifica quando o vínculo protege outro trecho e libera o editor de texto. Se o scan tiver conteúdo antigo, é necessário executar outro scan e resolver eventuais divergências.
 
 Teste manual: busque um texto antes/depois de um link gerenciado, substitua por um texto maior usando prévia e confirmação, confira o link intacto e depois prepare uma edição do Managed Value para verificar que ele ainda aponta para o link correto. Testar a aplicação real no CMS fica a cargo do usuário.
+
+## Payload e fontes
+
+Listas carregam DTOs estreitos e contagens, não todos os snapshots/vínculos. A lista de fontes pagina em grupos de dez; edição no painel mantém o limite seguro de 50 fontes. Acima dele, use o fluxo dedicado sem ampliar silenciosamente a seleção.

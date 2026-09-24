@@ -1,3 +1,5 @@
+> Design only — not implemented. Do not describe group pagination as available or select hidden occurrences.
+
 # Group-aware result pagination contract (Phase B design)
 
 This is a design, not an enabled feature. Current scans have a hard 1,000-occurrence cap. This phase does not change replacement scopes, mount multiple hidden editors, silently slice a duplicate group or claim reduced result-loader traffic.

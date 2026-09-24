@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Phase A — persisted-data UX
 
 2026-09-22. Implements Phase A only, following `api-ux-cost-audit.md`.

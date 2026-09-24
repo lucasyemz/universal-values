@@ -3,7 +3,7 @@ import { compatibleSavedScan, savedMatches, savedScanSchema, savedTypeHint } fro
 import { groupScanResults, occurrenceSchema, valueLabel } from "@/modules/scans/schema";
 import { reviewSummarySchema, scanReviewSummary } from "@/modules/scans/list-summary";
 import { managedValueSchema } from "@/modules/managed-values/schema";
-import { resourcePath } from "@/modules/routes/resources";
+import { resourcePath, sitePath } from "@/modules/routes/resources";
 import { AgentError, checkedPayload, errorSchema, toolInputs, type ToolName } from "./contracts";
 
 // Shared application service. Only this narrow repository is supplied by the transport.
@@ -16,15 +16,15 @@ function unwrap(value: unknown): unknown {
   if (error.success) throw new AgentError(error.data.error, error.data.retryAfter);
   return value;
 }
-export function createAgentService(read: ReadRepository, now = () => Date.now()) {
+export function createAgentService(read: ReadRepository, now = () => Date.now(), workspaceSlug?: string) {
   const query = async (action: string, args: Record<string, unknown>) => unwrap(await read(action, args));
   return async (name: ToolName, input: unknown): Promise<Record<string, unknown>> => {
     const parsed = toolInputs[name].safeParse(input);
     if (!parsed.success) throw new AgentError("INVALID_INPUT");
     const args = parsed.data;
     const scope = "account" in args ? { account: args.account, site: args.site } : null;
-    const base = scope ? `/dashboard/${scope.account}/sites/${scope.site}` : "";
-    const href = (kind: "scans" | "managed-values" | "operations" | "static-changes", number: number) => resourcePath(kind, number, scope!.account, scope!.site);
+    const base = scope ? sitePath(workspaceSlug ?? scope.account,scope.site) : "";
+    const href = (kind: "scans" | "managed-values" | "operations" | "static-changes", number: number) => resourcePath(kind, number, workspaceSlug ?? scope!.account, scope!.site);
     const freshness = (scan: z.infer<typeof savedScanSchema>, number: number) => ({
       scan: number, href: href("scans", number), startedAt: scan.created_at,
       ageSeconds: Math.max(0, Math.floor((now() - Date.parse(scan.created_at)) / 1000)),
@@ -36,7 +36,7 @@ export function createAgentService(read: ReadRepository, now = () => Date.now())
     let output: Record<string, unknown>;
     if (name === "list_sites") {
       const data = z.object({ rows: z.array(z.object({ account: z.string(), site: z.string(), name: z.string() })).max(6) }).parse(await query(name, args));
-      output = { sites: data.rows.slice(0, 5).map(s => ({ ...s, href: `/dashboard/${s.account}/sites/${s.site}/overview` })), nextAfter: data.rows.length > 5 ? data.rows[4]!.site : null };
+      output = { sites: data.rows.slice(0, 5).map(s => ({ ...s, href: sitePath(workspaceSlug ?? s.account,s.site) + "/overview" })), nextAfter: data.rows.length > 5 ? data.rows[4]!.site : null };
     } else if (name === "get_site_summary") {
       const data = z.object({ name: z.string(), activeValues: z.number(), scanCount: z.number(), latestScanAt: z.string().nullable(), uncertainSources: z.number(), recentNeedsAttention: z.boolean(), recentScans: z.array(z.object({ number: z.number().int().positive(), status: z.string(), recordedOccurrences: z.number(), startedAt: z.string() })).max(5) }).parse(await query(name, args));
       output = { ...data, recentScans: data.recentScans.map(s => ({ ...s, href: href("scans", s.number) })), href: base + "/overview", source: "saved-data", liveFreshness: "unknown" };

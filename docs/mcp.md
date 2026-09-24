@@ -35,7 +35,7 @@ All tools require `copyreplace:read`, current owner membership and unpaused acce
 
 | Tool | Arguments | Response |
 |---|---|---|
-| `list_sites` | optional `after` slug | Up to5 sites, canonical account/site and overview links, `nextAfter` |
+| `list_sites` | optional `after` slug | Up to5 sites, canonical workspace/site overview links, `nextAfter` |
 | `get_site_summary` | `account`, `site` slugs | Saved counts, up to5 recent scan numbers/links, latest scan creation timestamp, uncertain binding count, latest-five activity attention flag |
 | `search_saved_content` | `account`, `site`, `query` ≤200chars | Latest compatible completed/limited scan among last20, scope/freshness, up to5 matching groups/counts, explicit targeted-scan dashboard link |
 | `get_scan_results` | `account`, `site`, positive numeric `scan`, optional `page` | Up to20 original saved observations, exact Unicode ranges, matching group size, binding presence, aggregate review counts, `nextPage` |
@@ -45,7 +45,7 @@ All tools require `copyreplace:read`, current owner membership and unpaused acce
 
 Pass continuation fields unchanged as the next request's `after`, `before`, `page` or `cursor`. Cursors are not authorization. Result pages are observation-only, may cross group boundaries, and confer no bulk-selection authority. Saved scan rows retain immutable order; reviews may change between reads. Site/value/activity keyset cursors avoid offset shifts from new entries. Archived values report active bindings (usually0), not archived historical source count. Actual source inspection remains in the dashboard.
 
-Public tool inputs use canonical slugs/numbers, never database UUIDs. Occurrence references are read-only labels scoped to a scan, not mutation IDs. The shared application service (`src/modules/agents`) is separate from MCP; a future REST mirror must call it rather than duplicate rules. REST endpoints and MCP resources are not shipped in E1/E2.
+Public tool inputs retain account/site slugs and scoped numbers, never database UUIDs. Dashboard links use the authenticated workspace slug (migration `20260923001000_workspace_site_urls.sql`); this URL change does not rename API inputs or widen token scope. During rollout, older account-scoped links resolve through authenticated redirects. Occurrence references are read-only labels scoped to a scan, not mutation IDs. The shared application service (`src/modules/agents`) is separate from MCP; a future REST mirror must call it rather than duplicate rules. REST endpoints and MCP resources are not shipped in E1/E2.
 
 ## Freshness and coverage
 

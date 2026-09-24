@@ -18,7 +18,7 @@ export function createMcpRepository(token: string) {
       const failure = errorSchema.safeParse(data);
       if (failure.success) throw new AgentError(failure.data.error, failure.data.retryAfter);
       if (action === "authenticate") {
-        const identity = z.object({ actor: z.uuid(), workspace: z.uuid(), scope: z.literal("copyreplace:read") }).parse(data);
+        const identity = z.object({ actor: z.uuid(), workspace: z.uuid(), scope: z.literal("copyreplace:read"), workspaceSlug: z.string().regex(/^[a-z0-9-]+$/).nullish() }).parse(data);
         context = { workspace: identity.workspace };
         return identity;
       }

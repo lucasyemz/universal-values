@@ -12,7 +12,7 @@ async function fixture(){
  return {source,target,connection};
 }
 async function preview(f:Awaited<ReturnType<typeof fixture>>){const id=randomUUID();await asActor(db,f.source.actor,()=>db.query('select public.preview_site_transfer($1,$2,$3,$4)',[id,f.source.site,f.target,f.connection]));return id;}
-it('moves saved occurrences atomically, keeps IDs/URLs and audits exactly one confirmation',async()=>{
+it('moves saved occurrences atomically, keeps IDs/resource numbers and audits exactly one confirmation',async()=>{
  const f=await fixture(),scan=await savedScan(db,f.source,2);
  const before=(await db.query('select * from public.dashboard_resource_routes where site_id=$1',[f.source.site])).rows;
  const p=await preview(f);

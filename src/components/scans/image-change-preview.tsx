@@ -4,17 +4,17 @@ import { useText } from "@/i18n/use-text";
 import Image from "next/image";
 import { useState } from "react";
 
-export function ImagePreview({ url, label }: { url: string; label: string }) {
+export function ImagePreview({ url, label, compactUrl = false, aligned = false }: { url: string; label: string; compactUrl?: boolean; aligned?: boolean }) {
   const t = useText();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "failed">("loading");
-  return <figure className="min-w-0 rounded-xl border bg-subtle p-3">
+  return <figure className={aligned ? "image-comparison-figure" : "min-w-0 rounded-xl border bg-subtle p-3"}>
     <figcaption className="mb-3 text-sm font-semibold">{label}</figcaption>
-    <div className="relative flex h-52 items-center justify-center overflow-hidden rounded-lg bg-surface">
+    <div className={"relative flex items-center justify-center overflow-hidden rounded-lg bg-surface " + (aligned ? "image-comparison-media" : "h-52")}>
       {status === "loading" && <span role="status" className="absolute text-xs text-muted">{t("Carregando imagem…")}</span>}
       {status === "failed" ? <p role="status" className="p-4 text-center text-sm text-muted">{t("Não foi possível carregar a imagem. Confira a URL abaixo.")}</p> : <Image unoptimized src={url} alt={label} width={480} height={320} loading="lazy" referrerPolicy="no-referrer" onLoad={() => setStatus("loaded")} onError={() => setStatus("failed")} className={`relative h-full w-full object-contain ${status === "loaded" ? "opacity-100" : "opacity-0"}`} />}
     </div>
-    <a href={url} target="_blank" rel="noopener noreferrer" className="mt-3 block break-all text-xs text-accent underline underline-offset-4" aria-label={t("Abrir {0} em nova aba", label.toLowerCase())}>{url}</a>
+    <a href={url} target="_blank" rel="noopener noreferrer" title={url} className={"mt-3 block text-xs text-accent underline underline-offset-4 " + (compactUrl ? "truncate" : "break-all")} aria-label={t("Abrir {0} em nova aba", label.toLowerCase())}>{url}</a>
   </figure>;
 }
 

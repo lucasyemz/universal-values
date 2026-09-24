@@ -30,3 +30,11 @@ it("decodes image filenames without rewriting the URL or unrelated underscores",
  expect(imageFilename("https://cdn.example/my_photo.png")).toBe("my_photo.png");
  expect(imageFilename("https://cdn.example/%ZZ.png")).toBe("Image");
 });
+
+it("cleans nested Webflow IDs and repeated encoding for display", () => {
+ const url = "https://cdn.example/6ab02d338049373d63df4e7c_6a965b988ff8e873172cf73c_Identity%25203.png";
+ expect(imageFilename(url)).toBe("Identity 3.png");
+ expect(imageFilename("https://cdn.example/6a965b988ff8e873172cf73c_Mockup%2520%252301.webp")).toBe("Mockup #01.webp");
+ expect(imageFilename("https://cdn.example/Offer%2520100%25.png")).toBe("Offer%20100%.png");
+ expect(imageFilename("https://cdn.example/my_6a965b988ff8e873172cf73c_photo.png")).toBe("my_6a965b988ff8e873172cf73c_photo.png");
+});

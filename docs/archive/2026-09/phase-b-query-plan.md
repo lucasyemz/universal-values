@@ -1,3 +1,5 @@
+> Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
+
 # Phase B — query efficiency plan
 
 Baseline: `154a0ed` (2026-09-23). Phase A accepted; B only. No C/provider caching, D/poll cadence or worker changes, E/AI work. Q counts PostgREST table requests/RPCs, not statements inside PostgreSQL; Auth/proxy/layout and canonical-link queries are accounted separately. All slices keep W/I/E/G delta at zero. No production credentials, writes, quota operations or provider requests are used for measurement.
