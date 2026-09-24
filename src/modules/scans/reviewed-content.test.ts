@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { groupScanResults, type Occurrence } from "./schema";
-import { countReviewedOccurrences, filterReviewedGroups } from "./reviewed-content";
+import { countReviewedOccurrences, filterReviewedGroups, withoutVariableFields } from "./reviewed-content";
 
 const rows = ["old-a", "old-b", "new-c"].map((id) => ({ id, source_key: id, canonical: { type: "link", url: "https://example.com/join" } } as Occurrence));
 const sections = groupScanResults({ plan: [{ id: "a".repeat(24), name: "CMS", types: ["link"] }] }, rows, rows);
@@ -28,4 +28,12 @@ it("keeps the last repeated image pending after applying only its peer", () => {
  const groups=groupScanResults({plan:[{id:"a".repeat(24),name:"CMS",types:["image"]}]},images,images);
  expect(filterReviewedGroups(groups,[images[0]!.id],"pending")[0]?.duplicates[0]?.occurrences.map(o=>o.id)).toEqual([images[1]!.id]);
  expect(countReviewedOccurrences(groups,[images[0]!.id])).toEqual({pending:1,reviewed:1,all:2});
+});
+
+it("moves bound fields out of both review tabs without removing their remaining peers",()=>{
+ const visible=withoutVariableFields(sections,{"old-a":{id:"variable"},"old-b":{id:"variable"}});
+ expect(countReviewedOccurrences(visible,["old-a"])).toEqual({pending:1,reviewed:0,all:1});
+ expect(visible[0]?.duplicates[0]?.occurrences).toEqual([rows[2]]);
+ expect(sections[0]?.duplicates[0]?.occurrences).toHaveLength(3);
+ expect(withoutVariableFields(sections,Object.fromEntries(rows.map(row=>[row.source_key,{}])))[0]?.duplicates).toEqual([]);
 });

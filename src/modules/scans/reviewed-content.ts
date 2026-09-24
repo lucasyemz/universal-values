@@ -17,3 +17,10 @@ export function countReviewedOccurrences(sections: ReturnType<typeof groupScanRe
   const reviewed = new Set(reviewedIds.filter(id => ids.has(id))).size;
   return { pending: ids.size - reviewed, reviewed, all: ids.size };
 }
+
+// Presentation partition only: write eligibility and binding protections stay authoritative.
+export function withoutVariableFields(sections: ReturnType<typeof groupScanResults>, linkedValues: Record<string,unknown>) {
+  return sections.map(section => ({...section, duplicates: section.duplicates.map(group => ({...group,
+    occurrences: group.occurrences.filter(row => !linkedValues[row.source_key]),
+  })).filter(group => group.occurrences.length > 0)}));
+}

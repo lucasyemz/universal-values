@@ -28,3 +28,11 @@ it("preserves unknown content and keeps Portuguese available",()=>{
  expect(en("Abrir {0} em nova aba", "<script>alert(1)</script>")).toBe("Open <script>alert(1)</script> in a new tab");
  expect(en.dateLocale).toBe("en-US");expect(pt.dateLocale).toBe("pt-BR");
 });
+
+it("uses variable terminology in both locales without altering unknown customer text", () => {
+ expect(createText("en")("Managed Values")).toBe("Variables");
+ expect(createText("pt-BR")("Managed Values")).toBe("Variáveis");
+ expect(createText("en")("Centralizar valor")).toBe("Create variable");
+ expect(createText("pt-BR")("Centralizar valor")).toBe("Criar variável");
+ expect(createText("pt-BR")("Customer Managed Value name")).toBe("Customer Managed Value name");
+});

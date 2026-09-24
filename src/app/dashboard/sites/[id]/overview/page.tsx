@@ -53,7 +53,7 @@ export default async function OverviewPage({ params, searchParams }: { params: P
     <section aria-labelledby="manage-site-heading" className="mt-8">
       <h2 id="manage-site-heading" className="mb-4 text-xl font-semibold">{t("Gerenciar este site")}</h2>
       <div className="grid gap-4 lg:grid-cols-2">{[
-        { title: "Managed Values", description: t("Mantenha o conteúdo compartilhado organizado."), href: base + '/managed-values', Icon: Database },
+        { title: t("Managed Values"), description: t("Mantenha o conteúdo compartilhado organizado."), href: base + '/managed-values', Icon: Database },
         { title: t("Explorar CMS"), description: t("Navegue pelas coleções deste site."), href: base + '/cms', Icon: Compass },
       ].map(({ title, description, href, Icon }) => <Link key={href} href={href} prefetch={false} className="group flex min-w-0 items-center gap-4 rounded-2xl border bg-white p-6 transition-colors hover:border-accent hover:bg-accent-soft"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={30} aria-hidden="true" /></span><div className="min-w-0 flex-1"><h3 className="text-base font-semibold">{title}</h3><p className="mt-1 text-sm text-muted">{description}</p></div><ChevronRight size={22} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" /></Link>)}</div>
     </section>

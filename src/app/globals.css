@@ -218,3 +218,11 @@
 .scan-original-context { min-height: 112px; }
 .scan-replacement-field > textarea, .scan-replacement-field > input { margin-top: 0; }
 .scan-value-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }
+
+.scan-group-direct-actions { position: absolute; top: 16px; right: 16px; z-index: 10; display: flex; align-items: center; gap: 8px; }
+.scan-group-shell:has(.scan-group-direct-actions) .scan-group-heading-actions { padding-right: 260px; min-height: 48px; display: flex; align-items: center; }
+.scan-group-direct-actions .scan-review-direct { margin: 0; padding: 0; border: 0; }
+@media(max-width: 1100px) {
+ .scan-group-direct-actions { position: relative; top: auto; right: auto; justify-content: flex-end; flex-wrap: wrap; margin: 0 0 12px; }
+ .scan-group-shell:has(.scan-group-direct-actions) .scan-group-heading-actions { padding-right: 0; }
+}

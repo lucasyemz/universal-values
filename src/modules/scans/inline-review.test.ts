@@ -36,3 +36,24 @@ it("unlocks the editor after a finished operation without reusing its confirmati
  store.invalidate("remaining");const prepare=vi.fn(async()=>({ok:true as const,preview}));
  await store.prepare("remaining",prepare);expect(prepare).toHaveBeenCalledWith("2");
 });
+it("retains before/after when only action or variable name changes, without reusing its receipt",async()=>{
+ const store=createInlineReview(()=>"id"),confirm=vi.fn();
+ store.invalidate("one-off","same-fields");await store.prepare("one-off",async()=>({ok:true,preview}));
+ store.invalidate("","same-fields"); // Variable name is not filled yet.
+ expect(store.getSnapshot()).toMatchObject({stage:"idle",displayPreview:preview});
+ expect(store.getSnapshot().preview).toBeUndefined();
+ await store.confirm("",confirm);expect(confirm).not.toHaveBeenCalled();
+ store.invalidate("variable-name","same-fields");
+ expect(store.getSnapshot().displayPreview).toBe(preview);
+ await store.prepare("variable-name",async()=>({ok:false,message:"Validation unavailable"}));
+ expect(store.getSnapshot().displayPreview).toBe(preview);
+ await store.confirm("variable-name",confirm);expect(confirm).not.toHaveBeenCalled();
+ store.invalidate("other-selection","different-fields");
+ expect(store.getSnapshot().displayPreview).toBeUndefined();
+});
+it("discards retained presentation immediately when the replacement content changes",async()=>{
+ const store=createInlineReview(()=>"id");
+ store.invalidate("old","old-content");await store.prepare("old",async()=>({ok:true,preview}));
+ store.invalidate("new","new-content");
+ expect(store.getSnapshot().displayPreview).toBeUndefined();
+});

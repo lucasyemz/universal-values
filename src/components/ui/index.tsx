@@ -19,6 +19,7 @@ const statuses: Record<string, { label: string; tone: "success" | "warning" | "d
   reported: { label: "Informado pela extensão", tone: "warning" },
   reverted: { label: "Revertido", tone: "success" },
   expired: { label: "Prévia expirada", tone: "muted" }, dispatching: { label: "Verificação pendente", tone: "warning" },
+  scanned: { label: "Escaneado", tone: "accent" },
   preview: { label: "Aguardando confirmação", tone: "accent" }, running: { label: "Em andamento", tone: "accent" }, paused: { label: "Pausado", tone: "warning" }, completed: { label: "Concluído", tone: "success" }, limited: { label: "Cobertura parcial", tone: "warning" }, cancelled: { label: "Cancelado", tone: "muted" }, confirmed: { label: "Em aplicação", tone: "accent" }, disconnected: { label: "Reconectar", tone: "warning" }, connected: { label: "Vinculado", tone: "success" }, reviewed: { label: "Revisado", tone: "success" }, conflict: { label: "Conflito de versão", tone: "warning" }, failed: { label: "Falhou", tone: "danger" }, uncertain: { label: "Conferência necessária", tone: "warning" }, applied: { label: "Aplicado", tone: "success" }, already_applied: { label: "Já aplicado", tone: "success" }, draft: { label: "Rascunho", tone: "muted" }, ready: { label: "Pronto", tone: "success" },
 };
 const tones = { success: "bg-[var(--success-soft)] text-[var(--success)]", warning: "bg-[var(--warning-soft)] text-[var(--warning)]", danger: "bg-[var(--danger-soft)] text-[var(--danger)]", accent: "bg-accent-soft text-accent", muted: "bg-subtle text-muted" };

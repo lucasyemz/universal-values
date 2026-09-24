@@ -11,7 +11,7 @@ import { activityDestination, PAGE_SIZE } from "./presentation";
 
 export async function siteScansPage(id: string, page: number) {
   const site = await getScanSite(id); const { client } = await requireUser();
-  const result = await client.from("cms_scans").select("id,status,plan,created_at", { count: "exact" }).eq("site_id", id).order("created_at", { ascending: false }).order("id").range((page-1)*PAGE_SIZE, page*PAGE_SIZE-1);
+  const result = await client.from("cms_scans").select("id,status,plan,created_at,collection_items_read", { count: "exact" }).eq("site_id", id).order("created_at", { ascending: false }).order("id").range((page-1)*PAGE_SIZE, page*PAGE_SIZE-1);
   if (result.error) throw new Error("Não foi possível carregar os scans. Atualize a página para tentar novamente.");
   const scans = z.array(scanListSchema).parse(result.data);
   const summaries = scans.length ? await client.rpc("scan_review_summaries", {p_ids:scans.map(scan=>scan.id)}) : {data:[],error:null};

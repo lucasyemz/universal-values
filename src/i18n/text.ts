@@ -1,4 +1,6 @@
 import english from "./messages/en.json";
+import portuguese from "./messages/pt-BR.json";
+const ptCatalog: Record<string, string> = portuguese;
 export type ProductLocale = "en" | "pt-BR";
 export const productLocale = (value: string | undefined): ProductLocale => value === "pt-BR" ? "pt-BR" : "en";
 const catalog: Record<string, string> = english;
@@ -19,7 +21,7 @@ function buildText(locale: ProductLocale) {
         const suffix=source.match(/^(.*?)( \(HTTP \d{3}(?:; Google \d{3})?\))$/);
         if(suffix && catalog[suffix[1]!])result=catalog[suffix[1]!]!+suffix[2];
       }
-    } else result = reverse.get(source) ?? source;
+    } else { const key = reverse.get(source) ?? source; result = ptCatalog[key] ?? key; }
     if(values.length)result=result.replace(/\{(\d+)\}/g,(_,i)=>String(values[Number(i)]??""));
     return result as T extends string ? string : T;
   }

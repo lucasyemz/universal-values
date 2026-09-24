@@ -40,7 +40,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const siteName = current?.siteName ?? t("Site");
   const siteSections = [
     { path: "scans", label: t("Scans"), Icon: ScanLine },
-    { path: "managed-values", label: "Managed Values", Icon: Layers3 },
+    { path: "managed-values", label: t("Managed Values"), Icon: Layers3 },
     { path: "changes", label: t("Alterações"), Icon: History },
     { path: "cms", label: t("Explorar CMS"), Icon: Globe2 },
   ];

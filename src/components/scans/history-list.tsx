@@ -1,4 +1,5 @@
 "use client";
+import { scanDisplayStatus } from "@/modules/scans/list-summary";
 import type { ScanListRow } from "@/modules/scans/list-summary";
 import { useState } from "react";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export function ScanHistoryList({ scans, links, counts }: { scans: ScanListRow[]
     <div className="flex min-w-0 items-center gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={25} aria-hidden="true" /></span><div className="min-w-0"><RememberedLink href={href} className="break-words font-semibold hover:text-accent">{scan.plan[0]?.searchText ? `“${scan.plan[0].searchText}”` : labels[scan.id]}</RememberedLink>{scan.plan[0]?.searchText && <p className="mt-1 text-xs text-muted">{labels[scan.id]}</p>}</div></div>
     <div className="min-w-0 space-y-2"><p className="flex items-center gap-2 text-xs text-muted"><CalendarDays size={15} className="shrink-0" aria-hidden="true" />{siteDate(scan.created_at,t.dateLocale)}</p><ScanCollectionCell scan={scan} href={href} /></div>
     <div className="scan-history-counts">{review ? <><Link prefetch={false} href={href + "?filter=pending"} className="scan-history-count"><span className={review.pending ? "bg-orange-50 text-orange-800" : "bg-subtle text-muted"}>{review.pending}</span>{t("Pendentes")}</Link><Link prefetch={false} href={href + "?filter=reviewed"} className="scan-history-count"><span className={review.reviewed ? "bg-accent-soft text-accent" : "bg-subtle text-muted"}>{review.reviewed}</span>{t("Revisados")}</Link></> : <span className="text-xs text-muted">{t("Contagens indisponíveis")}</span>}</div>
-    <div><StatusBadge status={scan.status} /></div>
+    <div><StatusBadge status={scanDisplayStatus(scan.status,review)} /></div>
     <div className="scan-history-actions"><RememberedLink href={href} className="ui-btn ui-btn-primary">{t("Revisar resultados")}<ArrowRight size={16} aria-hidden="true" /></RememberedLink>{["completed","limited","cancelled"].includes(scan.status) && scan.plan.length>0 && <Link prefetch={false} className="ui-btn" href={href.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + href.split("/").at(-1)}><RotateCw size={16} aria-hidden="true" />{t("Repetir scan")}</Link>}</div>
    </li>;
   })}</ul>}

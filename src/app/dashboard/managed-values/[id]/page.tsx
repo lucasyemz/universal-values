@@ -1,3 +1,4 @@
+import { variableScanOrigins } from "@/modules/scans/created-variables";
 import { dashboardMetadata } from "@/modules/dashboard/metadata";
 
 export async function generateMetadata() {
@@ -22,10 +23,12 @@ export default async function ManagedValuePage({ params }: { params: Promise<{ i
   const view = await loadManagedSyncValue((await params).id);
   const { value, bindings, site, history } = view;
   const base = await siteLink(value.site_id);
+  const origin = (await variableScanOrigins(value.site_id,[value.id]))[value.id];
   return <main className="ui-page">
     <SiteContext title={value.name} siteName={site.display_name} siteId={value.site_id} workspaceId={site.workspace_id} />
     <RememberedLink className="ui-btn" href={base + "/managed-values"}>{t("← Managed Values")}</RememberedLink>
-    <PageHeader eyebrow="Managed Value" title={value.name} description={t("Versão {0} · {1} fontes vinculadas", value.version, bindings.length)} />
+    <PageHeader eyebrow={t("Managed Value")} title={value.name} description={t("Versão {0} · {1} fontes vinculadas", value.version, bindings.length)} />
+    {origin && <p className="mb-4 text-sm text-muted">{t("Criada no scan")} <Link prefetch={false} className="font-medium text-accent underline" href={origin.href}>#{origin.number}</Link></p>}
     <section aria-label={t("Valor centralizado")} className="ui-card p-6"><p className="text-xs font-medium text-muted">{t("Valor central desejado")}</p><p className="mt-2 break-words text-2xl font-semibold text-accent">{valueLabel(value.canonical)}</p><p className="mt-3 text-sm text-muted">{t("Este é o valor salvo no cadastro. Sua alteração só chega ao CMS depois que a aplicação de cada fonte é concluída e verificada.")}</p></section>
     {view.missingMigration ? <Notice tone="warning">{t("Aplique as migrations até a 015 para habilitar a sincronização em segundo plano.")}</Notice> : <>
       {view.activeOperation && <Notice tone="warning" title={t("A aplicação no CMS ainda não terminou")}>

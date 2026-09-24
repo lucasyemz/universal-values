@@ -4,7 +4,7 @@ import {writeFileSync} from 'node:fs';
 import {queryDatabase,tenant,savedScan,asActor} from './phase-b-fixture';
 import {occurrenceSchema,scanSchema,groupScanResults} from '../../src/modules/scans/schema';
 import {reviewedChanges,reviewHistorySchema} from '../../src/modules/scans/review-history';
-import {countReviewedOccurrences} from '../../src/modules/scans/reviewed-content';
+import {countReviewedOccurrences,withoutVariableFields} from '../../src/modules/scans/reviewed-content';
 import {reviewSummarySchema,scanReviewSummary} from '../../src/modules/scans/list-summary';
 let db:Awaited<ReturnType<typeof queryDatabase>>;
 beforeAll(async()=>{db=await queryDatabase();},30000);afterAll(async()=>{await db.close();});
@@ -15,7 +15,8 @@ async function parity(actor:string,scanId:string) {
  const requests=(await db.query('select * from public.cms_change_requests where scan_id=$1',[scanId])).rows.map(r=>reviewHistorySchema.parse(JSON.parse(JSON.stringify(r))));
  const flags=await db.query<{occurrence_id:string}>('select * from public.scan_reviewed_occurrences($1)',[scanId]);
  const reviewed=[...flags.rows.map(r=>r.occurrence_id),...Object.keys(reviewedChanges(occurrences,requests))];
- const before=countReviewedOccurrences(groupScanResults(scan,occurrences,occurrences),reviewed);
+ const bindings=await db.query<{source_key:string}>('select source_key from public.managed_value_bindings where site_id=$1',[scan.site_id]);
+ const before=countReviewedOccurrences(withoutVariableFields(groupScanResults(scan,occurrences,occurrences),Object.fromEntries(bindings.rows.map(row=>[row.source_key,true]))),reviewed);
  const result=await db.query('select * from public.scan_review_summaries($1)',[[scanId]]);
  const row=reviewSummarySchema.parse(result.rows[0]);
  expect(scanReviewSummary(scan,row)).toEqual(before);
@@ -60,16 +61,19 @@ it('measures five summary rows instead of 5000 complete source snapshots',async(
   return {rows:result.rows.length,bytes:Buffer.byteLength(JSON.stringify(result.rows)),plan:plan.rows};
  });writeFileSync('/tmp/phase-b-summaries.json',JSON.stringify(report,null,2));
 });
-it('keeps protected occurrences counted and resets specific-search review scope in a new scan',async()=>{
+it('excludes variable fields after grouping and resets specific-search review scope in a new scan',async()=>{
  const t=await tenant(db),scan=await savedScan(db,t,200),value=randomUUID();
  const occurrence=(await db.query<{id:string}>('select id from public.scan_occurrences where scan_id=$1 order by id limit 1',[scan])).rows[0]!;
  await db.query("insert into public.managed_values(id,site_id,workspace_id,name,canonical) select $1,site_id,workspace_id,'Protected',canonical from public.scan_occurrences where id=$2",[value,occurrence.id]);
  await db.query(`insert into public.managed_value_bindings(managed_value_id,site_id,workspace_id,source_key,collection_id,item_id,locale,field_slug,field_type,source_value,locations)
  select $1,site_id,workspace_id,source_key,collection_id,item_id,locale,field_slug,field_type,source_value,jsonb_build_array(jsonb_build_object('start',start_pos,'end',end_pos,'raw',raw_match)) from public.scan_occurrences where id=$2`,[value,occurrence.id]);
  await asActor(db,t.actor,()=>db.query('select public.set_scan_content_reviewed($1,$2,$3,true)',[randomUUID(),scan,[occurrence.id]]));
- await parity(t.actor,scan);
+ const variableCounts=await parity(t.actor,scan);
+ expect(reviewSummarySchema.parse(variableCounts[0]).total).toBe(199);
  const targeted=await savedScan(db,t,200,[{id:'a'.repeat(24),name:'CMS',types:['text'],searchText:'group'}]);
  const rows=await parity(t.actor,targeted);expect(reviewSummarySchema.parse(rows[0]).reviewed).toBe(0);
+ const other=(await db.query<{id:string}>('select id from public.scan_occurrences where scan_id=$1 and id<>$2 order by id limit 1',[scan,occurrence.id])).rows[0]!;
+ await asActor(db,t.actor,()=>db.query('select public.set_scan_content_reviewed($1,$2,$3,true)',[randomUUID(),scan,[other.id]]));
  const generic=await savedScan(db,t,200);const genericRows=await parity(t.actor,generic);expect(reviewSummarySchema.parse(genericRows[0]).reviewed).toBeGreaterThan(0);
 });
 it('uses the first successful source result exactly like the existing history reader',async()=>{

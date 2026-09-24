@@ -1,4 +1,6 @@
 "use client";
+import { variableSelection } from "@/modules/scans/variable-selection";
+import { prepareVariableChanges, confirmVariableChanges } from "@/modules/scans/variable-actions";
 
 import { RememberedDetails } from "@/components/layout/navigation-state";
 import { ManagedValueContext } from "@/components/managed-value-context";
@@ -24,6 +26,8 @@ type Row = { occurrence: Occurrence; display: ReturnType<typeof occurrencePresen
 export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewedIds = [], editableBoundOccurrenceIds = [], linkedValues = {} }: { outcomes?: Record<string, {status:string; message?:string}>; rows: Row[]; scanId: string; userId: string; reviewedIds?: string[]; editableBoundOccurrenceIds?: string[]; linkedValues?: Record<string, { id: string; name: string; divergence?: boolean; bindingId?: string }> }) {
   const t = useText();
 
+  const [variableMode, setVariableMode] = useState(false);
+  const [variableName, setVariableName] = useState("");
   const [bulk, setBulk] = useState("");
   const [individualMode, setIndividualMode] = useState<{ scope: string; enabled: boolean } | null>(null);
   const editorId = useId();
@@ -44,7 +48,11 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
   const editorGroups = individual ? selectedRows.map(row => [row]) : selectedRows.length ? [selectedRows] : [];
   const allSelected = occurrences.length > 0 && selected.length === occurrences.length;
   const changes = review.changes.map(change => ({ occurrenceId: change.occurrenceId, after: change.after }));
-  const draftKey = ready && !Object.keys(review.errors).length && changes.length ? JSON.stringify({scanId,selected: selected.map(o => o.id),changes}) : "";
+  const variable = variableSelection(selected, inputs, linkedValues);
+  const nameValid = variableName.trim().length >= 2 && variableName.trim().length <= 80 && !/[\p{Cc}]/u.test(variableName);
+  const previewContentKey = ready && selected.length && !Object.keys(review.errors).length
+    ? JSON.stringify({scanId, selected: selected.map(o => [o.id, o.source_value, o.start_pos, o.end_pos]), changes}) : "";
+  const draftKey = variableMode ? (ready && variable && nameValid ? JSON.stringify({scanId,variable,name:variableName.trim()}) : "") : ready && !Object.keys(review.errors).length && changes.length ? JSON.stringify({scanId,selected: selected.map(o => o.id),changes}) : "";
   if (!type) return <p className="mt-4 text-muted">{t("Nenhuma ocorrência encontrada para este tipo.")}</p>;
   return <div className={"scan-workbench scan-workbench-unified mt-4 " + (type === "image" ? "scan-workbench-images" : "")}>
     <section className="scan-result-list" aria-label={t("Ocorrências deste grupo")}>
@@ -117,7 +125,15 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
     </div>; })}
     {!!selected.length && <button type="button" disabled={pending} onClick={() => { setInputs({ ...inputs, ...Object.fromEntries(selected.map(o => [o.id, editableValue(o.canonical)])) }); setBulk(""); }} className="ui-btn">{t("Descartar edições da seleção")}</button>}
     {Object.keys(review.errors).length > 0 && <p role="alert" className="text-red-700">{t("Corrija os campos indicados antes de continuar.")}</p>}
-    <InlineReview sourceOrder={selected.map(o => o.source_key)} textSources={selected.filter(o => o.canonical.type === "text").map(o => o.source_key)} embedded newImagesOnly embeddedImages={type === "image"} draftKey={draftKey} prepare={id=>prepareInlineChanges({id,scanId,changes})} onConfirmingChange={setPending} onCompleted={() => { setSelectedIds([]); setBulk(""); }}/>
+    <InlineReview contentKey={previewContentKey} sourceOrder={selected.map(o => o.source_key)} textSources={selected.filter(o => o.canonical.type === "text").map(o => o.source_key)} embedded newImagesOnly embeddedImages={type === "image"} draftKey={draftKey} confirmationOptions={selected.length > 0 && <fieldset className="space-y-3 rounded-lg border bg-white p-4" disabled={pending}>
+      <legend className="px-1 text-sm font-semibold">{t("Como deseja aplicar?")}</legend>
+      <label className="flex items-center gap-2 text-sm"><input type="radio" name={editorId + "-action"} checked={!variableMode} onChange={() => setVariableMode(false)}/>{t("Alterar apenas estes campos")}</label>
+      <label className="flex items-center gap-2 text-sm"><input type="radio" name={editorId + "-action"} checked={variableMode} disabled={!variable && !variableMode} onChange={() => setVariableMode(true)}/>{t("Criar variável e aplicar")}</label>
+      {!variable && <p className="text-xs text-muted">{t("Selecione pelo menos dois campos não gerenciados com o mesmo valor final para criar uma variável.")}</p>}
+      {variableMode && <><label className="block text-sm font-medium">{t("Nome do valor central")}<input className="mt-2 w-full rounded border p-3" value={variableName} onChange={event => setVariableName(event.target.value)} minLength={2} maxLength={80} required placeholder={t("Ex.: Telefone comercial")}/></label><p className="text-xs text-muted">{t("A variável usará o valor final e vinculará somente os campos selecionados. Fontes com falha continuarão pendentes de sincronização.")}</p></>}
+    </fieldset>}
+    confirm={variableMode ? confirmVariableChanges : undefined} confirmLabel={variableMode ? t("Criar variável e aplicar") : undefined}
+    prepare={id=>variableMode && variable ? prepareVariableChanges({id,scanId,name:variableName.trim(),...variable}) : prepareInlineChanges({id,scanId,changes})} onConfirmingChange={setPending} onCompleted={() => { setSelectedIds([]); setBulk(""); setVariableMode(false); setVariableName(""); }}/>
     </section>
   </div>;
 }

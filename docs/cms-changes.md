@@ -37,3 +37,11 @@ Only verified occurrence IDs become read-only Reviewed; remaining group members 
 ## Verification and operations
 
 Fixtures, mocked providers and PGlite cover single/batch previews, receipt expiry/staleness, duplicate/ambiguous confirmation, Unicode/HTML/gallery preservation, FIFO/admission, leases, audit failure, 429, uncertain dispatch, sequential evidence, revert and isolation. They are not live-provider or multi-session concurrency tests. See [verification](verification.md), [worker setup](background-sync.md), [Managed Values](managed-value-sync.md) and [database deployment](../supabase/README.md).
+
+## Create variable from the inline preview
+
+The final confirmation offers a one-off edit (default) or **Create variable and apply**. Both use only the editor's selected occurrences. Variable creation requires 2–100 occurrences across at least two unbound fields, with the same valid final canonical value (empty removals cannot become variables). The name, selection, target and paired slugs are frozen in a receipt. Changing them invalidates confirmation.
+
+`20260924000100_scan_variable_apply.sql` stores a creation intent alongside the existing selection preview. Preparation creates no variable or CMS operation. Confirmation atomically creates the original bindings and confirms an existing Managed Value synchronization to the **new** target. A quota, binding, connection or queue failure rolls back the entire transaction. Duplicate confirmation returns the same operation. The existing worker remains unchanged: it advances only verified bindings, preserves old evidence for failed fields, and reconciles uncertain dispatches. Creation does not imply every source synchronized successfully.
+
+The resulting operation uses the existing variable-operation review route. Provider reads are unchanged for execution. Preparing CMS item-name replacements still reads/fixes the paired slug using the existing contract; other variable previews use saved scan data only. No AI or polling changes. Deployment of the migration is separate and requires approval.

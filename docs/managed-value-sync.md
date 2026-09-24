@@ -9,9 +9,9 @@ Use o esquema completo e uma conexão com `cms:write`; confira o [guia do banco]
 
 ## Criar um valor central
 
-Nos resultados de um scan concluído, abra “Centralizar valor” no grupo desejado. Dê um nome ao dado e selecione de 2 a 100 ocorrências iguais em pelo menos dois campos ainda não vinculados. Revise a prévia e confirme a centralização. Essa etapa cria os vínculos sem editar o Webflow. As origens vinculadas exibem um link para o valor central.
+Nos resultados de um scan concluído, selecione de 2 a 100 ocorrências em pelo menos dois campos ainda não vinculados. Na prévia inline, escolha **Criar variável e aplicar**, informe o nome e confirme. A variável usa o valor final comum da seleção; criação e entrada na fila são atômicas. Cada campo é sincronizado e verificado separadamente. O caminho legado de criação continua apenas vinculando o valor do scan, sem editar o Webflow. As origens vinculadas exibem um link para o valor central.
 
-“Marcar como conferido” apenas retira ocorrências dos pendentes, sem criar vínculos. O filtro Revisados reúne essas marcações. Os contadores Pendentes/Revisados/Todos contam ocorrências dos grupos da pesquisa atual; Pendentes + Revisados = Todos. Use Todos para centralizar também ocorrências já conferidas.
+“Marcar como conferido” apenas retira ocorrências dos pendentes, sem criar vínculos. O filtro Revisados reúne essas marcações. As abas de ocorrências são Pendentes e Revisados, com contagens limitadas à pesquisa atual. A aba Variáveis criadas lista os cadastros efetivamente criados neste scan, inclusive arquivados; não inclui prévias não confirmadas nem variáveis apenas encontradas/vinculadas em scans posteriores. A listagem e o detalhe da variável apontam para seu scan de origem. Registros legados sem evidência de criação não recebem uma origem inventada.
 
 ## Teste manual em site de testes
 

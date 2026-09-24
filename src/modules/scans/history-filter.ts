@@ -5,7 +5,7 @@ export function filterScanHistory<T extends Pick<Scan, "id" | "plan">>(scans: T[
  return scans.filter(scan => {
   const count = counts[scan.id];
   if (filter === "pending" && (!count || count.pending === 0)) return false;
-  if (filter === "reviewed" && (!count || count.pending !== 0 || count.reviewed === 0)) return false;
+  if (filter === "reviewed" && (!count || count.pending !== 0)) return false;
   const text = [labels[scan.id], ...scan.plan.flatMap(entry => [entry.name, entry.searchText ?? ""])].join(" ").toLocaleLowerCase();
   return !needle || text.includes(needle);
  });
