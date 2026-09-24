@@ -19,6 +19,7 @@ export const collectionDetailsSchema = collectionSchema.extend({
 export const itemsSchema = z.object({
   items: z.array(z.object({
     id: webflowIdSchema, cmsLocaleId: z.string().optional(),
+    lastUpdated: z.string().nullish(),
     isDraft: z.boolean(), isArchived: z.boolean(),
     fieldData: z.record(z.string(), z.json()),
   })),

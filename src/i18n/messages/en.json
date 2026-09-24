@@ -1635,5 +1635,18 @@
   "Escaneado": "Scanned",
   "Escaneado. Revise as ocorrências pendentes.": "Scanned. Review the pending occurrences.",
   "Ver mais {0} coleções": "View {0} more collections",
-  "Outras coleções": "Other collections"
+  "Outras coleções": "Other collections",
+  "Atualização recomendada": "Refresh recommended",
+  "Selecione uma coleção para ver os itens.": "Select a collection to view its items.",
+  "Carregando os itens mais recentes…": "Loading latest items…",
+  "Selecione a coleção acima para consultar os itens.": "Select the collection above to load its items.",
+  "Conteúdo ao vivo · carregado em {0}": "Live content · loaded at {0}",
+  "agora": "just now",
+  "Estrutura salva · {0}": "Structure saved · {0}",
+  "Conteúdo carregado · {0}": "Content loaded · {0}",
+  "Pesquisar nesta página": "Search this page",
+  "Mostrando {0}–{1} de {2}": "Showing {0}–{1} of {2}",
+  "{0} resultados nesta página": "{0} results on this page",
+  "Atualizado": "Updated",
+  "Não foi possível carregar os itens mais recentes.": "Couldn’t load the latest items."
 }

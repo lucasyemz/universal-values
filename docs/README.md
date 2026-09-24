@@ -34,3 +34,5 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 - Original optimization proposal, audit, Phase A–E reports and old UI inventories moved to the archive. Existing QA artifacts remain available. Group pagination moved to design because it is not shipped.
 
 Keep one canonical rule per subject and link to it. Guides describe current contracts; reports describe evidence at a date. Do not infer current deployment, pricing or completion from an old report. If implementation and rules disagree, identify the difference and fix/document it rather than silently treating the archive as authority.
+
+- [CMS Explorer UX, request budgets and session cache](cms-explorer-ux-plan.md)
