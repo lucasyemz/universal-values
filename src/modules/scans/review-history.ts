@@ -9,7 +9,7 @@ export const reviewHistorySchema = z.object({
   changes: z.array(z.object({ occurrenceId: z.string(), after: replacementSchema.optional() })),
   results: z.array(z.object({ sourceKey: z.string(), status: z.string(), message: z.string().optional(), actual: z.json().optional(), reviewedSource: z.string().optional() })),
 });
-export type ReviewedChange = { requestId: string; after: string; reverted: boolean; reversible: boolean; image?: { before: string; after: string } };
+export type ReviewedChange = { requestId: string; createdAt?: string; after: string; reverted: boolean; reversible: boolean; image?: { before: string; after: string } };
 /** Historical verified results, never a claim about the live CMS. Newest request wins. */
 export function reviewedChanges(occurrences: Occurrence[], requests: z.infer<typeof reviewHistorySchema>[]) {
   const history: Record<string, ReviewedChange> = {};
@@ -27,7 +27,7 @@ export function reviewedChanges(occurrences: Occurrence[], requests: z.infer<typ
         const match = actualMedia?.matches[index];
         if (match?.canonical.type === "image") imageAfter = match.canonical.url;
       }
-      if (after !== undefined) history[change.occurrenceId] = { requestId: request.id, after, reverted: !!request.reverts_request_id, reversible: !request.reverts_request_id && result.status === "applied" && result.actual !== undefined, ...(occurrence?.canonical.type === "image" && change.after?.type === "image" ? { image: { before: occurrence.canonical.url, after: imageAfter ?? change.after.url } } : {}) };
+      if (after !== undefined) history[change.occurrenceId] = { requestId: request.id, createdAt: request.created_at, after, reverted: !!request.reverts_request_id, reversible: !request.reverts_request_id && result.status === "applied" && result.actual !== undefined, ...(occurrence?.canonical.type === "image" && change.after?.type === "image" ? { image: { before: occurrence.canonical.url, after: imageAfter ?? change.after.url } } : {}) };
     }
   }
   return history;
@@ -58,4 +58,20 @@ export function visibleRevertGroups(occurrences: Occurrence[], history: Record<s
     sources.add(occurrence.source_key); groups.set(change.requestId,sources);
   }
   return [...groups].map(([requestId,sources])=>({requestId,sources:[...sources]}));
+}
+
+/** Partition only supplied reviewed rows; separate confirmations never merge by value. */
+export function reviewedOperationGroups(occurrences: Occurrence[], history: Record<string, ReviewedChange>) {
+  const groups = new Map<string | null, { requestId: string | null; createdAt?: string; occurrences: Occurrence[]; sources: string[] }>();
+  for (const occurrence of occurrences) {
+    const change = history[occurrence.id];
+    const key = change?.requestId ?? null;
+    const group = groups.get(key) ?? { requestId: key, createdAt: change?.createdAt, occurrences: [], sources: [] };
+    group.occurrences.push(occurrence);
+    groups.set(key, group);
+  }
+  for (const group of groups.values()) {
+    group.sources = visibleRevertGroups(group.occurrences, history, new Set(group.occurrences.map(o => o.id)))[0]?.sources ?? [];
+  }
+  return [...groups.values()];
 }

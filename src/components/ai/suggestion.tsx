@@ -7,7 +7,7 @@ import { useAiWork } from "./work";
 import { useAiBatch } from "./batch";
 import { AiConnectionDialog } from "./connection-dialog";
 
-export function AiSuggestion({scanId,occurrenceId,currentValue,onUse,batchEligible=false,itemLabel="",sourceValue,originalValue}:{scanId:string;occurrenceId:string;currentValue:string;onUse:(value:string)=>void;batchEligible?:boolean;itemLabel?:string;sourceValue:string;originalValue:string}) {
+export function AiSuggestion({scanId,occurrenceId,currentValue,onUse,compact=false,batchEligible=false,itemLabel="",sourceValue,originalValue}:{scanId:string;occurrenceId:string;currentValue:string;onUse:(value:string)=>void;compact?:boolean;batchEligible?:boolean;itemLabel?:string;sourceValue:string;originalValue:string}) {
   const t = useText();
 
   const ai=useAi();
@@ -40,7 +40,7 @@ export function AiSuggestion({scanId,occurrenceId,currentValue,onUse,batchEligib
       }], true, batch?.groupId);
     } finally { busy.current=false;if(active.current)setPending(false); }
   }
-  return <div className="mt-3">
+  return <div className={compact ? "min-w-0" : "mt-3"}>
     <button type="button" className="ui-btn disabled:opacity-40 disabled:cursor-not-allowed" disabled={pending||ai.loading||batch?.running||work?.busy}
       title={t("Usa o texto atual e o contexto deste item no Gemini e preenche o campo.")}
       onClick={()=>{if(ai.configured)void generate();else setConnecting(true);}}>

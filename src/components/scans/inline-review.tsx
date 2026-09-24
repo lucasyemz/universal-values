@@ -1,4 +1,5 @@
 "use client";
+import { TextChangeDiff } from "./text-change-diff";
 import { previewGroups } from "@/modules/scans/preview-groups";
 import { changeDestination } from "@/modules/scans/change-destination";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
@@ -11,8 +12,8 @@ import { Diff, Notice } from "@/components/ui";
 import { ImageChangePreview } from "./image-change-preview";
 import { ChangeProgress } from "./change-progress";
 
-export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted }: {
-  embedded?: boolean; embeddedImages?: boolean; newImagesOnly?: boolean; onCompleted?: () => void; reverting?:boolean; draftKey:string; prepare:(id:string)=>Promise<PreviewResult>; onConfirmingChange:(value:boolean)=>void;
+export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted, sourceOrder, textSources = [] }: {
+  sourceOrder?: string[]; textSources?: string[]; embedded?: boolean; embeddedImages?: boolean; newImagesOnly?: boolean; onCompleted?: () => void; reverting?:boolean; draftKey:string; prepare:(id:string)=>Promise<PreviewResult>; onConfirmingChange:(value:boolean)=>void;
 }) {
   const t=useText(), ai=useAiWork();
   const [store]=useState(()=>createInlineReview(()=>crypto.randomUUID()));
@@ -37,13 +38,13 @@ export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting 
       <p className="font-medium">{t("Campos: {0} · Itens do CMS: {1}",preview.fieldCount,preview.itemCount)}</p>
       {(preview.fieldCount>=10 || preview.itemCount>=5 || preview.removalCount>0) && <Notice tone="warning" title={t("Alteração de maior impacto")}>{t("Confira o alcance abaixo. Remoções e alterações em vários itens podem afetar diversas páginas do site.")}</Notice>}
       {preview.central && <div><h4 className="font-semibold">{t("Valor central")}</h4><Diff before={preview.central.before} after={preview.central.after}/><p className="text-sm text-muted">{t("A confirmação define o valor central desejado. Cada fonte é sincronizada separadamente, com releitura e auditoria. Fontes que falharem continuam pendentes; cancelar o restante não desfaz o valor central nem os campos aplicados.")}</p></div>}
-      <ul className="space-y-4">{previewGroups(preview.fields, newImagesOnly).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
-        <h4 className="text-sm font-semibold">{t("Locais afetados")} · {fields.length} {t("campos")}</h4>
+      <ul className="space-y-4">{previewGroups(preview.fields, newImagesOnly, sourceOrder).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
+        <h4 className="break-words text-sm font-semibold">{[...new Set(fields.map(field => field.item))].join(" · ")}</h4>
         <ul className="mt-2 space-y-2">{fields.map(field => <li key={field.sourceKey}>
-          <p className="break-words text-sm font-medium">{field.collection} → {field.item} → {field.field}</p>
+          <p className="break-words text-xs text-muted">{field.collection} → {field.item} → {field.field}</p>
           {field.locale && <p className="text-xs text-muted">Locale: {field.locale}</p>}
         </li>)}</ul>
-        {!fields[0]!.images.length && <Diff before={fields.every(field => field.before === fields[0]!.before) ? fields[0]!.before : <ul className="space-y-3">{fields.map(field => <li key={field.sourceKey}><p className="font-semibold">{field.collection} → {field.item} → {field.field}{field.locale ? ` · ${field.locale}` : ""}</p>{field.before}</li>)}</ul>} after={fields[0]!.after}/>}
+        {!fields[0]!.images.length && <div className="space-y-3">{fields.map(field => <TextChangeDiff key={field.sourceKey} before={field.before} after={field.after} highlight={textSources.includes(field.sourceKey)} />)}</div>}
         {!embeddedImages && fields[0]!.images.filter((image, index, images) => images.findIndex(other => other.after === image.after && (newImagesOnly || other.before === image.before)) === index).map((image,index)=><ImageChangePreview key={index} newOnly={newImagesOnly} before={image.before} after={image.after}/>)}
         {fields.filter(field => field.slug).map(field => <div key={field.sourceKey} className="mt-3 rounded bg-amber-50 p-3"><h5 className="text-sm font-semibold">{t("Slug sugerido")} · {field.collection} → {field.item}</h5><Diff before={field.slug!.before} after={field.slug!.after}/></div>)}
       </li>)}</ul>

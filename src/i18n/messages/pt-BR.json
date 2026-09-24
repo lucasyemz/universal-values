@@ -1602,5 +1602,10 @@
   "Selecione as ocorrências que deseja editar.": "Selecione as ocorrências que deseja editar.",
   "Selecionar": "Selecionar",
   "Conferir": "Conferir",
-  "Ações do grupo": "Ações do grupo"
+  "Ações do grupo": "Ações do grupo",
+  "Ative a edição individual para gerar sugestões de IA por item.": "Ative a edição individual para gerar sugestões de IA por item.",
+  "Aplicados juntos": "Aplicados juntos",
+  "Revisão sem aplicação verificada": "Revisão sem aplicação verificada",
+  "{0} ocorrências · {1} campos neste grupo": "{0} ocorrências · {1} campos neste grupo",
+  "A reversão deste bloco abrange somente os campos deste bloco. Outros grupos e operações ficam de fora.": "A reversão deste bloco abrange somente os campos deste bloco. Outros grupos e operações ficam de fora."
 }

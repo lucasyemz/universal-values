@@ -4,7 +4,7 @@ import { reviewedChanges, reviewHistorySchema } from "./review-history";
 const rows = fixture().occurrences;
 const request = (status = "applied", actual: unknown = "New") => reviewHistorySchema.parse({ id, created_at: "2026-09-20", reverts_request_id: null, changes: [{ occurrenceId: id }], results: [{ sourceKey: "source", status, actual }] });
 it("shows the verified field instead of the old scan snapshot", () => {
- expect(reviewedChanges(rows, [request()])[id]).toEqual({requestId:id,after:"New",reverted:false,reversible:true});
+ expect(reviewedChanges(rows, [request()])[id]).toEqual({requestId:id,createdAt:"2026-09-20",after:"New",reverted:false,reversible:true});
  expect(rows[0]!.source_value).toBe("Old");
 });
 it("does not claim failed/conflicting/uncertain or manual reviews were applied", () => {
@@ -13,7 +13,7 @@ it("does not claim failed/conflicting/uncertain or manual reviews were applied",
 });
 it("uses the newest verified reversal even if input is unordered", () => {
  const revert={...request(),id:other,created_at:"2026-09-21",reverts_request_id:id,results:[{sourceKey:"source",status:"applied",actual:"Old"}]};
- expect(reviewedChanges(rows,[request(),revert])[id]).toEqual({requestId:other,after:"Old",reverted:true,reversible:false});
+ expect(reviewedChanges(rows,[request(),revert])[id]).toEqual({requestId:other,createdAt:"2026-09-21",after:"Old",reverted:true,reversible:false});
 });
 it("preserves empty values and numeric/media representations", () => {
  expect(reviewedChanges(rows,[request("already_applied","")])[id]?.after).toBe("");
@@ -51,4 +51,19 @@ it("shows image comparison only for the explicitly changed, verified occurrence"
  const change={...request(),changes:[{occurrenceId:id,after:{type:"image" as const,url:"https://cdn.example/new.png"}}]};
  expect(reviewedChanges(imageRows,[change])[id]?.image).toEqual({before:"https://cdn.example/old.png",after:"https://cdn.example/new.png"});
  expect(reviewedChanges(imageRows,[{...change,results:[{sourceKey:"source",status:"conflict"}]}])).toEqual({});
+});
+
+it("separates confirmations for the same value and scopes reversible fields to each block", async () => {
+ const { reviewedOperationGroups } = await import("./review-history");
+ const base=rows[0]!;
+ const occurrences=[base,{...base,id:"second",source_key:"second"},{...base,id:"third",source_key:"third"},{...base,id:"manual"}];
+ const h={requestId:id,after:"New",reverted:false,reversible:true};
+ const history={[base.id]:h,second:{...h,requestId:other},third:h};
+ const groups=reviewedOperationGroups(occurrences,history);
+ expect(groups.map(g=>[g.requestId,g.occurrences.map(o=>o.id),g.sources])).toEqual([
+  [id,[base.id,"third"],[base.source_key,"third"]],[other,["second"],["second"]],[null,["manual"],[]]
+ ]);
+ expect(reviewedOperationGroups([base],history)[0]?.sources).toEqual([base.source_key]);
+ expect(reviewedOperationGroups([base,{...base,id:"duplicate"}],{[base.id]:h,duplicate:h})[0]?.sources).toEqual([base.source_key]);
+ expect(reviewedOperationGroups([base],{[base.id]:{...h,reversible:false,reverted:true}})[0]?.sources).toEqual([]);
 });

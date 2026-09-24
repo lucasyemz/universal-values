@@ -1,5 +1,6 @@
 import { ImageChangePreview, ImagePreview } from "./image-change-preview";
-import { Diff, StatusBadge } from "@/components/ui";
+import { TextChangeDiff } from "./text-change-diff";
+import { StatusBadge } from "@/components/ui";
 import { InlineRevert } from "./inline-revert";
 import { getText } from "@/i18n/server";
 import type { Occurrence } from "@/modules/scans/schema";
@@ -13,7 +14,7 @@ export async function ReviewedOccurrence({ occurrence, history, outcome }: { occ
     <p className="mt-1 text-sm text-muted">{occurrence.collection_name} · {t("Revisado · Somente leitura")}</p>
     {history ? <>
       {history.image && <ImageChangePreview before={history.image.before} after={history.image.after}/>}
-      {occurrence.canonical.type !== "image" && <Diff beforeLabel={t("Valor original do scan")} afterLabel={t("Resultado verificado da operação")} before={<div className="max-h-80 overflow-auto">{occurrence.source_value}</div>} after={<div className="max-h-80 overflow-auto">{history.after}</div>}/>}
+      {occurrence.canonical.type !== "image" && <TextChangeDiff highlight={occurrence.canonical.type === "text"} beforeLabel={t("Valor original do scan")} afterLabel={t("Resultado verificado da operação")} before={occurrence.source_value} after={history.after}/>}
       {occurrence.canonical.type === "image" && !history.image && <ImagePreview url={occurrence.canonical.url} label={t("Valor original do scan")}/>}
       {!history.reverted && history.reversible && <InlineRevert requestId={history.requestId} sources={[occurrence.source_key]} />}
     </> : <>

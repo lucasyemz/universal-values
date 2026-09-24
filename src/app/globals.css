@@ -153,7 +153,7 @@
 }
 
 /* Image workspace: equal comparison tracks and compact, horizontal source cards. */
-.scan-workbench-unified { gap: 0; align-items: stretch; }
+.scan-workbench-unified { gap: 0; align-items: start; }
 .scan-workbench-unified .scan-result-list { border: 1px solid var(--border-default); border-radius: 10px; padding: 16px; background: var(--bg-surface); }
 .scan-workbench-unified .scan-inspector { background: var(--bg-app); position: static; max-height: none; overflow: visible; }
 .scan-workbench-unified .scan-result-scroll { max-height: 660px; }
@@ -213,3 +213,8 @@
 .scan-value-comparison { column-gap: 24px; }
 .scan-group-actions { transform: translateY(-50%); }
 .scan-group-actions-panel { padding: 8px; }
+
+/* Align comparison controls and keep actions compact. */
+.scan-original-context { min-height: 112px; }
+.scan-replacement-field > textarea, .scan-replacement-field > input { margin-top: 0; }
+.scan-value-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px; }

@@ -7,6 +7,12 @@ const field = (sourceKey: string, after = "new"): InlinePreview["fields"][number
   collectionId: "collection", itemId: sourceKey, before: "old", after, images: [], slug: null,
 });
 describe("preview presentation groups", () => {
+  it("follows selection order without merging nonadjacent equal replacements or mutating the plan", () => {
+    const fields = [field("c"), field("b", "other"), field("a")];
+    const snapshot = structuredClone(fields);
+    expect(previewGroups(fields,true,["a","b","a","c"]).map(group=>group[0]!.sourceKey)).toEqual(["a","b","c"]);
+    expect(fields).toEqual(snapshot);
+  });
   it("groups the exact new value, preserving sources, distinct old values and slug effects", () => {
     const fields = [field("a"), { ...field("b"), before: "different", slug: { before: "old", after: "new" } }];
     const snapshot = structuredClone(fields);

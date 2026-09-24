@@ -1190,7 +1190,7 @@
   "Marcar como revisado mantém o CMS como está. As ocorrências revisadas ficam disponíveis apenas para consulta.": "Marking as reviewed keeps the CMS unchanged. Reviewed occurrences are read-only.",
   "Ocorrências revisadas são somente leitura. Consulte a operação para reverter uma alteração.": "Reviewed occurrences are read-only. Open the operation to reverse a change.",
   "Revisado · Somente leitura": "Reviewed · Read-only",
-  "Reversão verificada": "Reversal verified",
+  "Reversão verificada": "Verified reversal",
   "Alteração verificada": "Change verified",
   "Valor original do scan": "Original scan value",
   "Resultado verificado da operação": "Verified operation result",
@@ -1602,5 +1602,10 @@
   "Selecione as ocorrências que deseja editar.": "Select the occurrences you want to edit.",
   "Selecionar": "Select",
   "Conferir": "Review",
-  "Ações do grupo": "Group actions"
+  "Ações do grupo": "Group actions",
+  "Ative a edição individual para gerar sugestões de IA por item.": "Enable individual editing to generate AI suggestions per item.",
+  "Aplicados juntos": "Applied together",
+  "Revisão sem aplicação verificada": "Review without verified application",
+  "{0} ocorrências · {1} campos neste grupo": "{0} occurrences · {1} fields in this group",
+  "A reversão deste bloco abrange somente os campos deste bloco. Outros grupos e operações ficam de fora.": "This block’s reversal covers only the fields in this block. Other groups and operations are excluded."
 }

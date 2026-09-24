@@ -8,12 +8,10 @@ export async function generateMetadata() {
 import { TabLink } from "@/components/ui/tab-link";
 import { filterSavedGroup, savedGroupSchema } from "@/modules/scans/saved-search";
 import { RememberedLink, RememberedDetails } from "@/components/layout/navigation-state";
-import { visibleRevertGroups } from "@/modules/scans/review-history";
+import { ReviewedOperations } from "@/components/scans/reviewed-operations";
 import { resourceLink } from "@/modules/routes/links";
 import { ScanCollectionSummary } from "@/components/scans/collection-summary";
 import { ReviewOperationControls } from "@/components/scans/review-operation-controls";
-import { InlineRevert } from "@/components/scans/inline-revert";
-import { ReviewedOccurrence } from "@/components/scans/reviewed-occurrence";
 import { AiBatch } from "@/components/ai/batch";
 import { getText } from "@/i18n/server";
 import { searchOptionsLabel } from "@/modules/text-search/match";
@@ -48,7 +46,6 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const searched = filterSavedGroup(searchResultGroups(view.sections, query), groupKey);
   const counts = countReviewedOccurrences(searched, view.reviewedIds);
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter);
-  const visibleIds = new Set(sections.flatMap(section=>section.duplicates.flatMap(group=>group.occurrences.map(o=>o.id))));
   const { scan } = view;
   const site = await getScanSite(scan.site_id);
   return <main className="ui-page">
@@ -103,9 +100,6 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       {view.reviewsMissing && <p role="status" className="mt-3 text-sm text-amber-800">{t("Aplique a sétima migration para habilitar as marcações de revisão.")}</p>}
       {scan.status === "limited" && <Notice tone="warning" title={t("Cobertura parcial")}>{t("Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.")}</Notice>}
 
-      {filter !== "pending" && visibleRevertGroups(view.occurrences,view.reviewHistory,visibleIds).map(({requestId,sources}) =>
-        sources.length > 1 ? <InlineRevert key={requestId + query + filter} requestId={requestId} sources={sources} /> : null
-      )}
 
       {!sections.some(section => section.duplicates.length) && <div className="mt-6"><EmptyState title={t(filter === "pending" && counts.all > 0 ? "Tudo revisado nesta busca" : "Nenhuma ocorrência neste filtro")} description={t(filter === "pending" && counts.all > 0 ? "Consulte os valores revisados ou inicie outro scan para buscar mudanças no CMS." : "Altere o filtro ou limpe a pesquisa para ver outros resultados.")} action={<Link className="ui-btn" href={scanHref + "?filter=" + (filter === "pending" && counts.all > 0 ? "reviewed" : "all")}>{t(filter === "pending" && counts.all > 0 ? "Ver revisados" : "Ver todos")}</Link>}/></div>}
       {sections.filter(section => section.duplicates.length > 0).map((section) => <section key={section.type} className="mt-8">
@@ -124,7 +118,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
           <OccurrenceEditor outcomes={view.outcomes} userId={scan.actor_id} editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.filter(o => !view.reviewedIds.includes(o.id)).map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
 
           </AiBatch>}
-          {group.occurrences.filter(o => view.reviewedIds.includes(o.id)).map(o => <ReviewedOccurrence key={o.id} occurrence={o} history={view.reviewHistory[o.id]} outcome={view.outcomes[o.id]} />)}
+          <ReviewedOperations occurrences={group.occurrences.filter(o => view.reviewedIds.includes(o.id))} history={view.reviewHistory} outcomes={view.outcomes} />
         </RememberedDetails></div>)}
       </section>)}
 
