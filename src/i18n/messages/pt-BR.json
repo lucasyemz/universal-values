@@ -1748,5 +1748,10 @@
   "da referência do negócio (legado) no projeto Supabase correto. Os dados existentes serão preservados.": "da referência do negócio (legado) no projeto Supabase correto. Os dados existentes serão preservados.",
   "Histórico da referência do negócio (legado)": "Histórico da referência do negócio (legado)",
   "Transfira este site entre seus workspaces do ReplaceAll. Isso não transfere o projeto no Webflow.": "Transfira este site entre seus workspaces do ReplaceAll. Isso não transfere o projeto no Webflow.",
-  "Abra o ReplaceAll no Webflow Designer → Apps → Launch development app.": "Abra o ReplaceAll no Webflow Designer → Apps → Launch development app."
+  "Abra o ReplaceAll no Webflow Designer → Apps → Launch development app.": "Abra o ReplaceAll no Webflow Designer → Apps → Launch development app.",
+  "Prévia local no contexto": "Prévia ao vivo no contexto · Ainda não aplicado",
+  "O trecho removido não aparece no resultado acima.": "O trecho removido não aparece no resultado acima.",
+  "Recuperando conexão salva…": "Recuperando conexão salva…",
+  "Não foi possível recuperar a conexão agora. Seu token salvo não foi apagado.": "Não foi possível recuperar a conexão agora. Seu token salvo não foi apagado.",
+  "Conexão válida até {0}": "Conexão válida até {0}"
 }

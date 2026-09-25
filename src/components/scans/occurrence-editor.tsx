@@ -1,4 +1,6 @@
 "use client";
+import { LiveTextContext } from "@/components/live-text-context";
+import { liveTextPreview } from "@/modules/scans/live-text-preview";
 import { variableSelection } from "@/modules/scans/variable-selection";
 import { prepareVariableChanges, confirmVariableChanges } from "@/modules/scans/variable-actions";
 
@@ -41,6 +43,7 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
   const type = rows[0]?.occurrence.canonical.type;
   const review = selectedOccurrenceChanges(occurrences, selectedIds, inputs);
   const selected = review.occurrences;
+  const liveText = liveTextPreview(selected, inputs);
   const selectedSet = new Set(selected.map(o => o.id));
   const modeScope = JSON.stringify(selected.map(o => o.id));
   const individual = individualMode?.scope === modeScope ? individualMode.enabled : new Set(selected.map(o => inputs[o.id] ?? editableValue(o.canonical))).size > 1;
@@ -99,18 +102,22 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
       <ul className="mt-1 space-y-1 text-xs text-muted">{targets.map(target => <li key={target.id}>{target.collection_name} → {target.item_name} → {target.field_name}</li>)}</ul>
       <RememberedDetails stateId={"source:" + o.id} className="text-xs text-muted"><summary>{t("Detalhes da origem")}</summary><p>{o.collection_name} · Locale {o.locale || t("padrão")} · {t("posição")} {o.start_pos}</p></RememberedDetails>
       </header>
+      {type === "text" && <div className="mb-3"><label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={type === "text"} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
+      </label></div>}
       <div className="scan-value-comparison rounded-lg border bg-surface p-3">
       <div className="min-w-0"><h5 className="mb-3 text-sm font-semibold">{t("Antes")}</h5>
       <div className="space-y-3">{group.map(({ occurrence: source, display: sourceDisplay }) => <div key={source.id}>{group.length > 1 && <p className="mb-1 text-xs font-medium">{source.item_name} · {source.field_name}</p>}
       {!sourceDisplay.context && <p className="whitespace-pre-wrap break-words rounded-lg border bg-subtle p-3 text-sm">{editableValue(source.canonical)}</p>}
-      {sourceDisplay.context && <div className="scan-original-context rounded border-l-4 border-accent bg-subtle p-3">
+      {type === "text" ? liveText.fields.filter(field=>field.sourceKey===source.source_key).map(field=><LiveTextContext key={field.sourceKey} matches={field.matches} before={field.before} after={field.before} label="" removalLabel=""/>) : sourceDisplay.context && <div className="scan-original-context rounded border-l-4 border-accent bg-subtle p-3">
         <p className="whitespace-pre-wrap break-words leading-7 text-slate-700" aria-label={t("Trecho com a menção encontrada")}>{sourceDisplay.context.clippedBefore && "…"}{sourceDisplay.context.before}<mark className="rounded bg-amber-100 px-0.5 font-semibold text-slate-900">{sourceDisplay.context.match}</mark>{sourceDisplay.context.after}{sourceDisplay.context.clippedAfter && "…"}</p>
         {(sourceDisplay.context.clippedBefore || sourceDisplay.context.clippedAfter) && <RememberedDetails stateId={"context:" + source.id} className="mt-2 text-sm text-muted"><summary className="cursor-pointer">{t("Ver texto completo")}</summary><p className="mt-2 whitespace-pre-wrap break-words">{sourceDisplay.context.full}</p></RememberedDetails>}
       </div>}
       </div>)}</div>
-      </div><div className="min-w-0"><h5 className="mb-3 text-sm font-semibold">{t("Depois")}</h5>
-      <><label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={type === "text"} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
-      </label>
+      </div><div className="min-w-0"><h5 className="mb-3 text-sm font-semibold">{t(type === "text" ? "Novo valor" : "Depois")}</h5>
+      <>{type !== "text" && <label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={false} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
+      </label>}
+      {type === "text" && liveText.fields.filter(field => targets.some(target => target.source_key === field.sourceKey)).map(field => <LiveTextContext matches={field.matches} key={field.sourceKey} before={field.before} after={field.after} label={targets.length > 1 ? field.item + " → " + field.field : ""} removalLabel={t("O trecho removido não aparece no resultado acima.")}/>)}
+      {type === "text" && liveText.error && <p role="alert">{t(liveText.error)}</p>}
       {targets.some(target => target.field_slug === "name" && target.field_type === "PlainText") && <p className="mt-2 text-sm text-accent">{t("Nome do item CMS: a prévia abaixo também inclui o slug sugerido a partir do nome completo.")}</p>}
       <p id={"hint-" + o.id} className="mt-1 text-xs text-faint">{t(inputHints[type])}{type === "text" && targets.some(target => target.field_type === "RichText") && t(" A substituição mantém as tags e a formatação ao redor do trecho, incluindo títulos e parágrafos. Este campo edita somente o texto; HTML digitado não cria formatação, e quebras de linha não criam novos parágrafos.")}</p>
       {type === "text" && inputs[o.id] !== undefined && !inputs[o.id]!.trim() && <p className="mt-2 text-sm font-medium text-amber-800">{t("Este trecho será removido após revisar e confirmar.")}</p>}
@@ -125,7 +132,7 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
     </div>; })}
     {!!selected.length && <button type="button" disabled={pending} onClick={() => { setInputs({ ...inputs, ...Object.fromEntries(selected.map(o => [o.id, editableValue(o.canonical)])) }); setBulk(""); }} className="ui-btn">{t("Descartar edições da seleção")}</button>}
     {Object.keys(review.errors).length > 0 && <p role="alert" className="text-red-700">{t("Corrija os campos indicados antes de continuar.")}</p>}
-    <InlineReview contentKey={previewContentKey} sourceOrder={selected.map(o => o.source_key)} textSources={selected.filter(o => o.canonical.type === "text").map(o => o.source_key)} embedded newImagesOnly embeddedImages={type === "image"} draftKey={draftKey} confirmationOptions={selected.length > 0 && <fieldset className="space-y-3 rounded-lg border bg-white p-4" disabled={pending}>
+    <InlineReview embeddedTextFields={type === "text" ? liveText.fields : undefined} contentKey={previewContentKey} sourceOrder={selected.map(o => o.source_key)} textSources={selected.filter(o => o.canonical.type === "text").map(o => o.source_key)} embedded newImagesOnly embeddedImages={type === "image"} draftKey={draftKey} confirmationOptions={selected.length > 0 && <fieldset className="space-y-3 rounded-lg border bg-white p-4" disabled={pending}>
       <legend className="px-1 text-sm font-semibold">{t("Como deseja aplicar?")}</legend>
       <label className="flex items-center gap-2 text-sm"><input type="radio" name={editorId + "-action"} checked={!variableMode} onChange={() => setVariableMode(false)}/>{t("Alterar apenas estes campos")}</label>
       <label className="flex items-center gap-2 text-sm"><input type="radio" name={editorId + "-action"} checked={variableMode} disabled={!variable && !variableMode} onChange={() => setVariableMode(true)}/>{t("Criar variável e aplicar")}</label>

@@ -35,7 +35,7 @@ export function findMentions(nodes: TextNode[], input: string, options?: SearchO
   return result;
 }
 
-export function preparePlan(context: PageContext, nodes: TextNode[], search: string, replacements: Record<string, string>, now = Date.now(), options?: SearchOptions): TextPlan {
+export function preparePlan(context: PageContext, nodes: TextNode[], search: string, replacements: Record<string, string>, now = Date.now(), options?: SearchOptions, id = crypto.randomUUID()): TextPlan {
   const mentions = findMentions(nodes, search, options);
   if (Object.keys(replacements).some(key => !mentions.some(mention => mention.key === key))) throw new Error("Seleção inválida. Faça outra busca.");
   const changes = nodes.flatMap(node => {
@@ -48,5 +48,5 @@ export function preparePlan(context: PageContext, nodes: TextNode[], search: str
     return after === node.text ? [] : [{ id: node.id, before: node.text, after, ...(node.source ? {source:node.source} : {}) }];
   });
   if (!changes.length) throw new Error("Nenhuma alteração selecionada.");
-  return planSchema.parse({ id: crypto.randomUUID(), context, changes, ...(options ? { searchOptions: options } : {}), expiresAt: now + 15 * 60_000 });
+  return planSchema.parse({ id, context, changes, ...(options ? { searchOptions: options } : {}), expiresAt: now + 15 * 60_000 });
 }

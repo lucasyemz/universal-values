@@ -3,7 +3,7 @@ import { homeSchema, sessionCodeSchema, type GatewayInput } from "../../../modul
 import { auditSchema, type AuditEvent, type AuditStore } from "../../../modules/static-text/apply";
 import { planSchema, type TextPlan } from "../../../modules/static-text/plan";
 
-import { readDesignerSession, saveDesignerSession, clearDesignerSession } from "./session-storage";
+import { readScopedDesignerSession, saveScopedDesignerSession, clearScopedDesignerSession } from "./session-storage";
 
 declare const DESIGNER_DASHBOARD_URL: string;
 export const dashboardUrl = DESIGNER_DASHBOARD_URL;
@@ -13,21 +13,23 @@ export class DesignerAccessError extends Error {}
 export class DesignerDashboardClient {
   private code = "";
   private site = "";
-  constructor() {
-    try { const saved = readDesignerSession(localStorage); if (saved) { this.code = saved.code; this.site = saved.site; } } catch { /* Reconnect if storage is unavailable. */ }
+  private restore(site: string) {
+    try { const saved = readScopedDesignerSession(localStorage,{site,origin:dashboardUrl});
+      this.code=saved?.code??"";this.site=site;
+    } catch { this.code="";this.site=site; }
   }
-  hasSession() { return !!this.code; }
+  hasSession(site?: string) { if(site && site!==this.site)this.restore(site); return !!this.code; }
   async connect(code: string, site: string) {
     const parsed = sessionCodeSchema.parse(code.trim());
     const previous = { code: this.code, site: this.site };
     this.code = parsed; this.site = site;
     try {
       const home = await this.home(site);
-      saveDesignerSession(localStorage, { code: parsed, site, expiresAt: home.expiresAt });
+      saveScopedDesignerSession(localStorage, {site,origin:dashboardUrl}, { code: parsed, site, expiresAt: home.expiresAt });
       return home;
     } catch (error) { this.code = previous.code; this.site = previous.site; throw error; }
   }
-  disconnect() { this.code = ""; this.site = ""; try { clearDesignerSession(localStorage); sessionStorage.removeItem("universal-values:designer-session:v1"); } catch { /* Storage unavailable. */ } }
+  disconnect() { try {clearScopedDesignerSession(localStorage,{site:this.site,origin:dashboardUrl});} catch { /* Storage unavailable. */ } this.code="";this.site=""; }
   private async request(input: GatewayInput): Promise<unknown> {
     if (!this.code || input.webflowSiteId !== this.site) throw new DesignerAccessError("Conecte sua conta para este site.");
     let response: Response;
@@ -38,7 +40,7 @@ export class DesignerDashboardClient {
     if (!response.ok) throw new Error(envelope.error ?? "Falha no histórico central.");
     return envelope.data;
   }
-  async home(site: string) { return homeSchema.parse(await this.request({ action: "home", webflowSiteId: site })); }
+  async home(site: string) { if(site!==this.site)this.restore(site); return homeSchema.parse(await this.request({ action: "home", webflowSiteId: site })); }
   async preview(plan: TextPlan, searchText: string) { return planSchema.parse(await this.request({ action: "preview", webflowSiteId: plan.context.siteId, plan, searchText })); }
   store(plan: TextPlan): AuditStore {
     return {

@@ -33,3 +33,23 @@ These results are reported by the authorized Designer client after rereading, no
 Automated tests use Designer adapters/fixtures for selection, components, links, image URL handling, review evidence and dispatch safety. Native canvas behavior still needs the real Designer and a designated test site. Do not claim production publication from a successful Designer result. Canonical dashboard links follow [the URL guide](dashboard-urls.md).
 
 Generated workspace URLs use `20260923001000_workspace_site_urls.sql`, applied to the linked project on 2026-09-23 with user approval. Reload the extension to obtain its updated home links. Existing account-based links still redirect to the correct workspace in the dashboard.
+
+## Live text editing
+
+Text uses one search form. After selecting occurrences, one replacement input updates the selected set; “Edit individually” exposes one input per selected occurrence. The old sidebar fill-all control and duplicate header search button are removed. Images and links retain their existing editing/review flows.
+
+The full saved text node updates locally with highlighted changes, including several selected matches in the same node. No Designer/provider/dashboard request is made by typing. Text confirmation stays on the editing screen: it persists the exact displayed plan through the existing preview endpoint, checks the returned plan is identical, then executes the existing explicit-confirmation/apply/audit path. Plan identity survives retries and changes with the draft; conflicts, leases, expiry, shared-component scope and no-publish rules remain authoritative. Local display is not a live read of Webflow.
+
+Validation (2026-09-25): lint, typecheck, 866 tests in 157 files, production webpack build, Designer build/bundle and ZIP integrity passed. Tests cover selected Unicode ranges, combined and individual replacements, Rich Text escaping/removal, rejected stale/overlapping ranges, unchanged retry identity and mismatched persisted plans. No live-site write or authenticated browser walkthrough was performed. The CLI could not write its optional Library/Logs file in the sandbox; bundle generation succeeded. No migration/deployment.
+
+## Session recovery
+
+New Designer sessions expire after 30 days in migration `20260920002500`; reopening or retrying does not renew the server expiry. Older sessions retain their original expiry. The extension now stores capabilities separately by dashboard origin and Webflow site, migrates only the matching legacy saved session and disconnects only the active site's stored session. Never change the server-issued expiry locally.
+
+Startup shows restoration progress before asking for a connection code. A temporary identification/network failure offers retry without deleting the saved token. Server expiry/revocation/ownership rejection still requires reconnecting. Settings display the active session's actual server expiry. Browser/profile changes, cleared or blocked local storage, and different iframe origins cannot share this saved state. This change does not deploy a migration or extend existing grants.
+
+Session validation (2026-09-25): lint, typecheck, all 870 tests in 157 files, production webpack build, Designer build/bundle and ZIP integrity passed. Local migrated-database tests confirm a 30-day expiry and no renewal on retry; client tests cover multi-site restoration, origin isolation, transient failure recovery and server denial. The deployed database and the user's active session were not inspected. The CLI's optional sandbox-blocked log file did not prevent bundle generation.
+
+Individual text editing keeps each occurrence's original context, replacement input and live result together. Multiple selected matches in one node still show the combined final node result, using the same validated plan. Editing and confirmation now share a normal-flow stack so confirmation cannot overlap inputs at tablet/desktop breakpoints.
+
+In the Designer live text result, unchanged selected matches use yellow highlights from their exact saved ranges. Edited results retain the green change highlights. Highlighting is display-only and does not change the replacement plan.

@@ -69,3 +69,15 @@ fieldset{border:0;padding:0;margin:16px 0;min-width:0}legend{font-size:11px;colo
 .image-result-card>img{width:56px;height:48px;object-fit:contain;flex-shrink:0;border:1px solid #D9E0EA;border-radius:6px;background:#F7F9FC}.image-result-card .result-value{font-size:11px}.image-group-editor .check small{display:block;color:#667085}.image-group-editor .check{align-items:flex-start}
 .mode-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.mode-tabs .cms-scan-link{display:flex;align-items:center;justify-content:center;gap:6px;padding:6px 10px;min-height:32px;border:1px solid transparent;border-radius:6px;color:#667085;text-decoration:none;font-weight:600;font-size:inherit}.mode-tabs .cms-scan-link:hover{background:#EAF1FF;color:#0D47D9}.mode-tabs .cms-scan-link:focus-visible{outline:2px solid #1557FF;outline-offset:2px}
 .mode-tabs .seo-coming-soon{grid-column:1/-1}
+
+.live-text-context { margin-top: 12px; padding: 12px; border: 1px solid var(--border, #d9e1ee); border-radius: 10px; background: #f7f9fc; }
+.live-text-context .context { white-space: pre-wrap; overflow-wrap: anywhere; }
+.live-text-context mark { background: #dcfce7; color: #14532d; }
+/* Editing and confirmation share normal flow, never overlapping grid cells. */
+.editor-stack{display:flex;flex-direction:column;gap:12px;min-width:0;align-self:start}
+.editor-stack>.inspector-panel,.editor-stack>.review-panel{position:static;max-height:none;overflow:visible;margin:0}
+.inspector-panel .individual-text-editor{padding:16px 0;border-bottom:1px solid #D9E0EA}
+.individual-text-editor h3{margin:0 0 8px}
+@media(min-width:1000px){.editor-stack{grid-column:3}}
+@media(min-width:760px) and (max-width:999px){.editor-stack{grid-column:2;grid-row:2}}
+.live-text-context mark.match-highlight{background:#ffed9c;color:inherit}

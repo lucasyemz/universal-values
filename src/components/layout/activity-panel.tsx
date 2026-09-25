@@ -1,6 +1,7 @@
 "use client";
 import {workerHealthMessage,type WorkerState} from "@/modules/sync-worker/health";
 import {createPoller} from "@/modules/polling/scheduler";
+import {notifyOperationsObserved} from "@/modules/activity/progress-updates";
 import {activityDelay,ACTIVITY_CHANGED} from "@/modules/activity/polling";
 import { useAiWork } from "@/components/ai/work";
 import { useText } from "@/i18n/use-text";
@@ -39,6 +40,7 @@ export function ActivityPanel({ userId }: { userId: string }) {
   const open = openOverride ?? storedOpen;
   useEffect(() => {
     let disposed = false;
+    let observed:Activity[]=[];
     let health:WorkerState="unknown";
     let expiry:ReturnType<typeof setTimeout>|undefined;
     const updateVisible=()=>{
@@ -55,6 +57,8 @@ export function ActivityPanel({ userId }: { userId: string }) {
         const result=await getActivity(tracked.current);
         if(disposed)return null;
         if(result.ok){
+          notifyOperationsObserved(observed,result.items);
+          observed=result.items;
           visibility.current=updateActivityVisibility(visibility.current,result.items,Date.now());
           health=result.worker;setWorker(result.worker);setLimited(result.limited);setError("");
         }else setError(result.message);

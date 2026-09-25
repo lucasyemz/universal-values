@@ -1,5 +1,6 @@
 "use client";
 import {workerHealthMessage,type WorkerState} from "@/modules/sync-worker/health";
+import {OPERATION_OBSERVED} from "@/modules/activity/progress-updates";
 import {notifyActivityChanged} from "@/modules/activity/polling";
 import {createPoller} from "@/modules/polling/scheduler";
 import {progressChanged,progressDelay,type OperationProgress} from "@/modules/polling/policy";
@@ -38,9 +39,11 @@ export function ChangeProgress({ id, cursor, total, paused, onCompleted }: { onC
       }catch{if(!disposed)setError("Não foi possível consultar o progresso. O worker continua independente desta página.");return 60000;}
     },()=>!document.hidden&&navigator.onLine);
     const wake=()=>poller.wake();
+    const observed=(event:Event)=>{if(event instanceof CustomEvent && event.detail===id)poller.wake();};
+    window.addEventListener(OPERATION_OBSERVED,observed);
     document.addEventListener("visibilitychange",wake);window.addEventListener("online",wake);window.addEventListener("offline",wake);
     poller.wake();
-    return ()=>{disposed=true;poller.stop();document.removeEventListener("visibilitychange",wake);window.removeEventListener("online",wake);window.removeEventListener("offline",wake);};
+    return ()=>{disposed=true;poller.stop();window.removeEventListener(OPERATION_OBSERVED,observed);document.removeEventListener("visibilitychange",wake);window.removeEventListener("online",wake);window.removeEventListener("offline",wake);};
   }, [id,router,pollVersion]);
   return <section className="ui-card my-6 p-5">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><p role="status" className="font-semibold tabular-nums">{live.cursor}  {t("de")} {live.total}  {t("fontes processadas")}</p><StatusBadge status={live.paused ? "paused" : live.status} label={live.paused ? t("Aguardando revisão") : live.status === "confirmed" ? live.queuePosition && live.queuePosition > 1 ? t("Na fila · posição {0}", live.queuePosition) : t("Na fila do servidor") : undefined} /></div>

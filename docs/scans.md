@@ -33,3 +33,13 @@ Failures pause execution; 429 respects Retry-After. Fresh items and provider per
 ## Verification
 
 Automated tests cover detection, Unicode, numeric matching, HTML, exact URLs, limits, leases, review/application state, RLS and audit rollback. Browser/provider concurrency, real OAuth, 429 and external edits require a designated test environment; do not claim them from mocks. Group-aware result pagination is [not yet implemented](design/group-pagination.md).
+
+## Live text context
+
+Selected text edits show the complete resulting field immediately below the replacement input. Multiple selected ranges in one source are combined with `buildFieldChanges`, the same exact-range builder used by confirmation. Plain-text Unicode positions, Rich Text escaping, individual drafts and removals are preserved; HTML is rendered as readable text, never injected. Only selected eligible occurrences enter this display. The shared text-diff renderer highlights replacements.
+
+This adds no Q/W/I/E/G calls. Existing asynchronous persisted-preview validation and explicit confirmation remain in place, including suggested slug changes and stale receipt protection. Images are unchanged. Designer persists its text preview when the user confirms instead of requiring a separate review-screen action; per-confirmation request/write safety remains unchanged.
+
+Live text preview highlights unchanged selected occurrences in yellow and edited text in green. Display ranges are mapped from saved occurrence offsets (Unicode code points) into rendered text offsets, including decoded Rich Text entities; unselected repetitions are not inferred as selected. These display ranges never replace the authoritative mutation ranges.
+
+Text editing places the replacement input above the Before/New value context columns. Confirmation omits duplicate text comparisons only when the server-validated field's exact before/after values match the local display plan. Unexpected differences and suggested slugs remain visible, and confirmation still requires the current server receipt. No validation or write-safety step is removed.

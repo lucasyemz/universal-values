@@ -57,3 +57,8 @@ export function toggleTextSelection(drafts:Record<string,string>,mention:Mention
  if(Object.hasOwn(next,mention.key))delete next[mention.key];else next[mention.key]=mention.text;
  return next;
 }
+
+// An event from an old individual input must not reselect a removed occurrence.
+export function editIndividualMention(drafts:Record<string,string>,key:string,value:string){
+ return Object.hasOwn(drafts,key)?{...drafts,[key]:value}:drafts;
+}

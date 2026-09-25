@@ -12,7 +12,8 @@ import { Diff, Notice } from "@/components/ui";
 import { ImageChangePreview } from "./image-change-preview";
 import { ChangeProgress } from "./change-progress";
 
-export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted, sourceOrder, textSources = [], confirmationOptions, confirm = confirmInlineChanges, confirmLabel, contentKey }: {
+export function InlineReview({ embeddedTextFields = [], draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted, sourceOrder, textSources = [], confirmationOptions, confirm = confirmInlineChanges, confirmLabel, contentKey }: {
+  embeddedTextFields?: {sourceKey:string;rawBefore:string;rawAfter:string}[];
   contentKey?: string;
   confirmationOptions?: ReactNode; confirmLabel?: string; confirm?: typeof confirmInlineChanges;
   sourceOrder?: string[]; textSources?: string[]; embedded?: boolean; embeddedImages?: boolean; newImagesOnly?: boolean; onCompleted?: () => void; reverting?:boolean; draftKey:string; prepare:(id:string)=>Promise<PreviewResult>; onConfirmingChange:(value:boolean)=>void;
@@ -44,13 +45,13 @@ export function InlineReview({ draftKey, prepare, onConfirmingChange, reverting 
       <p className="font-medium">{t("Campos: {0} · Itens do CMS: {1}",preview.fieldCount,preview.itemCount)}</p>
       {(preview.fieldCount>=10 || preview.itemCount>=5 || preview.removalCount>0) && <Notice tone="warning" title={t("Alteração de maior impacto")}>{t("Confira o alcance abaixo. Remoções e alterações em vários itens podem afetar diversas páginas do site.")}</Notice>}
       {preview.central && !confirmationOptions && <div><h4 className="font-semibold">{t("Valor central")}</h4><Diff before={preview.central.before} after={preview.central.after}/><p className="text-sm text-muted">{t("A confirmação define o valor central desejado. Cada fonte é sincronizada separadamente, com releitura e auditoria. Fontes que falharem continuam pendentes; cancelar o restante não desfaz o valor central nem os campos aplicados.")}</p></div>}
-      <ul className="space-y-4">{previewGroups(preview.fields, newImagesOnly, sourceOrder).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
+      <ul className="space-y-4">{previewGroups(preview.fields.filter(field => field.slug || !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)), newImagesOnly, sourceOrder).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
         <h4 className="break-words text-sm font-semibold">{[...new Set(fields.map(field => field.item))].join(" · ")}</h4>
         <ul className="mt-2 space-y-2">{fields.map(field => <li key={field.sourceKey}>
           <p className="break-words text-xs text-muted">{field.collection} → {field.item} → {field.field}</p>
           {field.locale && <p className="text-xs text-muted">Locale: {field.locale}</p>}
         </li>)}</ul>
-        {!fields[0]!.images.length && <div className="space-y-3">{fields.map(field => <TextChangeDiff key={field.sourceKey} before={field.before} after={field.after} highlight={textSources.includes(field.sourceKey)} />)}</div>}
+        {!fields[0]!.images.length && <div className="space-y-3">{fields.filter(field => !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)).map(field => <TextChangeDiff key={field.sourceKey} before={field.before} after={field.after} highlight={textSources.includes(field.sourceKey)} />)}</div>}
         {!embeddedImages && fields[0]!.images.filter((image, index, images) => images.findIndex(other => other.after === image.after && (newImagesOnly || other.before === image.before)) === index).map((image,index)=><ImageChangePreview key={index} newOnly={newImagesOnly} before={image.before} after={image.after}/>)}
         {fields.filter(field => field.slug).map(field => <div key={field.sourceKey} className="mt-3 rounded bg-amber-50 p-3"><h5 className="text-sm font-semibold">{t("Slug sugerido")} · {field.collection} → {field.item}</h5><Diff before={field.slug!.before} after={field.slug!.after}/></div>)}
       </li>)}</ul>

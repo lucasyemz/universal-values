@@ -152,3 +152,7 @@ Primeira execução automática observada: 20/09/2026 18:55 UTC, Cron `succeeded
 With explicit user authorization, rebuilt and deployed `cms-worker` to `nxibjpprjorchjeoudss`, then installed `supabase/cron/cms-worker.sql`. Verified job1 remains active on `* * * * *`, the invocation function contains the conditional runnable gate, and authenticated callers cannot invoke the private scheduler directly. The queue reported no runnable work before deployment. The authenticated `check` diagnostic through Vault/pg_net returned HTTP200, `{"ok":true,"mode":"check"}`, without timeout (request4244). No customer-content test operation or manual run was submitted. Secrets were preserved.
 
 This supersedes the pending Cron/Edge deployment notes above. Batching under real provider load and dashboard browser interactions remain untested; the diagnostic does not validate a customer write.
+
+### Progress UI synchronization
+
+The activity popup emits an operation-specific invalidation when its authorized response changes a CMS operation's cursor, total, state or status label. A mounted progress panel for that ID wakes its existing narrow DTO poller immediately, including while its normal waiting cadence is 60 seconds. Unchanged observations do not emit again, avoiding a refresh feedback loop. The event carries only the operation ID; it cannot mark completion or bypass authorization. Hidden/offline suspension and terminal polling shutdown remain in force. This adds an on-change DB observation when needed, without Edge, credential, provider or AI calls.

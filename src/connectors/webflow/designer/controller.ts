@@ -9,7 +9,7 @@ import type { SearchOptions } from "../../../modules/text-search/match";
 import { DesignerTextPort } from "./adapter";
 import { DesignerDashboardClient } from "./dashboard-client";
 import { applyPlan } from "../../../modules/static-text/apply";
-import { findMentions, preparePlan, type TextPlan } from "../../../modules/static-text/plan";
+import { findMentions, preparePlan, planSchema, type TextPlan } from "../../../modules/static-text/plan";
 
 export class DesignerController {
   private images=new ImageTargets();
@@ -59,6 +59,13 @@ export class DesignerController {
   async preview(scan: Awaited<ReturnType<DesignerTextPort["scan"]>>, term: string, replacements: Record<string, string>, options?: SearchOptions) {
     const plan = preparePlan(scan.context, scan.nodes, term, replacements, Date.now(), options);
     return this.dashboard.preview(plan, term);
+  }
+  async saveTextPreview(plan: TextPlan, term: string) {
+    const validated = planSchema.parse(plan);
+    if (validated.changes.some(change => change.image || change.link)) throw new Error("Prévia com tipos misturados.");
+    const saved = await this.dashboard.preview(validated, term);
+    if (JSON.stringify(saved) !== JSON.stringify(validated)) throw new Error("Prévia alterada.");
+    return saved;
   }
   async apply(plan: TextPlan, confirmed: boolean) {
     if (!navigator.locks) throw new Error("Este navegador não oferece o bloqueio necessário para aplicar com segurança.");

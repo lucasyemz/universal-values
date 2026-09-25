@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest';
 import {findMentions,preparePlan} from './plan';
 import {exactSearch} from '../text-search/match';
-import {selectedTextEditor,toggleTextSelection,continueTextScan,continueLinkScan,editSelectedMentions,reviewedOccurrences,mergeReviewed} from './continue-scan';
+import {editIndividualMention,selectedTextEditor,toggleTextSelection,continueTextScan,continueLinkScan,editSelectedMentions,reviewedOccurrences,mergeReviewed} from './continue-scan';
 import {groupLinks,initialLinkDraft,prepareLinksPlan} from './repeated-links';
 import {linkSnapshot} from './link-edit';
 const context={siteId:'s',pageId:'p',pageName:'Home',rootId:'r'};
@@ -82,4 +82,21 @@ it('preserves different checked drafts until the user edits the group',()=>{
  const drafts={[mentions[0]!.key]:'One',[mentions[1]!.key]:'Two'};
  expect(selectedTextEditor(mentions,drafts).mixed).toBe(true);
  expect(drafts[mentions[1]!.key]).toBe('Two');
+});
+
+it('keeps a local preview identity stable until the selected draft changes',()=>{
+ const nodes=[{id:'a',text:'🎉 Find and Find'}];
+ const mentions=findMentions(nodes,'Find');
+ const drafts={[mentions[1]!.key]:''};
+ const id='11111111-1111-4111-8111-111111111111';
+ const first=preparePlan(context,nodes,'Find',drafts,1000,exactSearch,id);
+ expect(first.changes[0]?.after).toBe('🎉 Find and ');
+ expect(preparePlan(context,nodes,'Find',drafts,1000,exactSearch,id)).toEqual(first);
+ expect(first.id).toBe(id);
+});
+
+it('edits one checked mention without changing others or selecting hidden mentions',()=>{
+ const drafts={a:'One',b:'Two'};
+ expect(editIndividualMention(drafts,'a','Edited')).toEqual({a:'Edited',b:'Two'});
+ expect(editIndividualMention(drafts,'hidden','Edited')).toBe(drafts);
 });
