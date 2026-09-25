@@ -36,3 +36,23 @@ it("uses variable terminology in both locales without altering unknown customer 
  expect(createText("pt-BR")("Centralizar valor")).toBe("Criar variável");
  expect(createText("pt-BR")("Customer Managed Value name")).toBe("Customer Managed Value name");
 });
+
+it("uses the shared Slice 1 vocabulary in EN and PT-BR", () => {
+ const labels = [
+  ["Buscar", "Find", "Buscar"], ["Revisar resultados", "Review occurrences", "Revisar ocorrências"],
+  ["Novo valor para o grupo", "Replace with", "Substituir por"],
+  ["Salvar prévia e revisar", "Preview changes", "Conferir alterações"],
+  ["Aplicar alterações", "Apply changes", "Aplicar alterações"],
+  ["Variáveis", "Variables", "Variáveis"], ["Histórico", "History", "Histórico"],
+  ["Explorar CMS", "CMS Explorer", "CMS Explorer"],
+ ];
+ for (const [key, en, pt] of labels) {
+  expect(createText("en")(key)).toBe(en);
+  expect(createText("pt-BR")(key)).toBe(pt);
+ }
+ for (const catalog of [english, portuguese]) {
+  for (const value of Object.values(catalog)) expect(value).not.toMatch(/Managed Values?|CopyReplace|Universal Values|Global Facts/);
+ }
+ expect(createText("en")("Customer ReplaceAll Managed Value")).toBe("Customer ReplaceAll Managed Value");
+ expect(createText("pt-BR")("Customer ReplaceAll Managed Value")).toBe("Customer ReplaceAll Managed Value");
+});

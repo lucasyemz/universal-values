@@ -32,9 +32,9 @@ export default async function OverviewPage({ params, searchParams }: { params: P
     <section aria-labelledby="manage-site-heading" className="mb-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 id="manage-site-heading" className="text-lg font-semibold">{t("Gerenciar este site")}</h2><Link href={base + '/cms'} prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"><Compass size={16} aria-hidden="true"/>{t("Explorar CMS")}<ArrowRight size={15} aria-hidden="true"/></Link></div>
     <section aria-label={t("Resumo do site")} className=" grid divide-y overflow-hidden rounded-2xl border bg-white md:grid-cols-3 md:divide-x md:divide-y-0">{[
-      { label: t("Variáveis ativas"), value: view.activeValues, href: base + '/managed-values', Icon: Database },
+      { label: t("Variáveis ativas"), value: view.activeValues, href: base + '/variables', Icon: Database },
       { label: t("Scans registrados"), value: view.scanCount, href: base + '/scans', Icon: FileText },
-      { label: t("Fontes incertas"), value: view.uncertainCount, href: base + '/managed-values', Icon: TriangleAlert },
+      { label: t("Fontes incertas"), value: view.uncertainCount, href: base + '/variables', Icon: TriangleAlert },
     ].map(({ label, value, href, Icon }) => <Link prefetch={false} href={href} key={label} className="flex min-w-0 items-center gap-4 px-5 py-4 transition-colors hover:bg-accent-soft focus-visible:-outline-offset-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={21} aria-hidden="true" /></span><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p></div></Link>)}</section>
     </section>
     <section className="mb-6 rounded-xl border bg-white p-6"><div className="mb-4 flex items-center gap-2">{attention?<CircleAlert size={20} className="text-amber-700" />:<CircleCheck size={20} className="text-green-700" />}<h2 className="text-lg font-semibold">{attention?t("Precisa de atenção"):t("Nenhuma pendência encontrada neste resumo")}</h2></div>

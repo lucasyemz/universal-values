@@ -40,11 +40,11 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const siteName = current?.siteName ?? t("Site");
   const siteSections = [
     { path: "scans", label: t("Scans"), Icon: ScanLine },
-    { path: "managed-values", label: t("Managed Values"), Icon: Layers3 },
-    { path: "changes", label: t("Alterações"), Icon: History },
-    { path: "cms", label: t("Explorar CMS"), Icon: Globe2 },
+    { path: "variables", label: t("Variáveis"), Icon: Layers3 },
+    { path: "changes", label: t("Histórico"), Icon: History },
+    { path: "cms", label: t("CMS Explorer"), Icon: Globe2 },
   ];
-  const activeSection = siteBase ? [...siteSections, {path:"facts",label:"Global Facts",Icon:BookOpen}].find(section => pathname === siteBase + "/" + section.path || pathname.startsWith(siteBase + "/" + section.path + "/") || pathname.startsWith("/dashboard/" + section.path + "/")) : undefined;
+  const activeSection = siteBase ? [...siteSections, {path:"facts",label:t("Referência do negócio (legado)"),Icon:BookOpen}].find(section => pathname === siteBase + "/" + section.path || pathname.startsWith(siteBase + "/" + section.path + "/") || pathname.startsWith("/dashboard/" + section.path + "/")) : undefined;
   const isOverview = pathname === siteBase + "/overview";
   const pageTitle = current?.title ?? (routeWorkspace ? workspaces.find(w => w.id === routeWorkspace)?.name : pathname === "/dashboard" ? t("Visão geral") : pathname === "/dashboard/plan" ? t("Plano e consumo") : pathname === "/dashboard/settings/integrations" ? t("Integrações") : t("Revisão"));
   const close = () => dialog.current?.close();
@@ -64,7 +64,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
         </ul>
         <details className="pt-2" open={pathname.startsWith(siteBase + "/facts") || pathname === siteBase + "/static" || undefined}><summary className="px-3 py-2 text-xs font-medium text-muted">{t("Avançado")}</summary>
           <Link onClick={close} href={siteBase + "/static"} className="ui-nav-link" aria-current={pathname === siteBase + "/static" ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Páginas estáticas")}</Link>
-          <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />Global Facts</Link>
+          <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />{t("Referência do negócio (legado)")}</Link>
         </details>
       </>}
     </nav>

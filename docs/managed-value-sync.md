@@ -1,4 +1,4 @@
-# Edição central e sincronização de Managed Values
+# Edição central e sincronização de Variables
 
 > Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Contrato atual](architecture.md).
 
@@ -15,10 +15,10 @@ Nos resultados de um scan concluído, selecione de 2 a 100 ocorrências em pelo 
 
 ## Teste manual em site de testes
 
-1. Abra um Managed Value criado a partir de ocorrências CMS. Confira o valor, versão e fontes vinculadas.
+1. Abra um Variable criado a partir de ocorrências CMS. Confira o valor, versão e fontes vinculadas.
 2. Informe outro valor e clique para revisar. A prévia mostra o valor central antes/depois e cada campo completo. Até aqui nada mudou no CMS nem no valor central.
 3. Confirme explicitamente. A versão central avança quando o valor muda; a página processa os campos e registra o resultado de cada um. Com a migration 015 e o worker ativo, você pode fechar a página; acompanhe pelo histórico. Consulte `docs/background-sync.md`.
-4. Confira os campos no CMS Webflow e volte ao Managed Value. Verifique o valor central, fontes observadas e histórico.
+4. Confira os campos no CMS Webflow e volte ao Variable. Verifique o valor central, fontes observadas e histórico.
 5. Faça uma segunda edição, de preferência com texto de comprimento diferente. Apenas as ocorrências vinculadas devem mudar; suas posições são recalculadas após cada sucesso.
 6. Para testar conflito, altere manualmente um dos campos no Webflow após preparar a prévia. Confirme: esse campo deve ser preservado e sinalizado; outras fontes podem ter sucesso.
 7. Mantendo o mesmo valor central, prepare outra prévia para verificar/reconciliar fontes. Campos já corretos são apenas lidos. A versão central não avança quando o valor é igual.
@@ -37,7 +37,7 @@ Nos resultados de um scan concluído, selecione de 2 a 100 ocorrências em pelo 
 
 Campos vinculados são protegidos no servidor e na interface contra sobreposição, versões antigas e resultados incertos. A proteção atual permite apenas a exceção de texto independente descrita abaixo (migration 023); não bloqueia indiscriminadamente todo texto do campo. Outros tipos continuam protegidos. Prévias anteriores à centralização devem ser revalidadas na confirmação e no dispatch.
 
-Para remover um cadastro antigo, abra o Managed Value e use **Arquivar e liberar fontes → Revisar arquivamento → Confirmar arquivamento**. A prévia registra as fontes e expira em 15 minutos. A confirmação preserva o cadastro e o histórico, guarda as fontes liberadas e remove os vínculos ativos; não modifica o Webflow. Não há exclusão definitiva nem restauração automática. Operações ativas ou fontes com resultado incerto bloqueiam o arquivamento.
+Para remover um cadastro antigo, abra o Variable e use **Arquivar e liberar fontes → Revisar arquivamento → Confirmar arquivamento**. A prévia registra as fontes e expira em 15 minutos. A confirmação preserva o cadastro e o histórico, guarda as fontes liberadas e remove os vínculos ativos; não modifica o Webflow. Não há exclusão definitiva nem restauração automática. Operações ativas ou fontes com resultado incerto bloqueiam o arquivamento.
 
 Após liberar, execute um scan atualizado para capturar o conteúdo atual. Use **Centralizar valor** para criar o novo cadastro, selecionando pelo menos duas ocorrências iguais em dois campos distintos. O arquivamento não corrige divergências antigas: confira qual valor deve prevalecer antes de uma nova sincronização. Edições feitas diretamente no Webflow continuam sendo detectadas como conflitos; o bloqueio cobre os caminhos internos do aplicativo.
 
@@ -45,7 +45,7 @@ Teste de regressão: centralize duas fontes; confirme que ocorrências sobrepost
 
 ## Resolver alterações externas (migration 014)
 
-Aplique `supabase/migrations/20260918001400_managed_value_resolution.sql` após a 013. Execute um novo scan, cobrindo os campos e tipos relevantes, depois abra seus resultados. A seção **Verificar Managed Values** compara o conteúdo dos campos detectados com o registro dos vínculos. Uma divergência aparece mesmo em ocorrências únicas ou revisadas, independentemente dos filtros dos grupos. Ocorrências repetidas vinculadas também ganham o aviso **Alterado no Webflow**.
+Aplique `supabase/migrations/20260918001400_managed_value_resolution.sql` após a 013. Execute um novo scan, cobrindo os campos e tipos relevantes, depois abra seus resultados. A seção **Verificar Variables** compara o conteúdo dos campos detectados com o registro dos vínculos. Uma divergência aparece mesmo em ocorrências únicas ou revisadas, independentemente dos filtros dos grupos. Ocorrências repetidas vinculadas também ganham o aviso **Alterado no Webflow**.
 
 1. Confira o campo registrado e o encontrado no scan. O horário do scan fica visível; não é uma consulta em tempo real.
 2. Selecione exatamente os trechos atuais que representam o dado gerenciado. Os trechos selecionados devem conter um mesmo valor do tipo e moeda originais. Esta seleção redefine as posições gerenciadas daquela fonte após um resultado verificado.
@@ -65,13 +65,13 @@ A confirmação coloca a operação na fila durável. O worker avança os campos
 
 ## Edição de textos independentes no mesmo campo (migration 023)
 
-A proteção de edição do scan considera os intervalos do vínculo. Um texto de PlainText/RichText fora de todos os trechos gerenciados pode ser alterado, mesmo quando outro trecho do campo pertence a um Managed Value. Exemplo: editar “Maecenas” sem tocar no `href` gerenciado de “Buy it”. Sobreposição, snapshot divergente ou vínculo incerto continuam bloqueados.
+A proteção de edição do scan considera os intervalos do vínculo. Um texto de PlainText/RichText fora de todos os trechos gerenciados pode ser alterado, mesmo quando outro trecho do campo pertence a um Variable. Exemplo: editar “Maecenas” sem tocar no `href` gerenciado de “Buy it”. Sobreposição, snapshot divergente ou vínculo incerto continuam bloqueados.
 
 A migration `20260920002300_managed_text_ranges.sql` calcula no banco uma evidência privada e imutável por campo/prévia, revalida o vínculo na confirmação e no dispatch e, após resultado verificado, atualiza o snapshot e as posições em Unicode do vínculo. O valor central e sua versão permanecem iguais. A ação `managed_range_preserved` registra a atualização na auditoria. Remoções, HTML escapado, retries idempotentes, vários campos e reversão explícita são cobertos por testes; resultados incertos bloqueiam o vínculo para reconciliação.
 
-Esta liberação cobre edições de **texto**. Outros tipos seguem protegidos no campo vinculado. A centralização mantém a regra de um Managed Value por campo; criar outro vínculo independente no mesmo campo ainda não está disponível. A interface identifica quando o vínculo protege outro trecho e libera o editor de texto. Se o scan tiver conteúdo antigo, é necessário executar outro scan e resolver eventuais divergências.
+Esta liberação cobre edições de **texto**. Outros tipos seguem protegidos no campo vinculado. A centralização mantém a regra de um Variable por campo; criar outro vínculo independente no mesmo campo ainda não está disponível. A interface identifica quando o vínculo protege outro trecho e libera o editor de texto. Se o scan tiver conteúdo antigo, é necessário executar outro scan e resolver eventuais divergências.
 
-Teste manual: busque um texto antes/depois de um link gerenciado, substitua por um texto maior usando prévia e confirmação, confira o link intacto e depois prepare uma edição do Managed Value para verificar que ele ainda aponta para o link correto. Testar a aplicação real no CMS fica a cargo do usuário.
+Teste manual: busque um texto antes/depois de um link gerenciado, substitua por um texto maior usando prévia e confirmação, confira o link intacto e depois prepare uma edição do Variable para verificar que ele ainda aponta para o link correto. Testar a aplicação real no CMS fica a cargo do usuário.
 
 ## Payload e fontes
 

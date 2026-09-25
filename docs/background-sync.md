@@ -117,7 +117,7 @@ Cada invocação chama `processWorkerTurn` até três vezes, em série, mantendo
 
 A marca de despacho é persistida antes do PATCH. Se o processo morrer após o envio, a próxima chamada aguarda a lease expirar e reconcilia o estado por leitura, sem reenviar uma escrita de resultado incerto. Conflito, falha ou incerteza pausa as etapas restantes; a retomada exige a confirmação existente no dashboard. O histórico e a auditoria são os mesmos do executor Node. Nenhum site é publicado automaticamente.
 
-A confirmação de Managed Values salva o valor central desejado; somente a execução com verificação confirma a sincronização das fontes. A migração de hospedagem não muda essa distinção.
+A confirmação de Variables salva o valor central desejado; somente a execução com verificação confirma a sincronização das fontes. A migração de hospedagem não muda essa distinção.
 
 ## Monitoramento e painel
 
@@ -125,7 +125,7 @@ O painel flutuante aparece quando há processos ativos, pendências ou conclusã
 
 A saúde é calculada pela fila autorizada: ociosa, aguardando agendamento/operação anterior, processando, executável atrasada, cooldown do provedor ou erro. Também distingue atenção manual e trabalho pronto. Ausência de heartbeat com fila vazia não indica falha. Trabalho executável atrasado por três minutos gera alerta. O progresso usa DTO estreito e só atualiza a rota inteira quando há mudança significativa; estados terminais encerram a consulta. Confira também os logs da Edge Function e `net._http_response`: sucesso do job Cron significa que a requisição HTTP foi enfileirada, não que o CMS foi atualizado. O modo `check` não atualiza heartbeat.
 
-Scans de leitura ainda dependem da página de execução aberta, e a extensão Designer mantém seu fluxo. Esta etapa cobre somente alterações CMS: scans confirmados para edição, Managed Values, resoluções e reversões.
+Scans de leitura ainda dependem da página de execução aberta, e a extensão Designer mantém seu fluxo. Esta etapa cobre somente alterações CMS: scans confirmados para edição, Variables, resoluções e reversões.
 
 ## Alternativa local
 

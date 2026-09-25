@@ -25,3 +25,16 @@ describe("site URL routing", () => {
     for (const path of ["/dashboard/sites/preview/abc", "/dashboard/scans/abc", "/dashboard/sites", "/dashboard/sites/a%2Fb"]) expect(siteRoute(path)).toBeNull();
   });
 });
+
+it("presents Variables lists while retaining Managed Values action handlers", () => {
+ const canonical = "/dashboard/kazama-test/sites/meu-projeto-2/variables";
+ const legacy = canonical.replace("/variables", "/managed-values");
+ const internal = `/dashboard/sites/${site.id}/managed-values`;
+ for (const method of ["GET", "HEAD"]) {
+  expect(siteRouteDestination(legacy, site, method)).toEqual({kind:"redirect", pathname:canonical});
+  expect(siteRouteDestination(internal, site, method)).toEqual({kind:"redirect", pathname:canonical});
+  expect(siteRouteDestination(canonical, site, method)).toEqual({kind:"rewrite", pathname:internal});
+ }
+ for (const path of [canonical, legacy]) expect(siteRouteDestination(path, site, "POST")).toEqual({kind:"rewrite", pathname:internal});
+ expect(siteRouteDestination(internal, site, "POST")).toBeNull();
+});

@@ -1,4 +1,4 @@
-# Global Facts — referência versionada (etapa 1)
+# Business reference (legacy) — referência versionada (etapa 1)
 
 Cada site tem uma sequência de referências aprovadas pelo owner do workspace. O cadastro começa vazio: exemplos do handoff não são tratados como fatos aprovados nem enviados ao banco automaticamente.
 
@@ -22,7 +22,7 @@ Sem a migration a tela informa a configuração pendente, sem habilitar o formul
 - Idempotência: o mesmo ID/payload retorna a mesma prévia; reutilizar ID com outro conteúdo falha. Repetir confirmação retorna a mesma versão, mesmo após expiração. A auditoria faz parte da mesma transação.
 - Confirmações bloqueiam a linha do site antes de avançar a versão. Duas prévias da mesma base não podem substituir silenciosamente o trabalho uma da outra: a segunda falha após a primeira confirmação.
 - A tela lista até 20 versões recentes e 20 prévias do autor por filtro (Pendentes/Arquivadas). Versões antigas permanecem acessíveis em `/dashboard/{workspace}/sites/{site}/facts/versions/{number}`.
-- Esta referência não edita o Webflow, não publica conteúdo e não sincroniza Managed Values.
+- Esta referência não edita o Webflow, não publica conteúdo e não sincroniza Variables.
 
 ## Regras implementadas, ainda sem coletor de páginas
 
@@ -52,3 +52,5 @@ Abra uma prévia não confirmada, expanda **Arquivar esta prévia**, revise o ef
 A migration 011 adiciona `archived_at` e o evento de auditoria `archived`. A RPC verifica autor e owner, usa a mesma ordem de locks da confirmação e é idempotente: repetir não altera a data nem duplica eventos. Confirmação de uma prévia arquivada é bloqueada no banco. O conteúdo e a referência atual permanecem intactos. Não há restauração nesta etapa; uma nova proposta deve ser feita a partir da versão atual.
 
 Teste manual: abra a prévia desatualizada criada no teste de conflito, arquive e confira que saiu de Pendentes. Abra Arquivadas, verifique seus valores e que não existe opção de confirmar a referência. A suíte de banco cobre idempotência, isolamento, bloqueio de aprovação e rollback quando a auditoria falha.
+
+The UI calls this legacy tool **Business reference (legacy)** / **Referência do negócio (legado)**. Existing facts routes, APIs and storage keep their compatibility identifiers.

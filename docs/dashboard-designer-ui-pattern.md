@@ -19,7 +19,7 @@ Use existing light-mode tokens: white surfaces, #F7F9FC app background, #1557FF 
 
 ## Safety and request costs
 
-Existing InlineReview and prepare/apply actions are reused. Selection is included in the preview key, so changing it invalidates confirmation even if resulting writes happen to be identical. Managed Value protection is applied before selection; offsets and URL equality remain unchanged. No new provider endpoints, polling, metadata fetches or Gemini generation triggers were introduced. Selection, expanding groups and bulk draft filling are local; preview preparation and explicit application retain existing contracts and calls (including existing CMS name/slug validation). Provider/cache/worker optimizations have their own contracts in [architecture](architecture.md); UI selection must not add implicit provider work.
+Existing InlineReview and prepare/apply actions are reused. Selection is included in the preview key, so changing it invalidates confirmation even if resulting writes happen to be identical. Variable protection is applied before selection; offsets and URL equality remain unchanged. No new provider endpoints, polling, metadata fetches or Gemini generation triggers were introduced. Selection, expanding groups and bulk draft filling are local; preview preparation and explicit application retain existing contracts and calls (including existing CMS name/slug validation). Provider/cache/worker optimizations have their own contracts in [architecture](architecture.md); UI selection must not add implicit provider work.
 
 ## Validation
 
@@ -52,7 +52,7 @@ Text preview/results emphasize changed words with React strong elements only; or
 
 Reviewed results retain canonical value groups and split their contents by verified operation identity. Each operation block shows its recorded request date (UTC), affected item names and visible occurrence/field counts. Bulk reversal lives inside that block and uses only its reversible visible fields; separate confirmations are never merged by equal values. Manual reviews remain separate, and per-field reversal keeps the existing preview/confirmation flow. No new queries or provider calls: incremental Q/W/I/E/G = 0.
 
-Product UI calls Managed Values “Variables” (EN) / “Variáveis” (PT-BR). Internal identifiers, API contracts and existing managed-values routes are unchanged.
+Product UI calls Variables “Variables” (EN) / “Variáveis” (PT-BR). Internal identifiers, API contracts and existing managed-values routes are unchanged.
 
 Create variable uses only the editor selection. At final inline confirmation, the user chooses a one-off edit (default) or Create variable and apply, naming the new variable. At least two unmanaged fields must share the same final value. The receipt includes name, selected sources and new target; there is no second selection or separate review route. Ineligible selections keep creation blocked with an explanation. See [the atomic confirmation contract](cms-changes.md#create-variable-from-the-inline-preview).
 

@@ -17,7 +17,7 @@ export function ManagedDivergence({ id,scanId,bindingId,name,valueId,version,cen
 
   const [state,action]=useActionState(previewResolution,{});
   return <section id={"divergence-"+bindingId} className="mt-5 scroll-mt-6 rounded-xl border border-amber-300 bg-amber-50 p-5">
-    <p className="text-xs font-semibold uppercase text-amber-900">{stale ? t("Registro antigo do scan") : t("Alterado no Webflow")} · Managed Value</p>
+    <p className="text-xs font-semibold uppercase text-amber-900">{stale ? t("Registro antigo do scan") : t("Alterado no Webflow")} · {t("Variável")}</p>
     <h3 className="mt-2 break-words font-semibold">{name}</h3>
     <p className="mt-2 text-sm">{rows[0]?.collection_name} → {rows[0]?.item_name} → {rows[0]?.field_name} · locale {rows[0]?.locale || t("padrão")}</p>
     <p className="mt-2 break-words text-sm">{t("Valor central:")} <strong>{valueLabel(central)}</strong></p>
@@ -36,6 +36,6 @@ export function ManagedDivergence({ id,scanId,bindingId,name,valueId,version,cen
       {state.error && <p role="alert" className="text-sm text-amber-900">{t(state.error)}</p>}
       <SubmitButton pendingLabel={t("Preparando prévia…")}>{t("Revisar resolução")}</SubmitButton>
     </form>}
-    <Link className="ui-btn mt-4" href={"/dashboard/managed-values/"+valueId}>{t("Abrir Managed Value")}</Link>
+    <Link className="ui-btn mt-4" href={"/dashboard/managed-values/"+valueId}>{t("Abrir Variável")}</Link>
   </section>;
 }

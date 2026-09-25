@@ -1,12 +1,19 @@
 export const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const numberPattern = /^[1-9][0-9]{0,14}$/;
 export const resourceSuffix = {
-  scans: "scans", operations: "operations", "managed-values": "managed-values",
-  "managed-value-previews": "managed-values/preview", "static-changes": "changes", "fact-previews": "facts/preview",
+  scans: "scans", operations: "operations", "managed-values": "variables",
+  "managed-value-previews": "variables/preview", "static-changes": "changes", "fact-previews": "facts/preview",
   "site-previews": "setup/sites", "workspace-previews": "setup/workspaces",
 } as const;
 export type ResourceKind = keyof typeof resourceSuffix;
+export function canonicalPresentationSuffix(suffix: string) {
+  return suffix.replace(/^\/managed-values(?=\/|$)/, "/variables");
+}
+export function internalPresentationSuffix(suffix: string) {
+  return suffix.replace(/^\/variables(?=\/|$)/, "/managed-values");
+}
 export function resourceSegment(suffix: string) {
+  suffix = canonicalPresentationSuffix(suffix);
   for (const [kind, prefix] of Object.entries(resourceSuffix)) {
     const match = new RegExp(`^/${prefix}/([^/]+)/?$`).exec(suffix);
     if(match && (uuidPattern.test(match[1]!) || numberPattern.test(match[1]!))) return {kind:kind as ResourceKind,value:match[1]!};

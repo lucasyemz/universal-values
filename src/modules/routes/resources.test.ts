@@ -12,3 +12,13 @@ it("recognizes legacy and scoped resources without swallowing static routes",()=
  expect(resourceSegment("/facts/preview/2")).toEqual({kind:"fact-previews",value:"2"});
  for(const path of ["/scans/new","/scans/0","/scans/-1","/scans/1.1","/scans/1/other","/facts/versions/3"])expect(resourceSegment(path)).toBeNull();
 });
+
+it("uses Variables suffixes without changing resource kinds or numbers", () => {
+ expect(resourcePath("managed-values", 123, "workspace", "site")).toBe("/dashboard/workspace/sites/site/variables/123");
+ expect(resourcePath("managed-value-previews", 123, "workspace", "site")).toBe("/dashboard/workspace/sites/site/variables/preview/123");
+ for (const prefix of ["variables", "managed-values"]) {
+  expect(resourceSegment(`/${prefix}/123`)).toEqual({kind:"managed-values",value:"123"});
+  expect(resourceSegment(`/${prefix}/preview/123`)).toEqual({kind:"managed-value-previews",value:"123"});
+  expect(resourceSegment(`/${prefix}/0`)).toBeNull();
+ }
+});

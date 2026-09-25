@@ -44,3 +44,20 @@ it.each(["managed-values","managed-value-previews","operations","static-changes"
  for(const method of ["GET","POST"]) expect(await resolveResourceRoute(client(false,kind),path,new URLSearchParams("page=2"),method,"owner")).toEqual({kind:"rewrite",pathname:internalResourcePath(kind,id,siteId),search:"page=2"});
  expect(await resolveResourceRoute(client(false,kind),path.replace("kazama-test","lucasmatrixx"),new URLSearchParams("page=2"),"GET","owner")).toEqual({kind:"redirect",pathname:path,search:"page=2"});
 });
+
+it.each(["managed-values", "managed-value-previews"] as const)("keeps Variables presentation and %s identity compatible", async kind => {
+ const path = resourcePath(kind, 1, "kazama-test", "real-state-website");
+ const old = path.replace("/variables", "/managed-values");
+ const internal = internalResourcePath(kind, id, siteId);
+ const search = "page=2&query=hello%20world&filter=archived";
+ for (const method of ["GET", "HEAD"]) {
+  for (const legacy of [old, internal]) expect(await resolveResourceRoute(client(false, kind), legacy, new URLSearchParams(search), method, "owner")).toEqual({kind:"redirect", pathname:path, search:new URLSearchParams(search).toString()});
+ }
+ for (const input of [path, old]) expect(await resolveResourceRoute(client(false, kind), input, new URLSearchParams(search), "POST", "owner")).toEqual({kind:"rewrite", pathname:internal, search:new URLSearchParams(search).toString()});
+ expect(await resolveResourceRoute(client(false, kind), internal, new URLSearchParams(search), "POST", "owner")).toBeNull();
+ for (const input of [path, old]) {
+  expect(await resolveResourceRoute(client(false, kind), input, new URLSearchParams(), "GET", "foreign")).toEqual({kind:"not-found"});
+  expect(await resolveResourceRoute(client(false, kind), input.replace("real-state-website", "other"), new URLSearchParams(), "GET", "owner")).toEqual({kind:"not-found"});
+  expect(await resolveResourceRoute(client(false, kind), input.replace(/1$/, "2"), new URLSearchParams(), "GET", "owner")).toEqual({kind:"not-found"});
+ }
+});

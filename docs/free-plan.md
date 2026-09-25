@@ -13,9 +13,9 @@ A migration `20260920001600_free_plan_limits.sql` aplica cotas no PostgreSQL, in
 | Acessos à integração/mês | 1.000 | Sem cota comercial |
 | Preparações + acessos à integração/minuto | 60 | Sem cota comercial |
 
-Acesso à integração significa obtenção autorizada da credencial pelo executor, não cada requisição HTTP externa. Uma leitura pode envolver várias páginas/endpoints. Preparações incluem conexão, workspace, scan, alterações, Managed Values, Global Facts e sessões/alterações Designer. Essas proteções não limitam todas as requisições HTTP, autenticação ou leituras do banco.
+Acesso à integração significa obtenção autorizada da credencial pelo executor, não cada requisição HTTP externa. Uma leitura pode envolver várias páginas/endpoints. Preparações incluem conexão, workspace, scan, alterações, Variables, Global Facts e sessões/alterações Designer. Essas proteções não limitam todas as requisições HTTP, autenticação ou leituras do banco.
 
-O consumo mensal renova no primeiro dia às 00h UTC. A reserva acontece na confirmação, na mesma transação da operação; repetir a confirmação não consome novamente. Cancelamentos e falhas não devolvem cotas. Campos incluem sincronização de Managed Values, resolução de divergências e reversões CMS. Scans pausados continuam ocupando a operação ativa. Dados e histórico anteriores são preservados; scans já iniciados conservam seu limite original. Consumo novo começa na ativação da migration.
+O consumo mensal renova no primeiro dia às 00h UTC. A reserva acontece na confirmação, na mesma transação da operação; repetir a confirmação não consome novamente. Cancelamentos e falhas não devolvem cotas. Campos incluem sincronização de Variables, resolução de divergências e reversões CMS. Scans pausados continuam ocupando a operação ativa. Dados e histórico anteriores são preservados; scans já iniciados conservam seu limite original. Consumo novo começa na ativação da migration.
 
 ## Proteção global
 

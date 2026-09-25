@@ -6,9 +6,9 @@ Site resource addresses and workspace lists/settings use the same workspace fold
 | --- | --- |
 | Scan | `/dashboard/{workspace}/sites/{site}/scans/1` |
 | Scan review operation | `/dashboard/{workspace}/sites/{site}/scans/1?filter=reviewed&operation=2` |
-| Managed Value | `/dashboard/{workspace}/sites/{site}/managed-values/1` |
-| Managed Value preview | `/dashboard/{workspace}/sites/{site}/managed-values/preview/1` |
-| CMS operation entry / Managed Value sync | `/dashboard/{workspace}/sites/{site}/operations/1` |
+| Variable | `/dashboard/{workspace}/sites/{site}/variables/1` |
+| Variable preview | `/dashboard/{workspace}/sites/{site}/variables/preview/1` |
+| CMS operation entry / Variable sync | `/dashboard/{workspace}/sites/{site}/operations/1` |
 | Static page operation | `/dashboard/{workspace}/sites/{site}/changes/1` |
 | Global Facts preview | `/dashboard/{workspace}/sites/{site}/facts/preview/1` |
 | Global Facts version | `/dashboard/{workspace}/sites/{site}/facts/versions/1` |
@@ -21,7 +21,7 @@ Apply `20260921000400_dashboard_resource_routes.sql` before using the updated da
 
 The authenticated proxy resolves public routes to the original internal handlers. Legacy GET/HEAD links redirect to public addresses with query parameters preserved. Legacy POSTs keep their handlers; public POSTs rewrite internally without changing form payloads, CSRF handling, permission checks or idempotency keys. The operation query parameter is resolved within the site and verified against the exact scan. Invalid, missing or inaccessible resource mappings fail closed instead of falling back to another site's record.
 
-The scan and resource lists, overview and process panel generate workspace-scoped resource links directly. Older saved bookmarks and internal action redirects continue to work through the proxy. CMS operations tied to a scan retain the existing redirect into its review; Managed Value sync operations remain standalone because they have no scan. Connection callback entry URLs retain the OAuth contract and immediately redirect into workspace settings. API endpoints and external Designer handoff identifiers are outside the public dashboard URL numbering contract.
+The scan and resource lists, overview and process panel generate workspace-scoped resource links directly. Older saved bookmarks and internal action redirects continue to work through the proxy. CMS operations tied to a scan retain the existing redirect into its review; Variable sync operations remain standalone because they have no scan. Connection callback entry URLs retain the OAuth contract and immediately redirect into workspace settings. API endpoints and external Designer handoff identifiers are outside the public dashboard URL numbering contract.
 
 `dashboard_resource_routes` stores routing metadata only; it does not duplicate scans, reviews or content. It is read-only to authenticated clients and filtered by account through RLS. Source handlers retain their authorization checks. No migration writes to Webflow.
 
@@ -33,7 +33,7 @@ Old `/dashboard/{account}/sites` remains a primary-workspace compatibility alias
 
 Account slugs are stable names derived from the email prefix (never the full email), globally disambiguated at allocation and unchanged by email updates. Site slugs are unique within the account across its workspaces; rename/reconnect/transfer does not rename them. Workspace transfers change the workspace segment; site slugs/resource numbers remain stable. Old account/site aliases resolve the current workspace. A prior workspace path does not silently resolve a site now in another workspace. Public names and numbers never replace ownership checks.
 
-Site cards link to `/dashboard/{workspace}/sites/{site}/overview`. The bare site entry currently redirects to `/scans`; use an explicit section URL when that destination matters. Other sections include `/scans/new`, `/managed-values`, `/changes` and `/cms`.
+Site cards link to `/dashboard/{workspace}/sites/{site}/overview`. The bare site entry currently redirects to `/scans`; use an explicit section URL when that destination matters. Other sections include `/scans/new`, `/variables`, `/changes` and `/cms`.
 
 ## Implementation and regression contract
 
@@ -41,7 +41,7 @@ Use `src/modules/routes/resources.ts` for resources, `links.ts` for server links
 
 ## Compatibility and integration rollout
 
-`/dashboard/lucasmatrixx/sites/universal-test/overview` redirects to `/dashboard/kazama-test/sites/universal-test/overview` when that is the authorized site's current workspace. The same contract covers scans, CMS, Managed Values, static changes and Global Facts. Canonical workspace routes take precedence over legacy account aliases: if that workspace exists but does not contain the site, return not found. Never fall back to another workspace/account.
+`/dashboard/lucasmatrixx/sites/universal-test/overview` redirects to `/dashboard/kazama-test/sites/universal-test/overview` when that is the authorized site's current workspace. The same contract covers scans, CMS, Variables, static changes and Global Facts. Canonical workspace routes take precedence over legacy account aliases: if that workspace exists but does not contain the site, return not found. Never fall back to another workspace/account.
 
 Account-level setup previews still use `/dashboard/{account}/setup/...` because workspace creation has no destination workspace yet. Internal UUID handlers, action payloads and API/security identifiers are unchanged. MCP tool input `account` remains its authorization contract; returned dashboard links use the authenticated token's workspace.
 
@@ -60,3 +60,7 @@ Remote activation (2026-09-23): applied only `20260923001000` to `nxibjpprjorchj
 The overview menu can preview and confirm a workspace name/slug edit. Names are 2–80 characters; slugs are 1–80 lowercase ASCII letters/digits separated by single hyphens (reserved route names are rejected). Uniqueness is checked within the authenticated account at preview and again under the existing namespace allocator lock at confirmation. Current ownership and original name/slug are revalidated; expired/stale previews fail. Confirmation is idempotent and audited with immutable before/after metadata.
 
 Migration `20260924000400_workspace_edit.sql` was applied with explicit approval on 2026-09-24 to linked project `nxibjpprjorchjeoudss`. It adds workspace edit previews/audit and permanent account-scoped previous-slug aliases. New workspace allocation reserves aliases too. Renaming does not affect site slugs, resource numbers, connections or provider content. Old workspace/site URLs resolve to the current workspace namespace; GET/HEAD redirects preserve queries and POSTs still rewrite. A missing site in a matched old workspace never falls through to a different workspace. Current canonical namespaces precede previous-slug aliases, which precede legacy account aliases. Alias reads retain account + current owner restrictions.
+
+## Variables presentation aliases
+
+Canonical lists/details/previews use `/variables`, `/variables/{number}` and `/variables/preview/{number}`. Existing `/managed-values` paths remain authenticated GET/HEAD redirects; POST requests rewrite into unchanged internal handlers. Resource kinds `managed-values` and `managed-value-previews`, numbers, UUID payloads, API/MCP contracts and database identifiers are unchanged. Query parameters and original request bodies are preserved. No migration or new lookup is required.

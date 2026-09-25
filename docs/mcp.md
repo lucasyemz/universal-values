@@ -1,4 +1,4 @@
-# CopyReplace MCP — read-only preview release
+# ReplaceAll MCP — read-only preview release
 
 Implemented scope: Phase E1 + E2. Remote Streamable HTTP at **`/api/mcp`**, hosted by the existing Next.js application, using the official TypeScript MCP SDK. No separate domain or hosting service is required. No LLM is required by this feature.
 
@@ -8,7 +8,7 @@ Implemented scope: Phase E1 + E2. Remote Streamable HTTP at **`/api/mcp`**, host
 2. Set `MCP_SERVER_ORIGIN` to the exact public application origin, without a trailing slash, e.g. `https://app.example.com`. Local development: `http://localhost:3000`. This is required; no request-header-derived origin fallback. Proxy/hosting must preserve the canonical Host and request URL.
 3. Build/start the Next.js application. This does not require another Edge Function, worker, Webflow permission or Gemini key.
 4. Sign in as workspace owner → Integrations → MCP → Manage MCP tokens. Choose workspace and token label, review the read-only/30-day scope, click **Authorize and create read token**.
-5. Copy the token into your client's private credential settings. It is displayed once, held in component memory only, and stored only as a SHA256 hash in CopyReplace. Do not paste it into prompts/chat or commit it to config files. Use **Revoke token** to invalidate it immediately for subsequent calls.
+5. Copy the token into your client's private credential settings. It is displayed once, held in component memory only, and stored only as a SHA256 hash in ReplaceAll. Do not paste it into prompts/chat or commit it to config files. Use **Revoke token** to invalidate it immediately for subsequent calls.
 
 Endpoint requests use `Authorization: Bearer <token>`. Session cookies, Webflow tokens and Supabase keys are not MCP credentials. Five active tokens per account; expiration after 30 days, no automatic renewal. Removing owner membership also invalidates access. Revocation cannot retract data already read by an agent.
 
@@ -53,7 +53,7 @@ Search reuses Phase A's deterministic compatibility and exact saved group matche
 
 Responses identify `source: saved-data`, source scan number/link, `startedAt` (creation, **not completion** time), age, collections/types/query, limited/truncated/skipped flags and `liveFreshness: unknown`. Even a completed scan covers only detected, supported, saved occurrences. `partialCoverage: true` deliberately avoids a whole-site coverage claim. If no compatible scan exists, `scan: null` explicitly means coverage cannot be proven. If no match exists, message is **“no matching saved occurrence”**, never absence from Webflow.
 
-`get_scan_results` reports **original scan observations**, not post-apply/current content. Aggregate review counts reuse the existing manual/applied/reverted/specific-search projection. For per-occurrence current outcomes, before/after or protected ranges, follow the dashboard link. `managedField` only indicates a binding in the field, not overlap with this exact range. It does not block/unblock edits or replace Managed Value protection.
+`get_scan_results` reports **original scan observations**, not post-apply/current content. Aggregate review counts reuse the existing manual/applied/reverted/specific-search projection. For per-occurrence current outcomes, before/after or protected ranges, follow the dashboard link. `managedField` only indicates a binding in the field, not overlap with this exact range. It does not block/unblock edits or replace Variable protection.
 
 Strings in compact results may be clipped; `displayTruncated` identifies clipped values. Exact matching uses complete persisted canonical data first. Never use clipped display values as replacement input. Full field snapshots, customer prompts, provider credentials and private audit payloads are not exposed.
 
@@ -75,14 +75,14 @@ Tokens authorize inspection, not editing. Preview/confirmation, conflicts, audit
 
 ## Example requests to an agent
 
-- “Use CopyReplace to find saved occurrences of ‘Free Consultation’ in this site.”
-- “Show the Managed Values with uncertain saved sources.”
+- “Use ReplaceAll to find saved occurrences of ‘Free Consultation’ in this site.”
+- “Show the Variables with uncertain saved sources.”
 - “Show repeated pricing or phone findings from scan1, and tell me its coverage and age.”
 - “Show the latest CMS and Designer changes.”
 
 “Prepare a replacement, but do not apply it” and “Preview Starting Price at $519,000” remain **future E4** workflows. For now the agent can locate the saved data and direct you to the dashboard's preview. It cannot verify live conflicting phones or prepare changes through MCP.
 
-Webflow MCP can create general site structure; CopyReplace can inspect saved consistency findings afterward. A newly created campaign page will not appear automatically in old scans. Explicitly scan the supported scope before using those findings; publishing remains separate.
+Webflow MCP can create general site structure; ReplaceAll can inspect saved consistency findings afterward. A newly created campaign page will not appear automatically in old scans. Explicitly scan the supported scope before using those findings; publishing remains separate.
 
 ## Later phases (not implemented)
 

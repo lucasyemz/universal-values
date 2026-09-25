@@ -11,13 +11,13 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 | Local setup and resuming work | [Root README](../README.md) · [Handoff](HANDOFF.md) |
 | Search and result semantics | [Scans](scans.md) |
 | Preview, queue, apply, sequential edits and revert | [CMS changes](cms-changes.md) |
-| Central values and source protection | [Managed Values](managed-value-sync.md) |
+| Central values and source protection | [Variables](managed-value-sync.md) |
 | Static-page extension | [Designer](designer-dashboard.md) |
 | Provider connection / executor | [Webflow](webflow.md) · [Background sync](background-sync.md) |
 | Database lifecycle | [Supabase](../supabase/README.md) |
 | Plans and personal AI | [Limits](free-plan.md) · [Gemini](ai-suggestions.md) |
 | Read-only agent integration | [MCP](mcp.md) |
-| Reference data | [Global Facts](global-facts.md) |
+| Reference data | [Business reference (legacy)](global-facts.md) |
 | Visual implementation | [Dashboard/Designer pattern](dashboard-designer-ui-pattern.md) · [Brand](brand-guide.md) |
 | Language and public site | [Internationalization](internationalization.md) · [Landing page](landing-page.md) |
 | Test expectations | [Verification](verification.md) |

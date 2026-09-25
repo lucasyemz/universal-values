@@ -16,11 +16,11 @@ Numeric fields support exact numeric-term matching (2000 does not match 12000), 
 
 ## Results and review
 
-Pending / Reviewed / All filter the already-formed groups. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Managed Values or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
+Pending / Reviewed / All filter the already-formed groups. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Variables or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
 
 The local results filter searches saved labels/context; it never invents editable ranges from context. Quick Search on Overview uses only compatible completed/limited saved scans, explicitly showing date and collection scope. No match means only no match in that saved scan. Offer a targeted scan if exact editable evidence or coverage is missing; never start it automatically.
 
-Only checked eligible occurrences enter preview/application. Preserve validated drafts and selection by identity/snapshot/ranges; focus alone does not select. Selection or value changes invalidate confirmation. Image lists use thumbnails and readable filenames; previews avoid raw gallery JSON. See [CMS changes](cms-changes.md) and [Managed Values](managed-value-sync.md).
+Only checked eligible occurrences enter preview/application. Preserve validated drafts and selection by identity/snapshot/ranges; focus alone does not select. Selection or value changes invalidate confirmation. Image lists use thumbnails and readable filenames; previews avoid raw gallery JSON. See [CMS changes](cms-changes.md) and [Variables](managed-value-sync.md).
 
 ## Bounds and execution
 

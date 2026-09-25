@@ -22,3 +22,16 @@ it("invalidates a saved checkbox when the source or exact range changes", () => 
  expect(selectionStateKey("id", "b text", 2, 6)).not.toBe(before);
  expect(selectionStateKey("id", "a text", 0, 6)).not.toBe(before);
 });
+
+it("restores legacy Variables navigation without changing stored keys or selection identity", () => {
+ const old = "/dashboard/alice/sites/project/managed-values/7";
+ const canonical = old.replace("/managed-values", "/variables");
+ const now = Date.now();
+ const saved = {href:old+"?q=phone&filter=active&page=2", y:123, details:{sources:true}, selections:{exact:true}, savedAt:now};
+ const storage = {getItem:(key:string)=>key===`copyreplace:navigation:v1:alice:${old}`?JSON.stringify(saved):null};
+ expect(stateKey("alice",canonical)).toBe(`copyreplace:navigation:v1:alice:${old}`);
+ expect(stateHref(old+"?q=phone&filter=active&page=2")).toBe(canonical+"?q=phone&filter=active&page=2");
+ expect(readNavigation(storage,"alice",canonical,now)).toEqual({...saved,href:canonical+"?q=phone&filter=active&page=2"});
+ expect(readNavigation(storage,"bob",canonical,now)).toBeNull();
+ expect(stateHref(canonical.replace("/7","/preview/7"))).toBeNull();
+});

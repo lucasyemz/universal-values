@@ -2,7 +2,7 @@
 
 ## Inline preview
 
-Edit selected occurrences in the scan or a Managed Value. Group fill changes selected drafts only. The common editor prepares a persisted preview after one second without typing; AI batches wait for generation to finish. Preparation does not confirm an operation or modify Webflow/central values.
+Edit selected occurrences in the scan or a Variable. Group fill changes selected drafts only. The common editor prepares a persisted preview after one second without typing; AI batches wait for generation to finish. Preparation does not confirm an operation or modify Webflow/central values.
 
 Show before/after, affected fields/items/locales and paired slug changes. Image previews show the replacement beside the existing list thumbnail; applied history shows both images, not raw gallery JSON. Ten or more fields, five or more items, and text removals receive impact notices. **Apply to N fields** is the final explicit confirmation; no mandatory separate review page or redundant checkbox.
 
@@ -10,7 +10,7 @@ A receipt covers the operation, connection, scan, central version/value and exac
 
 ## Durable queue and write safety
 
-Confirmation validates/locks the immutable plan, reserves quota once, audits and admits a FIFO operation. At most 20 confirmed operations per account, including administrators. A leased, paused or retrying head blocks later operations for that account/site; independent accounts may progress. Multiple simultaneous versions of a Managed Value cannot bypass version/binding checks. Earlier queued edits can conflict with later frozen previews; there is no automatic rebase.
+Confirmation validates/locks the immutable plan, reserves quota once, audits and admits a FIFO operation. At most 20 confirmed operations per account, including administrators. A leased, paused or retrying head blocks later operations for that account/site; independent accounts may progress. Multiple simultaneous versions of a Variable cannot bypass version/binding checks. Earlier queued edits can conflict with later frozen previews; there is no automatic rebase.
 
 The worker runs independently of the browser. Before each field it revalidates current ownership, connection, site, collection, schema, item and locale, then compares the fresh source to expected evidence. If already correct, record `already_applied` without another write. Persist/audit dispatch before PATCH, verify afterward and store actual provider output. Lost/uncertain results are reconciled by reads, never blindly resent. Audit failure before dispatch prevents writing. Leases, idempotency and Retry-After remain authoritative.
 
@@ -20,7 +20,7 @@ Failure/conflict/uncertainty can pause remaining work. Cancelling does not undo 
 
 ## Partial application and sequential edits
 
-Only verified occurrence IDs become read-only Reviewed; remaining group members stay Pending. Scan-bound operation routes resolve to the same scan review with scoped operation context; Managed Value sync without a scan has a dedicated view. Rendering does not duplicate stored operations.
+Only verified occurrence IDs become read-only Reviewed; remaining group members stay Pending. Scan-bound operation routes resolve to the same scan review with scoped operation context; Variable sync without a scan has a dedicated view. Rendering does not duplicate stored operations.
 
 `withAppliedSources` advances untouched ranges using durable prior `applied`/`already_applied` evidence. Gallery count/position/metadata must match; text requires exact response evidence and non-overlapping ranges. Never normalize URLs. Ambiguous evidence preserves the old baseline and fails safely against changed content.
 
@@ -32,16 +32,16 @@ Only verified occurrence IDs become read-only Reviewed; remaining group members 
 - Editing the system `name` field suggests a lowercase, accent-stripped, hyphenated slug from the full new name. Custom fields labeled Name do not trigger this. Freeze before/after slug in the preview; send/verify name and slug together. A changed slug consumes an extra field allowance. No unreviewed suffix, redirect or publication is created.
 - Retry prepares a new preview for failed eligible fields only, not conflicts, uncertain dispatches, applied or unprocessed fields. It requires confirmation and respects cooldown.
 - Revert prepares a new operation from the original snapshot and actual recorded applied output. Fresh-source mismatch blocks it; an already-restored source needs no write. Revert only eligible applied results with evidence, not manual flags or unknown outcomes. No reversal of a reversal in this flow; original audit remains.
-- Managed Value ranges/versions remain protected. Independent text changes may preserve/reposition bindings only through the established verified range contract.
+- Variable ranges/versions remain protected. Independent text changes may preserve/reposition bindings only through the established verified range contract.
 
 ## Verification and operations
 
-Fixtures, mocked providers and PGlite cover single/batch previews, receipt expiry/staleness, duplicate/ambiguous confirmation, Unicode/HTML/gallery preservation, FIFO/admission, leases, audit failure, 429, uncertain dispatch, sequential evidence, revert and isolation. They are not live-provider or multi-session concurrency tests. See [verification](verification.md), [worker setup](background-sync.md), [Managed Values](managed-value-sync.md) and [database deployment](../supabase/README.md).
+Fixtures, mocked providers and PGlite cover single/batch previews, receipt expiry/staleness, duplicate/ambiguous confirmation, Unicode/HTML/gallery preservation, FIFO/admission, leases, audit failure, 429, uncertain dispatch, sequential evidence, revert and isolation. They are not live-provider or multi-session concurrency tests. See [verification](verification.md), [worker setup](background-sync.md), [Variables](managed-value-sync.md) and [database deployment](../supabase/README.md).
 
 ## Create variable from the inline preview
 
 The final confirmation offers a one-off edit (default) or **Create variable and apply**. Both use only the editor's selected occurrences. Variable creation requires 2–100 occurrences across at least two unbound fields, with the same valid final canonical value (empty removals cannot become variables). The name, selection, target and paired slugs are frozen in a receipt. Changing them invalidates confirmation.
 
-`20260924000100_scan_variable_apply.sql` stores a creation intent alongside the existing selection preview. Preparation creates no variable or CMS operation. Confirmation atomically creates the original bindings and confirms an existing Managed Value synchronization to the **new** target. A quota, binding, connection or queue failure rolls back the entire transaction. Duplicate confirmation returns the same operation. The existing worker remains unchanged: it advances only verified bindings, preserves old evidence for failed fields, and reconciles uncertain dispatches. Creation does not imply every source synchronized successfully.
+`20260924000100_scan_variable_apply.sql` stores a creation intent alongside the existing selection preview. Preparation creates no variable or CMS operation. Confirmation atomically creates the original bindings and confirms an existing Variable synchronization to the **new** target. A quota, binding, connection or queue failure rolls back the entire transaction. Duplicate confirmation returns the same operation. The existing worker remains unchanged: it advances only verified bindings, preserves old evidence for failed fields, and reconciles uncertain dispatches. Creation does not imply every source synchronized successfully.
 
 The resulting operation uses the existing variable-operation review route. Provider reads are unchanged for execution. Preparing CMS item-name replacements still reads/fixes the paired slug using the existing contract; other variable previews use saved scan data only. No AI or polling changes. Deployment of the migration is separate and requires approval.

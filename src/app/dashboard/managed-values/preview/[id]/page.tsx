@@ -32,7 +32,7 @@ export default async function ValuePreviewPage({ params, searchParams }: { param
       <Link className="mt-4 inline-block text-accent underline" href={"/dashboard/scans/" + preview.scan_id}>{t("Manter como está e voltar sem criar")}</Link>
       <ul className="mt-5 space-y-3">{occurrences.map((o) => <li className="rounded border p-3" key={o.id}><p className="break-words font-semibold">{o.item_name}</p><p className="mt-1 break-words text-sm text-muted">{o.collection_name} → {o.field_name}</p><p className="mt-2 break-words"><OccurrenceHeading occurrence={o} /></p></li>)}</ul>
       {error && <p role="alert" className="mt-5 text-amber-800">{t("Não foi possível confirmar. A prévia pode ter expirado ou uma fonte já foi vinculada. Volte ao scan e revise a seleção.")}</p>}
-      {preview.managed_value_id ? <Link className="ui-btn ui-btn-primary mt-6" href={"/dashboard/managed-values/" + preview.managed_value_id}>{t("Abrir Managed Value criado")}</Link> : expired ? <p className="mt-6 text-amber-800">{t("Prévia expirada. Prepare uma nova seleção.")}</p> :
+      {preview.managed_value_id ? <Link className="ui-btn ui-btn-primary mt-6" href={"/dashboard/managed-values/" + preview.managed_value_id}>{t("Abrir Variável criada")}</Link> : expired ? <p className="mt-6 text-amber-800">{t("Prévia expirada. Prepare uma nova seleção.")}</p> :
         <form action={confirmManagedValue} className="ui-action-bar mt-6 space-y-4"><input type="hidden" name="id" value={id} /><input type="hidden" name="confirmed" value="yes" /><p className="text-sm text-muted">{t("Confirmo que estas fontes representam o mesmo dado de negócio.")}</p><SubmitButton pendingLabel={t("Centralizando…")}>{t("Confirmar centralização")}</SubmitButton></form>}
     </section>
   </main>;

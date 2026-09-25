@@ -25,8 +25,8 @@ export default async function FactsPage({ params, searchParams }: { params: Prom
   const base = `/dashboard/sites/${id}/facts`;
   return <main className="ui-page">
     <SiteContext title={view.site.display_name} siteName={view.site.display_name} siteId={id} workspaceId={view.site.workspace_id} />
-    <PageHeader title="Global Facts" eyebrow={view.site.display_name} description={t("Uma referência aprovada e versionada para as informações do negócio.")} />
-    <Notice title={t("Cadastro de referência")}>{t("A auditoria automática de páginas, links e JSON-LD ainda não está disponível. Salvar fatos não altera o site nem sincroniza Managed Values.")}</Notice>
+    <PageHeader title={t("Referência do negócio (legado)")} eyebrow={view.site.display_name} description={t("Uma referência aprovada e versionada para as informações do negócio.")} />
+    <Notice title={t("Cadastro de referência")}>{t("A auditoria automática de páginas, links e JSON-LD ainda não está disponível. Salvar fatos não altera o site nem sincroniza Variáveis.")}</Notice>
     {view.missingMigration ? <Notice tone="warning" title={t("Configuração do banco pendente")}>{t("Aplique a migration")} {view.missingMigration}  {t("de Global Facts no projeto Supabase correto. Os dados existentes serão preservados.")}</Notice> : <>
       {query.archived === "1" && <Notice tone="success">{t("Prévia arquivada. Ela continua disponível em Arquivadas.")}</Notice>}
       {query.confirmed && view.versions.some(version => String(version.version) === query.confirmed) && <Notice tone="success">{t("Versão")} {query.confirmed}  {t("aprovada e registrada no histórico.")}</Notice>}

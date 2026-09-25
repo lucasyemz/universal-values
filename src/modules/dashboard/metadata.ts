@@ -21,11 +21,11 @@ const pages = {
     "description": "Escolha as coleções, os tipos de conteúdo e os termos que deseja pesquisar antes de confirmar um scan."
   },
   "scan": {
-    "title": "Resultados do scan",
+    "title": "Revisar ocorrências",
     "description": "Revise as ocorrências encontradas, compare valores iguais e prepare substituições com prévia e confirmação."
   },
   "cms": {
-    "title": "Explorar CMS",
+    "title": "CMS Explorer",
     "description": "Explore as coleções e os itens do CMS Webflow para localizar o conteúdo que deseja revisar."
   },
   "staticPages": {
@@ -37,19 +37,19 @@ const pages = {
     "description": "Conecte o Webflow Designer ao dashboard para revisar e acompanhar alterações em páginas estáticas."
   },
   "values": {
-    "title": "Managed Values",
+    "title": "Variáveis",
     "description": "Consulte os valores gerenciados do site, suas fontes vinculadas e as opções de atualização centralizada."
   },
   "value": {
-    "title": "Detalhes do Managed Value",
+    "title": "Detalhes da Variável",
     "description": "Revise o valor gerenciado e suas fontes, prepare atualizações e acompanhe a sincronização das ocorrências."
   },
   "valuePreview": {
-    "title": "Prévia do Managed Value",
-    "description": "Confira o valor e as fontes selecionadas antes de confirmar a criação de um Managed Value."
+    "title": "Prévia da Variável",
+    "description": "Confira o valor e as fontes selecionadas antes de confirmar a criação de uma Variável."
   },
   "changes": {
-    "title": "Histórico de alterações",
+    "title": "Histórico",
     "description": "Acompanhe as alterações do CMS e das páginas estáticas, consulte seus estados e abra os detalhes de cada operação."
   },
   "change": {
@@ -61,16 +61,16 @@ const pages = {
     "description": "Revise os valores anteriores e propostos e acompanhe os resultados de uma alteração no Webflow Designer."
   },
   "facts": {
-    "title": "Global Facts",
+    "title": "Referência do negócio (legado)",
     "description": "Defina as informações oficiais do negócio e consulte o histórico de referências aprovadas para este site."
   },
   "factsPreview": {
-    "title": "Prévia dos Global Facts",
-    "description": "Compare as informações de referência e revise as mudanças antes de confirmar uma nova versão dos Global Facts."
+    "title": "Prévia da referência do negócio (legado)",
+    "description": "Compare as informações de referência e confira as alterações antes de confirmar uma nova versão da referência do negócio (legado)."
   },
   "factsVersion": {
-    "title": "Versão dos Global Facts",
-    "description": "Consulte as informações de negócio registradas em uma versão aprovada dos Global Facts deste site."
+    "title": "Versão da referência do negócio (legado)",
+    "description": "Consulte as informações registradas em uma versão aprovada da referência do negócio (legado) deste site."
   },
   "plan": {
     "title": "Plano e consumo",

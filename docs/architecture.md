@@ -17,7 +17,7 @@ Keep this modular application; do not create microservices or duplicate plans/po
 
 Scan occurrences are saved observations with exact ranges, source identity and freshness. Drafts express local intent. A persisted preview freezes the proposed payload and supporting evidence. Confirmation admits an idempotent operation; per-field dispatch/results and audit describe execution. Routing records only map public identifiers. These records serve different purposes; consolidating screens does not justify deleting execution evidence or treating a preview as success.
 
-Summaries must use narrow projections rather than load full plans/snapshots/bindings. Review counters preserve manual, applied, reverted, protected and specific-search semantics. Recent overview activity is limited to five entries; Changes uses stable reverse-chronological pagination across CMS/static sources. Progress and redirect DTOs load only the state/identity needed. Managed Value lists use counts; source details paginate, while in-panel editing retains its 50-source limit. Group-aware scan pagination is [design only](design/group-pagination.md).
+Summaries must use narrow projections rather than load full plans/snapshots/bindings. Review counters preserve manual, applied, reverted, protected and specific-search semantics. Recent overview activity is limited to five entries; Changes uses stable reverse-chronological pagination across CMS/static sources. Progress and redirect DTOs load only the state/identity needed. Variable lists use counts; source details paginate, while in-panel editing retains its 50-source limit. Group-aware scan pagination is [design only](design/group-pagination.md).
 
 ## Cache and security
 

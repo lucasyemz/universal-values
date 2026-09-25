@@ -1,4 +1,4 @@
-import { sitePath } from "@/modules/routes/resources";
+import { sitePath, canonicalPresentationSuffix, internalPresentationSuffix } from "@/modules/routes/resources";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const segment = /^[a-zA-Z0-9-]{1,110}$/;
@@ -19,10 +19,10 @@ export function siteRouteDestination(pathname: string, site: { id: string; slug:
   if (!route) return null;
   const reading = method === "GET" || method === "HEAD";
   const siteEntry = !route.suffix || route.suffix === "/";
-  const canonical = sitePath(site.workspaceSlug,site.slug) + (siteEntry ? "/scans" : route.suffix);
+  const canonical = sitePath(site.workspaceSlug,site.slug) + (siteEntry ? "/scans" : canonicalPresentationSuffix(route.suffix));
   if (reading && pathname !== canonical) {
     return { kind: "redirect" as const, pathname: canonical };
   }
-  if (!route.namespace && route.isId) return null;
-  return { kind: "rewrite" as const, pathname: `/dashboard/sites/${site.id}${route.suffix}` };
+  if (!route.namespace && route.isId && internalPresentationSuffix(route.suffix) === route.suffix) return null;
+  return { kind: "rewrite" as const, pathname: `/dashboard/sites/${site.id}${internalPresentationSuffix(route.suffix)}` };
 }

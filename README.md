@@ -12,9 +12,9 @@
 
 **ReplaceAll** é um SaaS em desenvolvimento para descobrir informações repetidas em sites Webflow, revisar cada ocorrência e manter valores de negócio consistentes a partir de um dashboard central.
 
-O dashboard reúne o CMS, os Managed Values e o histórico. A extensão do **Webflow Designer** permite trabalhar com elementos de páginas estáticas no contexto do editor. Toda aplicação de alterações exige uma ação explícita do usuário; a publicação no Webflow permanece separada.
+O dashboard reúne o CMS, os Variables e o histórico. A extensão do **Webflow Designer** permite trabalhar com elementos de páginas estáticas no contexto do editor. Toda aplicação de alterações exige uma ação explícita do usuário; a publicação no Webflow permanece separada.
 
-> O projeto começou como **Universal Values** e passou pela marca **CopyReplace**. O repositório e alguns identificadores internos mantêm esses nomes por compatibilidade; a marca atual é **ReplaceAll**.
+> O projeto começou como **Universal Values** e passou pela marca **ReplaceAll**. O repositório e alguns identificadores internos mantêm esses nomes por compatibilidade; a marca atual é **ReplaceAll**.
 
 ## Funcionalidades
 
@@ -24,13 +24,13 @@ O dashboard reúne o CMS, os Managed Values e o histórico. A extensão do **Web
 | **Scans do CMS** | Pesquisa por tipos de conteúdo e termos específicos, progresso salvo e resultados agrupados por valores iguais. |
 | **Revisão e substituição** | Alteração individual ou em grupo, contexto do trecho encontrado, prévias e confirmação. Busca textual permite substituir ou remover apenas o trecho informado. |
 | **Links e imagens** | Revisão de URLs repetidas e imagens em campos suportados, incluindo miniaturas e ocorrências em galerias. |
-| **Managed Values** | Centralização de valores, fontes vinculadas e sincronização confirmada por fonte. |
+| **Variables** | Centralização de valores, fontes vinculadas e sincronização confirmada por fonte. |
 | **Histórico e controle** | Flags de revisão, acompanhamento das operações, novas tentativas e reversão nos fluxos suportados, com validação de conflitos. |
 | **Execução CMS** | Worker em segundo plano, fila de alterações confirmadas e tratamento de falhas, limites e resultados parciais. |
 | **Páginas estáticas** | Extensão do Designer para pesquisa e edição de textos, links e imagens suportados, com prévia e histórico central. |
 | **Global Facts** | Referência de negócio versionada por site, aprovação, histórico e comparação determinística de evidências fornecidas. |
 | **Sugestões com IA** | Integração pessoal com Gemini para preparar sugestões individuais ou em lote; aplicar o conteúdo continua exigindo revisão e confirmação. |
-| **Dashboard** | Busca em scans salvos, repetição de configuração, filtros preservados e edição contextual de Managed Values. |
+| **Dashboard** | Busca em scans salvos, repetição de configuração, filtros preservados e edição contextual de Variables. |
 | **Idiomas e identidade** | Inglês e português, marca ReplaceAll e títulos/metadescrições específicos por página. |
 
 **Busca salva não é um novo scan:** usa resultados já persistidos e informa sua cobertura. A ausência de resultados não comprova que o conteúdo inexiste no site atual.
@@ -40,7 +40,7 @@ O dashboard reúne o CMS, os Managed Values e o histórico. A extensão do **Web
 1. **Conecte:** autorize o Webflow e vincule um site ao workspace.
 2. **Pesquise:** escolha o escopo e os tipos ou termos que deseja encontrar.
 3. **Revise:** selecione as ocorrências que representam o mesmo dado de negócio.
-4. **Prepare:** defina substituições individuais, em grupo ou por Managed Value.
+4. **Prepare:** defina substituições individuais, em grupo ou por Variable.
 5. **Confirme:** confira a prévia e autorize a operação.
 6. **Acompanhe:** consulte o resultado por fonte e o histórico da alteração.
 
