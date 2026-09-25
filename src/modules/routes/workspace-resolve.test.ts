@@ -4,7 +4,7 @@ import type {Database} from '@/connectors/supabase/types';
 import {resolveWorkspaceEntry} from './workspace-resolve';
 import {workspaceRoute} from '@/modules/sites/workspace-url';
 function client(){
- const rows:Record<string,Record<string,unknown>[]>={workspace_routes:[
+ const rows:Record<string,Record<string,unknown>[]>={workspace_route_aliases:[{workspace_id:'a',account_id:'owner',slug:'old-name'}],workspace_routes:[
   {workspace_id:'a',account_id:'owner',slug:'principal',is_primary:true},
   {workspace_id:'b',account_id:'owner',slug:'outros-sites',is_primary:false},
   {workspace_id:'c',account_id:'foreign',slug:'outros-sites',is_primary:true},
@@ -23,4 +23,10 @@ it('resolves old account aliases only for the current account',async()=>{
  expect(await resolveWorkspaceEntry(client(),'owner',workspaceRoute('/dashboard/lucasmatrixx/workspaces/outros-sites/sites')!)).toMatchObject({workspace_id:'b'});
  expect(await resolveWorkspaceEntry(client(),'owner',workspaceRoute('/dashboard/other/workspaces/outros-sites/sites')!)).toBeNull();
  expect(await resolveWorkspaceEntry(client(),'foreign',workspaceRoute('/dashboard/lucasmatrixx/sites')!)).toBeNull();
+});
+it('renamed workspace aliases return the current route without weakening account scope',async()=>{
+ const db=client();
+ const old=workspaceRoute('/dashboard/old-name/settings/webflow')!;
+ expect(await resolveWorkspaceEntry(db,'owner',old)).toMatchObject({workspace_id:'a',slug:'principal'});
+ expect(await resolveWorkspaceEntry(db,'foreign',old)).toBeNull();
 });

@@ -9,6 +9,6 @@ export const getWorkspaceNavigation = cache(async () => {
  if(routes.error)throw new Error("Workspace routes unavailable");
  return workspaces.flatMap(workspace=>{
   const route=routes.data?.find(r=>r.workspace_id===workspace.id);
-  return route?[{...workspace,href:workspacePath("",route)}]:[];
+  return route?[{...workspace,slug:route.slug,href:workspacePath("",route)}]:[];
  });
 });

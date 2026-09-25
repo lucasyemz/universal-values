@@ -7,8 +7,8 @@ import { detectionLabels } from "@/modules/scans/schema";
 export async function QuickSearch({ siteId, query, base }: { siteId: string; query: string; base: string }) {
   const t = await getText();
   const result = await searchSavedScans(siteId, query);
-  return <section className="ui-card mb-8 p-5" aria-labelledby="quick-search-title">
-    <h2 id="quick-search-title" className="text-lg font-semibold">{t("O que você quer encontrar?")}</h2>
+  return <section className="ui-card min-w-0 p-5" aria-labelledby="quick-search-title">
+    <h2 id="quick-search-title" className="text-lg font-semibold">{t("Scan rápido")}</h2>
     <p className="mt-1 text-sm text-muted">{t("Busque nos registros salvos, não no site ao vivo. Consulta os 20 scans concluídos mais recentes.")}</p>
     <form method="get" className="mt-4 flex gap-2"><label className="sr-only" htmlFor="saved-query">{t("Pesquisar nos resultados")}</label><input id="saved-query" name="q" type="search" maxLength={200} defaultValue={query} placeholder={t("Texto, URL, telefone, preço…")} className="min-w-0 flex-1"/><button className="ui-btn ui-btn-primary">{t("Pesquisar")}</button></form>
     {result && <div className="mt-5 space-y-3" aria-live="polite">

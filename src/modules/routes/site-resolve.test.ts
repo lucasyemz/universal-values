@@ -45,3 +45,9 @@ it("never falls through a real workspace namespace into an account alias",async(
   expect(await resolve("/dashboard/lucasmatrixx/sites/universal-test/overview","owner",collision)).toBeNull();
   expect(await resolve("/dashboard/another/sites/universal-test/overview")).toBeNull();
 });
+it("old workspace slugs resolve only inside their account and workspace",async()=>{
+ const renamed={...rows,workspace_route_aliases:[{account_id:"owner",workspace_id:"w1",slug:"old-workspace"}]};
+ expect(await resolve("/dashboard/old-workspace/sites/universal-test/scans/1?filter=reviewed","owner",renamed)).toMatchObject({id:"one",workspaceSlug:"kazama-test"});
+ expect(await resolve("/dashboard/old-workspace/sites/second/cms","owner",renamed)).toBeNull();
+ expect(await resolve("/dashboard/old-workspace/sites/universal-test/cms","other",renamed)).toBeNull();
+});

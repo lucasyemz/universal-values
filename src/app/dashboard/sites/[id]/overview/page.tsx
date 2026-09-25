@@ -9,7 +9,7 @@ import { QuickSearch } from "@/components/sites/quick-search";
 import { savedQuerySchema } from "@/modules/scans/saved-search";
 import { getText } from "@/i18n/server";
 import Link from "next/link";
-import { CircleCheck, CircleAlert, ArrowUpRight, ArrowRight, FileText, History, Info, Database, TriangleAlert, Compass, ChevronRight } from "lucide-react";
+import { CircleCheck, CircleAlert, ArrowUpRight, ArrowRight, FileText, History, Database, TriangleAlert, Compass, Plus } from "lucide-react";
 import { SitePage } from "@/components/sites/site-page";
 import { StatusBadge, EmptyState } from "@/components/ui";
 import { siteOverview } from "@/modules/sites/page-service";
@@ -20,14 +20,24 @@ export default async function OverviewPage({ params, searchParams }: { params: P
   const {id}=await params,view=await siteOverview(id),base=await siteLink(id);
   const attention=view.attention;
   const query = savedQuerySchema.parse((await searchParams).q ?? "");
-  return <SitePage site={view.site} title={t("Visão geral do site")} description={t("Acompanhe o conteúdo centralizado e os registros que precisam da sua atenção.")} newScan newScanHref={base + "/scans/new"}>
-    <QuickSearch siteId={id} query={query} base={base} />
-    <section aria-label={t("Resumo do site")} className="mb-6 grid divide-y overflow-hidden rounded-2xl border bg-white md:grid-cols-3 md:divide-x md:divide-y-0">{[
-      { label: t("Managed Values ativos"), value: view.activeValues, href: base + '/managed-values', Icon: Database },
+  return <SitePage site={view.site} title={t("Visão geral do site")} description={t("Acompanhe o conteúdo centralizado e os registros que precisam da sua atenção.")}>
+    <div className="mb-6 grid items-stretch gap-4 lg:grid-cols-2">
+      <QuickSearch siteId={id} query={query} base={base} />
+      <section className="ui-card flex flex-col items-start p-5" aria-labelledby="new-scan-title">
+        <h2 id="new-scan-title" className="text-lg font-semibold">{t("Criar novo scan")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("Escolha o conteúdo e o escopo para uma nova busca no CMS.")}</p>
+        <div className="mt-auto pt-4"><Link prefetch={false} href={base + "/scans/new"} className="ui-btn ui-btn-primary"><Plus size={16} aria-hidden="true" />{t("Novo scan")}</Link></div>
+      </section>
+    </div>
+    <section aria-labelledby="manage-site-heading" className="mb-6">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 id="manage-site-heading" className="text-lg font-semibold">{t("Gerenciar este site")}</h2><Link href={base + '/cms'} prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"><Compass size={16} aria-hidden="true"/>{t("Explorar CMS")}<ArrowRight size={15} aria-hidden="true"/></Link></div>
+    <section aria-label={t("Resumo do site")} className=" grid divide-y overflow-hidden rounded-2xl border bg-white md:grid-cols-3 md:divide-x md:divide-y-0">{[
+      { label: t("Variáveis ativas"), value: view.activeValues, href: base + '/managed-values', Icon: Database },
       { label: t("Scans registrados"), value: view.scanCount, href: base + '/scans', Icon: FileText },
       { label: t("Fontes incertas"), value: view.uncertainCount, href: base + '/managed-values', Icon: TriangleAlert },
-    ].map(({ label, value, href, Icon }) => <Link prefetch={false} href={href} key={label} className="flex min-w-0 items-center gap-4 px-5 py-6 transition-colors hover:bg-accent-soft focus-visible:-outline-offset-4"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={29} aria-hidden="true" /></span><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p><p className="mt-1 text-3xl font-semibold tabular-nums">{value}</p></div></Link>)}</section>
-    <section className="mb-10 rounded-xl border bg-white p-6"><div className="mb-4 flex items-center gap-2">{attention?<CircleAlert size={20} className="text-amber-700" />:<CircleCheck size={20} className="text-green-700" />}<h2 className="text-lg font-semibold">{attention?t("Precisa de atenção"):t("Nenhuma pendência encontrada neste resumo")}</h2></div>
+    ].map(({ label, value, href, Icon }) => <Link prefetch={false} href={href} key={label} className="flex min-w-0 items-center gap-4 px-5 py-4 transition-colors hover:bg-accent-soft focus-visible:-outline-offset-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={21} aria-hidden="true" /></span><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p></div></Link>)}</section>
+    </section>
+    <section className="mb-6 rounded-xl border bg-white p-6"><div className="mb-4 flex items-center gap-2">{attention?<CircleAlert size={20} className="text-amber-700" />:<CircleCheck size={20} className="text-green-700" />}<h2 className="text-lg font-semibold">{attention?t("Precisa de atenção"):t("Nenhuma pendência encontrada neste resumo")}</h2></div>
       <ul className="space-y-3 text-sm">{view.running.map(scan=><li key={scan.id}><Link className="inline-flex items-center gap-2 underline" href={view.scanLinks[scan.id]!}>{scan.status==='paused'?t("Retomar scan pausado"):t("Acompanhar scan em andamento")} · Scan #{view.scanLinks[scan.id]!.split("/").at(-1)}<ArrowUpRight size={14} /></Link></li>)}
       {view.uncertain.map((binding,index)=><li key={binding.managed_value_id+index}><Link className="underline" href={view.valueLinks[binding.managed_value_id]! + "#managed-sources"}>{t("Conferir fonte com resultado incerto")}</Link></li>)}
       {view.recent.filter(row=>row.attention).map(row=><li key={row.id}><Link prefetch={false} href={row.href} className="inline-flex flex-wrap items-center gap-2 underline">{t(row.title)} · {row.target} · {siteDate(row.createdAt,t.dateLocale)}<StatusBadge status={row.status} label={row.label}/></Link></li>)}</ul>
@@ -49,13 +59,5 @@ export default async function OverviewPage({ params, searchParams }: { params: P
         </li>)}</ul>}
       </section>
     </div>
-    <p className="mt-6 flex items-start gap-3 rounded-xl bg-accent-soft p-4 text-sm text-muted"><Info size={19} className="shrink-0 text-accent" aria-hidden="true" />{t("Esta visão geral usa registros salvos. Inicie um novo scan para consultar o conteúdo atual do CMS.")}</p>
-    <section aria-labelledby="manage-site-heading" className="mt-8">
-      <h2 id="manage-site-heading" className="mb-4 text-xl font-semibold">{t("Gerenciar este site")}</h2>
-      <div className="grid gap-4 lg:grid-cols-2">{[
-        { title: t("Managed Values"), description: t("Mantenha o conteúdo compartilhado organizado."), href: base + '/managed-values', Icon: Database },
-        { title: t("Explorar CMS"), description: t("Navegue pelas coleções deste site."), href: base + '/cms', Icon: Compass },
-      ].map(({ title, description, href, Icon }) => <Link key={href} href={href} prefetch={false} className="group flex min-w-0 items-center gap-4 rounded-2xl border bg-white p-6 transition-colors hover:border-accent hover:bg-accent-soft"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={30} aria-hidden="true" /></span><div className="min-w-0 flex-1"><h3 className="text-base font-semibold">{title}</h3><p className="mt-1 text-sm text-muted">{description}</p></div><ChevronRight size={22} className="shrink-0 text-muted group-hover:text-accent" aria-hidden="true" /></Link>)}</div>
-    </section>
   </SitePage>;
 }

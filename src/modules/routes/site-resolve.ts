@@ -1,3 +1,4 @@
+import { workspaceAlias } from "./workspace-alias";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/connectors/supabase/types";
 import type { siteRoute } from "@/modules/sites/url";
@@ -22,6 +23,12 @@ export async function resolveSiteEntry(client: Client, actor: string, route: Non
     if (workspace.data) {
       const site = await query.eq("workspace_id", workspace.data.workspace_id).eq("slug", route.value).maybeSingle();
       return site.error || !site.data ? null : { ...site.data, workspaceSlug: workspace.data.slug };
+    }
+    const alias = await workspaceAlias(client, actor, route.namespace);
+    if (alias.error) return null;
+    if (alias.data) {
+      const site = await query.eq("workspace_id", alias.data.workspace_id).eq("slug", route.value).maybeSingle();
+      return site.error || !site.data ? null : { ...site.data, workspaceSlug: alias.data.slug };
     }
     const account = await client.from("account_routes").select("slug").eq("user_id", actor).eq("slug", route.namespace).maybeSingle();
     if (account.error || !account.data) return null;
