@@ -10,12 +10,12 @@ export async function CreatedVariables({view,page,href,siteId,occurrences,linked
  const t=await getText();
  const evidence=await Promise.all(view.values.map(value=>variableEvidence(siteId,value.id,occurrences)));
  return <section className="mt-6" aria-label={t("Variáveis criadas neste scan")}>
-  <p className="mb-4 text-sm text-muted">{t("Variáveis deste scan e resultados da última operação registrada. A criação não significa que todas as fontes foram sincronizadas.")}</p>
+  <p className="mb-4 text-sm text-muted">{t("Variáveis criadas a partir deste scan. A criação não significa que todas as fontes foram sincronizadas.")}</p>
   {!view.values.length ? <EmptyState title={t("Nenhuma variável criada neste scan")} description={t("Selecione pelo menos dois campos em Pendentes e escolha Criar variável e aplicar na prévia.")}/> : <div className="space-y-5">{view.values.map((value,index)=>{
    const saved=evidence[index];
    const rows=saved?.rows ?? occurrences.filter(row=>linkedValues[row.source_key]?.id===value.id);
    return <article key={value.id} className="ui-card p-5">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">{value.name}</h2><p className="text-sm text-muted">{t(view.createdIds.includes(value.id)?"Variável criada neste scan":"Variável vinculada neste scan")} · {t(value.archived_at?"Arquivado":"Ativo")}</p></div><Link prefetch={false} href={view.links[value.id]!} className="ui-btn">{t("Abrir Variável")}</Link></header>
+    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">{value.name}</h2><p className="text-sm text-muted">{t("Variável criada neste scan")} · {t(value.archived_at?"Arquivado":"Ativo")}</p></div><Link prefetch={false} href={view.links[value.id]!} className="ui-btn">{t("Abrir Variável")}</Link></header>
     {rows.map(row=>{
      const verified=saved?.history[row.id];
      const result=saved?.results.find(result=>result.sourceKey===row.source_key);

@@ -15,14 +15,14 @@ const originSchema=z.object({managed_value_id:z.uuid(),scan_id:z.uuid()});
 
 // The caller has loaded this scan through loadScanResults; retain actor/site
 // predicates and authenticated RLS on this narrow creation-history projection.
-export async function scanCreatedVariables(scan:Pick<Scan,"id"|"site_id"|"actor_id">,page:number,includeRows:boolean,linkedIds:string[]=[]) {
+export async function scanCreatedVariables(scan:Pick<Scan,"id"|"site_id"|"actor_id">,page:number,includeRows:boolean) {
  const {client,user}=await requireUser();
  if(scan.actor_id!==user.id)throw new Error("Scan unavailable");
  const result=await client.from("managed_value_previews").select("managed_value_id")
   .eq("scan_id",scan.id).eq("site_id",scan.site_id).eq("actor_id",user.id).not("managed_value_id","is",null);
  if(result.error)throw new Error("Histórico de criação indisponível.");
  const createdIds=z.array(z.object({managed_value_id:z.uuid()})).parse(result.data??[]).map(row=>row.managed_value_id);
- const allIds=[...new Set([...createdIds,...linkedIds])].sort();
+ const allIds=[...new Set(createdIds)].sort();
  const ids=includeRows?allIds.slice((page-1)*CREATED_VARIABLES_PAGE_SIZE,page*CREATED_VARIABLES_PAGE_SIZE):[];
  if(!ids.length)return {total:allIds.length,createdIds,values:[],links:{} as Record<string,string>};
  const values=await client.from("managed_values").select("id,name,created_at,archived_at").eq("site_id",scan.site_id).in("id",ids);

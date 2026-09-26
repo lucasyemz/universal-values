@@ -52,7 +52,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const displayStatus = scanDisplayStatus(view.scan.status, countReviewedOccurrences(ordinarySections, view.reviewedIds));
   const filter = scanResultTab(filterInput,counts);
   const page = sitePageNumber(pageInput);
-  const created = await scanCreatedVariables(view.scan,page,filter === "variables", Object.values(view.linkedValues).map(value => value.id));
+  const created = await scanCreatedVariables(view.scan,page,filter === "variables");
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter === "variables" ? "pending" : filter);
   const { scan } = view;
   const site = await getScanSite(scan.site_id);
@@ -98,10 +98,10 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       </div>
       {scan.status === "limited" && <Notice tone="warning" title={t("Cobertura parcial")}>{t("Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.")}</Notice>}
 
-      {filter === "variables" ? <><CreatedVariables view={created} page={page} href={scanHref} siteId={scan.site_id} occurrences={view.occurrences} linkedValues={view.linkedValues}/>      {view.divergences.length > 0 && <details className="mt-5" aria-label={t("Divergências de Variáveis")}><summary className="cursor-pointer font-medium">{t("Verificar Variáveis")}</summary>
+      {filter === "variables" ? <><CreatedVariables view={created} page={page} href={scanHref} siteId={scan.site_id} occurrences={view.occurrences} linkedValues={view.linkedValues}/>      {view.divergences.some(d=>created.createdIds.includes(d.value.id)) && <details className="mt-5" aria-label={t("Divergências de Variáveis")}><summary className="cursor-pointer font-medium">{t("Verificar Variáveis")}</summary>
         <SectionHeader title={t("Verificar Variáveis")} description={t("Comparação das fontes detectadas neste scan com o último registro dos vínculos. Não é monitoramento em tempo real; campos sem ocorrências detectadas não foram comparados aqui.")} />
         <p className="mt-2 text-xs text-muted">{t("Scan iniciado em")} {new Date(scan.created_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })}  {t("UTC. As divergências aparecem mesmo que a ocorrência não seja repetida ou tenha sido marcada como revisada.")}</p>
-        {view.divergences.map(d => <ManagedDivergence key={d.binding.id} id={randomUUID()} scanId={scan.id} bindingId={d.binding.id} name={d.value.name} valueId={d.value.id} version={d.value.version} central={d.value.canonical} before={d.binding.source_value} observed={d.observed} rows={d.rows} stale={d.stale} uncertain={d.binding.uncertain} />)}
+        {view.divergences.filter(d=>created.createdIds.includes(d.value.id)).map(d => <ManagedDivergence key={d.binding.id} id={randomUUID()} scanId={scan.id} bindingId={d.binding.id} name={d.value.name} valueId={d.value.id} version={d.value.version} central={d.value.canonical} before={d.binding.source_value} observed={d.observed} rows={d.rows} stale={d.stale} uncertain={d.binding.uncertain} />)}
       </details>}
 </> : <>
 

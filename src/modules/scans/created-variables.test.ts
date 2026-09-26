@@ -42,12 +42,18 @@ it("links back to the canonical source scan and does not invent missing provenan
  expect(await variableScanOrigins(id,[value])).toEqual({});
 });
 
-it("counts linked variables once and preserves creation provenance",async()=>{
+it("counts only creation provenance even when other site variables exist",async()=>{
  const linked="33333333-3333-4333-8333-333333333333";
- const result=await scanCreatedVariables({id,site_id:id,actor_id:id},1,false,[value,linked,linked]);
- expect(result.total).toBe(2);
- expect(result.createdIds).toEqual([value]);
- expect(result.values).toEqual([]);
+ records.managed_values!.data!.push({id:linked,name:"From another scan",created_at:"2026-09-23T12:00:00Z",archived_at:null});
+ records.managed_value_previews!.data!.push({managed_value_id:value,scan_id:id});
+ const result=await scanCreatedVariables({id,site_id:id,actor_id:id},1,true);
+ expect(result.total).toBe(1);
+ expect(result.values.map(row=>row.id)).toEqual([value]);
+ expect(calls).toContainEqual(["managed_values","in","id",[value]]);
+ records.managed_value_previews!.data=[];
+ const empty=await scanCreatedVariables({id,site_id:id,actor_id:id},1,true);
+ expect(empty.total).toBe(0);
+ expect(empty.values).toEqual([]);
 });
 
 it("shows verified persisted results only, preserving item context and rejecting foreign snapshots",async()=>{
