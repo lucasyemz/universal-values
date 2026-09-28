@@ -7,14 +7,14 @@ export function createInlineReview(uuid:()=>string, now=()=>Date.now()) {
   const listeners=new Set<()=>void>(),ids=new Map<string,string>();
   let contentKey: string | undefined, displayPreview: InlinePreview | undefined;
   const publish=(next:ReviewState)=>{
-    if (contentKey && next.preview) displayPreview=next.preview;
+    if (next.preview) displayPreview=next.preview;
     state={...next,contentKey,displayPreview};listeners.forEach(fn=>fn());
   };
   return {
     getSnapshot:()=>state,
     finish(){if(state.stage!=="confirmed")return;revision++;ids.clear();contentKey=undefined;displayPreview=undefined;publish({key:"",stage:"idle"});},
     subscribe:(fn:()=>void)=>{listeners.add(fn);return()=>{listeners.delete(fn);};},
-    invalidate(key:string, nextContentKey?:string){if(state.stage==="confirming"||state.stage==="confirmed")return;revision++;if(contentKey!==nextContentKey || !nextContentKey)displayPreview=undefined;contentKey=nextContentKey;publish({key,stage:key?"preparing":"idle"});},
+    invalidate(key:string, nextContentKey?:string){if(state.stage==="confirming"||state.stage==="confirmed")return;revision++;if(contentKey!==nextContentKey || (!key && !nextContentKey))displayPreview=undefined;contentKey=nextContentKey;publish({key,stage:key?"preparing":"idle"});},
     async prepare(key:string, action:(id:string)=>Promise<PreviewResult>) {
       if(!key || key!==state.key || state.stage==="confirming"||state.stage==="confirmed")return;
       const version=++revision;

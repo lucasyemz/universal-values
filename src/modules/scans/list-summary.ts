@@ -13,6 +13,7 @@ export function scanReviewSummary(scan:ScanListRow,row:z.infer<typeof reviewSumm
 }
 
 /** Completed is ingestion state; review completion is derived, never persisted over it. */
-export function scanDisplayStatus(status:string,counts:{pending:number}|null|undefined) {
+export function scanDisplayStatus(status:string,counts:{pending:number;reviewed:number}|null|undefined) {
+ if(status === "completed" && counts?.pending === 0 && counts.reviewed === 0)return "no_results";
  return status === "completed" && (!counts || counts.pending > 0) ? "scanned" : status;
 }

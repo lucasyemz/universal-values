@@ -1,5 +1,6 @@
 import { z } from "zod";
-export const activityRowSchema = z.object({ id:z.uuid(), site_id:z.uuid(), source:z.enum(["cms","static"]),title:z.string(),target:z.string(),status:z.string(),label:z.string().nullable(),verified:z.number().int().nonnegative(),total:z.number().int().nonnegative(),created_at:z.string(),attention:z.boolean() });
+export const activityDetailsSchema = z.object({ types:z.array(z.enum(["text","image","link","money","phone","date","number"])), collections:z.array(z.object({id:z.string(),name:z.string()})), plannedItems:z.number().int().nonnegative().nullable(), changedItems:z.number().int().nonnegative().nullable() });
+export const activityRowSchema = z.object({ id:z.uuid(), site_id:z.uuid(), source:z.enum(["cms","static"]),title:z.string(),target:z.string(),status:z.string(),label:z.string().nullable(),verified:z.number().int().nonnegative(),total:z.number().int().nonnegative(),created_at:z.string(),attention:z.boolean(),details:activityDetailsSchema.nullish() });
 const cursorSchema=z.object({at:z.iso.datetime({offset:true}),id:z.uuid(),source:z.enum(["cms","static"])});
 export function decodeActivityCursor(value?:string) {
  if(!value || value.length>400)return null;

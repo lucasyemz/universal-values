@@ -1,4 +1,6 @@
 "use client";
+import { LoaderCircle } from "lucide-react";
+import type { InlinePreview } from "@/modules/scans/inline-preview";
 import { TextChangeDiff } from "./text-change-diff";
 import { previewGroups } from "@/modules/scans/preview-groups";
 import { changeDestination } from "@/modules/scans/change-destination";
@@ -12,7 +14,10 @@ import { Diff, Notice } from "@/components/ui";
 import { ImageChangePreview } from "./image-change-preview";
 import { ChangeProgress } from "./change-progress";
 
-export function InlineReview({ embeddedTextFields = [], draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted, sourceOrder, textSources = [], confirmationOptions, confirm = confirmInlineChanges, confirmLabel, contentKey }: {
+export function InlineReview({ liveFields, initialFields, sourcesFooter, sourcesContent, linkedSources = false, markTextChanges = false, embeddedTextFields = [], draftKey, prepare, onConfirmingChange, reverting = false, newImagesOnly = false, embeddedImages = false, embedded = false, onCompleted, sourceOrder, textSources = [], confirmationOptions, confirm = confirmInlineChanges, confirmLabel, contentKey }: {
+  liveFields?: InlinePreview["fields"];
+  initialFields?: InlinePreview["fields"]; sourcesFooter?: ReactNode;
+  sourcesContent?: ReactNode; linkedSources?: boolean; markTextChanges?: boolean;
   embeddedTextFields?: {sourceKey:string;rawBefore:string;rawAfter:string}[];
   contentKey?: string;
   confirmationOptions?: ReactNode; confirmLabel?: string; confirm?: typeof confirmInlineChanges;
@@ -30,36 +35,44 @@ export function InlineReview({ embeddedTextFields = [], draftKey, prepare, onCon
     return()=>clearTimeout(timer);
   },[draftKey,contentKey,store,ai?.busy]);
   useEffect(()=>{onConfirmingChange(state.stage==="confirming"||state.stage==="confirmed");},[state.stage,onConfirmingChange]);
-  if(!draftKey && state.stage!=="confirmed" && !confirmationOptions)return null;
+  if(!draftKey && state.stage!=="confirmed" && !confirmationOptions && !initialFields)return sourcesContent ?? null;
   const fresh=state.key===draftKey && (contentKey === undefined || state.contentKey===contentKey);
   const currentPreview=fresh || state.stage==="confirmed" ? state.preview : undefined;
   // Presentation can survive a change of action/name. Confirmation still requires
   // the receipt for the current draft; never submit the retained visual preview.
-  const preview=currentPreview ?? (contentKey && state.contentKey===contentKey ? state.displayPreview : undefined);
-  return <section aria-label={t("Prévia das alterações")} className={embedded ? "mt-4 space-y-3 border-t pt-4" : "ui-card mt-6 space-y-4 border-accent/30 p-5"}>
-    <h3 className="font-semibold">{t(embedded ? "Conferir e aplicar" : "Prévia das alterações")}</h3>
-    {!preview && (!fresh || state.stage==="preparing") && <p role="status">{t("Atualizando a prévia. Aguarde a validação antes de aplicar.")}</p>}
+  const preview=!draftKey && !confirmationOptions && state.stage!=="confirmed" ? undefined : currentPreview ?? (state.contentKey===contentKey && (draftKey || contentKey) ? state.displayPreview : undefined);
+  const validated=fresh && (state.stage==="ready" || state.stage==="confirming" || state.stage==="confirmed");
+  const savedFields=preview?.fields ?? initialFields ?? [];
+  const shownFields=!validated && liveFields ? savedFields.map(field=>liveFields.find(live=>live.sourceKey===field.sourceKey) ?? field) : savedFields;
+  const validating=!!draftKey && (!fresh || state.stage==="preparing");
+  return <section id={linkedSources ? "managed-sources" : undefined} aria-label={t(linkedSources ? "Origens vinculadas" : "Prévia das alterações")} className={embedded ? "mt-4 space-y-3 border-t pt-4" : "ui-card mt-6 space-y-4 border-accent/30 p-5"}>
+    <h3 className="font-semibold">{t(linkedSources ? "Origens vinculadas" : embedded ? "Conferir e aplicar" : "Prévia das alterações")}</h3>
+    {validating && !linkedSources && <p role="status">{t("Atualizando a prévia. Aguarde a validação antes de aplicar.")}</p>}
     {fresh && state.error && <p role="alert" className="text-sm text-amber-800">{t(state.error)}</p>}
     {!preview && confirmationOptions}
     {preview && <>
       <p className="font-medium">{t("Campos: {0} · Itens do CMS: {1}",preview.fieldCount,preview.itemCount)}</p>
       {(preview.fieldCount>=10 || preview.itemCount>=5 || preview.removalCount>0) && <Notice tone="warning" title={t("Alteração de maior impacto")}>{t("Confira o alcance abaixo. Remoções e alterações em vários itens podem afetar diversas páginas do site.")}</Notice>}
-      {preview.central && !confirmationOptions && <div><h4 className="font-semibold">{t("Valor central")}</h4><Diff before={preview.central.before} after={preview.central.after}/><p className="text-sm text-muted">{t("A confirmação define o valor central desejado. Cada fonte é sincronizada separadamente, com releitura e auditoria. Fontes que falharem continuam pendentes; cancelar o restante não desfaz o valor central nem os campos aplicados.")}</p></div>}
-      <ul className="space-y-4">{previewGroups(preview.fields.filter(field => field.slug || !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)), newImagesOnly, sourceOrder).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
+      {preview.central && !confirmationOptions && !linkedSources && <div><h4 className="font-semibold">{t("Valor central")}</h4><Diff before={preview.central.before} after={preview.central.after}/><p className="text-sm text-muted">{t("A confirmação define o valor central desejado. Cada fonte é sincronizada separadamente, com releitura e auditoria. Fontes que falharem continuam pendentes; cancelar o restante não desfaz o valor central nem os campos aplicados.")}</p></div>}
+    </>}
+      <ul className="space-y-4" aria-busy={linkedSources ? undefined : validating}>{previewGroups(shownFields.filter(field => field.slug || !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)), newImagesOnly, sourceOrder).map(fields => <li key={fields[0]!.sourceKey} className="rounded-lg border p-4">
         <h4 className="break-words text-sm font-semibold">{[...new Set(fields.map(field => field.item))].join(" · ")}</h4>
         <ul className="mt-2 space-y-2">{fields.map(field => <li key={field.sourceKey}>
           <p className="break-words text-xs text-muted">{field.collection} → {field.item} → {field.field}</p>
           {field.locale && <p className="text-xs text-muted">Locale: {field.locale}</p>}
         </li>)}</ul>
-        {!fields[0]!.images.length && <div className="space-y-3">{fields.filter(field => !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)).map(field => <TextChangeDiff key={field.sourceKey} before={field.before} after={field.after} highlight={textSources.includes(field.sourceKey)} />)}</div>}
+        {!fields[0]!.images.length && <div className="space-y-3">{fields.filter(field => !embeddedTextFields.some(shown => shown.sourceKey === field.sourceKey && shown.rawBefore === field.before && shown.rawAfter === field.after)).map(field => <TextChangeDiff key={field.sourceKey} before={field.before} after={field.after} highlight={markTextChanges || textSources.includes(field.sourceKey)} marked={markTextChanges} />)}</div>}
         {!embeddedImages && fields[0]!.images.filter((image, index, images) => images.findIndex(other => other.after === image.after && (newImagesOnly || other.before === image.before)) === index).map((image,index)=><ImageChangePreview key={index} newOnly={newImagesOnly} before={image.before} after={image.after}/>)}
         {fields.filter(field => field.slug).map(field => <div key={field.sourceKey} className="mt-3 rounded bg-amber-50 p-3"><h5 className="text-sm font-semibold">{t("Slug sugerido")} · {field.collection} → {field.item}</h5><Diff before={field.slug!.before} after={field.slug!.after}/></div>)}
       </li>)}</ul>
+      {!draftKey && sourcesFooter}
+      {linkedSources && draftKey && !preview && <button type="button" className="ui-btn ui-btn-primary" disabled aria-busy={validating}>{validating && <LoaderCircle size={16} className="motion-safe:animate-spin" aria-hidden="true"/>}{t("Aplicar alterações")}</button>}
+      {preview && <>
       {preview.slugCount>0 && <Notice tone="warning">{t("Mudar o slug altera o endereço da página quando publicada. Redirecionamentos não são criados automaticamente. Os slugs alterados estão incluídos na quantidade de campos.")}</Notice>}
-      {state.stage!=="confirmed" && <>
+      {draftKey && state.stage!=="confirmed" && <>
         {confirmationOptions}
         <p className="text-sm text-muted">{t("Ao aplicar, você confirma exatamente os valores e slugs exibidos. O site não será publicado. Campos alterados no Webflow serão bloqueados; os demais podem ser aplicados.")}</p>
-        <button type="button" className="ui-btn ui-btn-primary disabled:opacity-40" disabled={!fresh||state.stage!=="ready"||ai?.busy} onClick={()=>void store.confirm(draftKey,receipt=>confirm({id:receipt.id,digest:receipt.digest,confirmed:true}))}>{state.stage==="confirming"?t("Confirmando operação…"):confirmLabel ? confirmLabel : reverting?t("Confirmar reversão de {0} campos",preview.fieldCount):preview.fieldCount===1?t("Aplicar em 1 campo"):t("Aplicar em {0} campos",preview.fieldCount)}</button>
+        <button type="button" className="ui-btn ui-btn-primary disabled:opacity-40" aria-busy={validating || state.stage==="confirming"} disabled={!fresh||state.stage!=="ready"||ai?.busy} onClick={()=>void store.confirm(draftKey,receipt=>confirm({id:receipt.id,digest:receipt.digest,confirmed:true}))}>{(validating || state.stage==="confirming") && <LoaderCircle size={16} className="motion-safe:animate-spin" aria-hidden="true"/>}{state.stage==="confirming"?t("Confirmando operação…"):confirmLabel ? confirmLabel : reverting?t("Confirmar reversão de {0} campos",preview.fieldCount):preview.fieldCount===1?t("Aplicar em 1 campo"):t("Aplicar em {0} campos",preview.fieldCount)}</button>
       </>}
       {state.stage==="confirmed" && <><Notice tone="success">{t("Alteração confirmada. Acompanhe o processamento abaixo ou continue navegando.")}</Notice><ChangeProgress id={preview.id} cursor={0} total={preview.fields.length} paused={false} onCompleted={onCompleted ? () => { onCompleted(); store.finish(); } : undefined}/><Link className="ui-btn" href={changeDestination(preview.id,preview.scanId)}>{t("Ver revisados")}</Link></>}
     </>}

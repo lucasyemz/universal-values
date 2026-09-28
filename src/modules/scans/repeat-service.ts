@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/modules/auth/service";
 import { getScan, getScanSite } from "./service";
 import { planSchema, type Scan } from "./schema";
+import { scanStartError } from "./start-error";
 
 export function repeatPlan(scan: Scan) {
   if (!["completed", "limited", "cancelled"].includes(scan.status)) throw new Error("Scan indisponível para repetir.");
@@ -34,9 +35,7 @@ export async function confirmRepeat(input: { id: string; scanId: string; digest:
   const { client } = await requireUser();
   // Same immutable preview, confirmation, quota, audit and idempotency gateways.
   // Current remote authorization/collection scope is checked by readScanBatch, after confirmation.
-  const preview = await client.rpc("preview_cms_scan", { p_id: input.id, p_site_id: site.id, p_plan: repeatPlan(scan), p_truncated: false });
-  if (preview.error) throw new Error("Não foi possível preparar o scan. Confira seu limite e a conexão.");
-  const confirmed = await client.rpc("confirm_cms_scan", { p_id: input.id });
-  if (confirmed.error) throw new Error("Não foi possível confirmar. Confira seu limite e se já existe um scan ativo.");
+  const confirmed = await client.rpc("start_cms_scan", { p_id: input.id, p_site_id: site.id, p_plan: repeatPlan(scan), p_truncated: false });
+  if (confirmed.error) throw new Error(scanStartError(confirmed.error)==='active' ? "Já existe um scan em andamento ou pausado neste site. Conclua ou cancele esse scan antes de iniciar outro." : "Não foi possível confirmar. Confira seu limite e se já existe um scan ativo.");
   return input.id;
 }

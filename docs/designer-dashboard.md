@@ -53,3 +53,11 @@ Session validation (2026-09-25): lint, typecheck, all 870 tests in 157 files, pr
 Individual text editing keeps each occurrence's original context, replacement input and live result together. Multiple selected matches in one node still show the combined final node result, using the same validated plan. Editing and confirmation now share a normal-flow stack so confirmation cannot overlap inputs at tablet/desktop breakpoints.
 
 In the Designer live text result, unchanged selected matches use yellow highlights from their exact saved ranges. Edited results retain the green change highlights. Highlighting is display-only and does not change the replacement plan.
+
+## Static page scans entry
+
+The main site navigation and site-card shortcuts distinguish CMS Scans from Static page scans. `/static` now shows a handoff page with a site-specific Open in Webflow button and instructions to open ReplaceAll from Apps; it does not scan or write website content. Legacy static history hashes retain their authenticated compatibility destinations.
+
+The connector builds `https://<shortName>.design.webflow.com/?app=<clientId>` from validated saved provider metadata, never a display name or custom domain. The optional app ID is the configured public Webflow client ID. Webflow opens the extension when installed; otherwise the user opens it manually. Reference: [Webflow deep linking](https://developers.webflow.com/data-beta/deep-linking).
+
+Initial successful site connection reuses the provider response already verified before confirmation and stores site metadata through the existing scoped generation/lease RPC. This adds up to three DB calls (read, claim, finish), W/I/E/G +0. Metadata persistence failure does not undo a confirmed connection. Previously connected sites without metadata use the explicit refresh button. Opening the handoff page adds one metadata read and two canonical workspace-link lookups versus the former settings redirect, W/I/E/G +0. Stale short names can be explicitly refreshed; navigation never refreshes them automatically. No schema migration is required.

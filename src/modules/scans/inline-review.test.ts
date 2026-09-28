@@ -57,3 +57,16 @@ it("discards retained presentation immediately when the replacement content chan
  store.invalidate("new","new-content");
  expect(store.getSnapshot().displayPreview).toBeUndefined();
 });
+
+it("keeps display-only fields mounted while a new text receipt is prepared, without authorizing old values",async()=>{
+ const store=createInlineReview(()=>"id"),confirm=vi.fn();
+ store.invalidate("old");await store.prepare("old",async()=>({ok:true,preview}));
+ store.invalidate("new");
+ expect(store.getSnapshot()).toMatchObject({stage:"preparing",displayPreview:preview});
+ expect(store.getSnapshot().preview).toBeUndefined();
+ await store.confirm("new",confirm);expect(confirm).not.toHaveBeenCalled();
+ await store.prepare("new",async()=>({ok:false,message:"Invalid text"}));
+ expect(store.getSnapshot().displayPreview).toBe(preview);
+ await store.confirm("new",confirm);expect(confirm).not.toHaveBeenCalled();
+ store.invalidate("");expect(store.getSnapshot().displayPreview).toBeUndefined();
+});

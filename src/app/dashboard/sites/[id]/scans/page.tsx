@@ -16,7 +16,7 @@ import { LegacySiteSection } from "@/components/sites/legacy-site-section";
 import { EmptyState } from "@/components/ui";
 
 import { siteScansPage } from "@/modules/sites/page-service";
-import { sitePageNumber } from "@/modules/sites/presentation";
+import { sitePageNumber, SCANS_PAGE_SIZE } from "@/modules/sites/presentation";
 
 
 export default async function SiteScansPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ page?: string }> }) {
@@ -28,6 +28,6 @@ export default async function SiteScansPage({ params, searchParams }: { params: 
   return <SitePage site={view.site} title={t("Scans")} description={t("Encontre conteúdo repetido e revise os resultados das suas buscas.")} newScan newScanHref={base + "/scans/new"}>
     <LegacySiteSection siteId={id} />
     {!view.scans.length ? <EmptyState title={page===1 ? t("Nenhum scan ainda") : t("Nenhum scan nesta página")} description={t("Prepare um scan para encontrar conteúdo repetido neste site.")} /> : <ScanHistoryList key={page} scans={view.scans} links={view.scanLinks} counts={view.reviewCounts} />}
-    <SitePagination page={page} total={view.total} base={base + "/scans"} />
+    <SitePagination page={page} total={view.total} hasMore={page * SCANS_PAGE_SIZE < view.total} base={base + "/scans"} />
   </SitePage>;
 }

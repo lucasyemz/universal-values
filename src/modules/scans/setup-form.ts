@@ -1,6 +1,6 @@
 import { previewScanSchema } from "./schema";
 
-// Same payload for the two UI steps and the server-side preview validation.
+// Shared payload for the CMS setup form and server-side preview validation.
 export function parseScanSetup(form: FormData) {
   const searchText = form.get("searchText") ?? undefined;
   const placeholders = form.get("placeholders") === "on";

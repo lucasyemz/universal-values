@@ -1,3 +1,4 @@
+vi.mock("@/modules/managed-values/source-labels",()=>({managedSourceLabels:vi.fn(async()=>({source:{item_name:"Oak Meadows",collection_name:"Properties",field_name:"Short details"}}))}));
 import { beforeEach,expect,it,vi } from "vitest";
 vi.mock("server-only",()=>({}));
 vi.mock("next/navigation",()=>({unstable_rethrow:vi.fn()}));vi.mock("next/cache",()=>({revalidatePath:vi.fn()}));
@@ -38,4 +39,14 @@ it("keeps confirmed success if the independent worker kick fails",async()=>{
  rpc.mockImplementation(async(name:string)=>{if(name==='request_cms_worker_kick')throw new Error('network');return {error:null};});
  expect(await confirmInlineChanges({id,digest:inlinePreview(fixture()).digest,confirmed:true})).toEqual({ok:true,id});
  expect(rpc.mock.calls.map(([name])=>name)).toEqual(['confirm_cms_changes','request_cms_worker_kick']);
+});
+
+it("managed preview adds readable labels without changing the persisted confirmation receipt",async()=>{
+ const view=fixture();view.request.managed_value_id=id;
+ vi.mocked(loadChangeRequest).mockResolvedValue(view);
+ const {readInlinePreview}=await import("./inline-actions");
+ const result=await readInlinePreview(id);
+ expect(result.ok).toBe(true);
+ if(result.ok){expect(result.preview.fields[0]).toMatchObject({item:"Oak Meadows",collection:"Properties",field:"Short details"});expect(result.preview.digest).toBe(inlinePreview(view).digest);}
+ expect(rpc).not.toHaveBeenCalled();
 });

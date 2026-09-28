@@ -18,7 +18,14 @@ export async function readInlinePreview(id: string) {
   try {
     const view = await loadChangeRequest(id);
     if (view.request.status !== "preview" || view.expired) return { ok: false as const, refresh:true, message: "A prévia expirou ou já foi confirmada. Atualize os dados antes de aplicar." };
-    return { ok: true as const, preview: inlinePreview(view) };
+    const preview=inlinePreview(view);
+    if(view.request.managed_value_id){
+      const {managedSourceLabels}=await import("@/modules/managed-values/source-labels");
+      const labels=await managedSourceLabels(view.request.site_id,preview.fields.map(field=>field.sourceKey));
+      // Display labels do not replace the immutable plan covered by the receipt.
+      preview.fields=preview.fields.map(field=>({...field,item:labels[field.sourceKey]?.item_name || "Item sem nome registrado",collection:labels[field.sourceKey]?.collection_name || "Coleção sem nome registrado",field:labels[field.sourceKey]?.field_name || field.field}));
+    }
+    return { ok: true as const, preview };
   } catch (error) { unstable_rethrow(error);return { ok: false as const, message: "Não foi possível carregar a prévia validada. Tente novamente." }; }
 }
 export async function confirmInlineChanges(input: unknown) {

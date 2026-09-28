@@ -143,6 +143,14 @@
 .scan-history-count:hover { color:var(--accent); }
 .scan-history-count>span { display:grid; place-items:center; min-width:38px; height:38px; padding:4px; border-radius:9px; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; }
 .scan-history-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.scan-history-list { display:grid; gap:12px; }
+@media(min-width:1440px) {
+ .scan-history-list { grid-template-columns:minmax(150px,1fr) minmax(140px,.8fr) max-content max-content max-content; column-gap:18px; }
+ .scan-history-list > .scan-history-card { grid-template-columns:subgrid; grid-column:1/-1; }
+ .scan-history-list .scan-history-actions { grid-column:auto; justify-content:flex-end; flex-wrap:nowrap; }
+ .scan-history-list .scan-history-counts { display:grid; grid-template-columns:1fr 1fr; }
+ .scan-history-list .scan-history-counts > span { grid-column:1/-1; }
+}
 @media(min-width:768px) { .scan-history-card { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .scan-history-actions { grid-column:1/-1; } }
 @media(min-width:1440px) { .scan-history-card { grid-template-columns:minmax(160px,1.2fr) minmax(140px,.8fr) auto auto; } .scan-history-counts { border-left:1px solid var(--border-default); padding-left:20px; } .scan-history-actions { grid-column:1/-1; justify-content:flex-end; } }
 @media(min-width:1440px) { .scan-history-card { grid-template-columns:minmax(150px,1fr) minmax(140px,.8fr) auto auto auto; gap:18px; } .scan-history-actions { grid-column:auto; } }
@@ -247,4 +255,10 @@
  .overview-history > section > :first-child { margin-bottom:4px; }
  .overview-history > section > ul { display:grid; grid-row:span 3; grid-template-rows:subgrid; }
  .overview-history > section > ul > li { margin:0; height:100%; }
+}
+
+@media(min-width:768px) {
+ .change-history-card-horizontal { flex-direction:row; align-items:center; gap:24px; padding:22px; }
+ .change-history-card-horizontal > :first-child { flex:1; align-items:center; }
+ .change-history-card-horizontal > :last-child { margin-top:0; padding-top:0; flex-wrap:nowrap; gap:32px; }
 }

@@ -1,6 +1,6 @@
 import { useText } from "@/i18n/use-text";
 import type { ReactNode, ComponentProps } from "react";
-import { ArrowRight, CheckCircle2, Circle, CircleAlert, Info, Layers3, PauseCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, Circle, CircleAlert, Info, Layers3, PauseCircle, LoaderCircle, Clock3 } from "lucide-react";
 
 export function Button({ variant = "primary", className = "", ...props }: ComponentProps<"button"> & { variant?: "primary" | "secondary" | "danger" | "ghost" }) {
   return <button className={`ui-btn ${variant === "secondary" ? "" : "ui-btn-" + variant} ${className}`} {...props} />;
@@ -20,6 +20,8 @@ const statuses: Record<string, { label: string; tone: "success" | "warning" | "d
   reverted: { label: "Revertido", tone: "success" },
   expired: { label: "Prévia expirada", tone: "muted" }, dispatching: { label: "Verificação pendente", tone: "warning" },
   scanned: { label: "Escaneado", tone: "accent" },
+  queued: { label: "Na fila", tone: "muted" },
+  no_results: { label: "Sem resultados", tone: "muted" },
   preview: { label: "Aguardando confirmação", tone: "accent" }, running: { label: "Em andamento", tone: "accent" }, paused: { label: "Pausado", tone: "warning" }, completed: { label: "Concluído", tone: "success" }, limited: { label: "Cobertura parcial", tone: "warning" }, cancelled: { label: "Cancelado", tone: "muted" }, confirmed: { label: "Em aplicação", tone: "accent" }, disconnected: { label: "Reconectar", tone: "warning" }, connected: { label: "Vinculado", tone: "success" }, reviewed: { label: "Revisado", tone: "success" }, conflict: { label: "Conflito de versão", tone: "warning" }, failed: { label: "Falhou", tone: "danger" }, uncertain: { label: "Conferência necessária", tone: "warning" }, applied: { label: "Aplicado", tone: "success" }, already_applied: { label: "Já aplicado", tone: "success" }, draft: { label: "Rascunho", tone: "muted" }, ready: { label: "Pronto", tone: "success" },
 };
 const tones = { success: "bg-[var(--success-soft)] text-[var(--success)]", warning: "bg-[var(--warning-soft)] text-[var(--warning)]", danger: "bg-[var(--danger-soft)] text-[var(--danger)]", accent: "bg-accent-soft text-accent", muted: "bg-subtle text-muted" };
@@ -27,8 +29,8 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
  const t = useText();
 
   const state = statuses[status] ?? { label: status, tone: "muted" as const };
-  const Icon = status === "paused" ? PauseCircle : state.tone === "success" ? CheckCircle2 : ["warning", "danger"].includes(state.tone) ? CircleAlert : Circle;
-  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${tones[state.tone]}`}><Icon size={13} aria-hidden="true" />{t(label ?? state.label)}</span>;
+  const Icon = status === "running" ? LoaderCircle : status === "queued" ? Clock3 : status === "paused" ? PauseCircle : state.tone === "success" ? CheckCircle2 : ["warning", "danger"].includes(state.tone) ? CircleAlert : Circle;
+  return <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${tones[state.tone]}`}><Icon size={13} className={status === "running" ? "motion-safe:animate-spin" : undefined} aria-hidden="true" />{t(label ?? state.label)}</span>;
 }
 export function Notice({ children, tone = "info", title }: { children: ReactNode; tone?: "info" | "success" | "warning" | "danger"; title?: string }) {
   const Icon = tone === "success" ? CheckCircle2 : tone === "info" ? Info : CircleAlert;

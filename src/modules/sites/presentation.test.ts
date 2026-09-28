@@ -20,9 +20,9 @@ describe('site history presentation',()=>{
 import { activityDestination } from "./presentation";
 it("opens unresolved operations with pending and reviewed fields while retaining their operation number", () => {
  const href = "/dashboard/alice/sites/project/scans/2?filter=reviewed&operation=7";
- expect(activityDestination(href,true,"conflict")).toBe("/dashboard/alice/sites/project/scans/2?filter=all&operation=7");
+ expect(activityDestination(href,true,"conflict")).toBe("/dashboard/alice/sites/project/scans/2?filter=all&operation=7#operation-results");
  expect(activityDestination(href,false,"confirmed")).toContain("filter=all");
- expect(activityDestination(href,false,"completed")).toBe(href);
+ expect(activityDestination(href,false,"completed")).toBe(href + "#operation-results");
  const staticHref = "/dashboard/alice/sites/project/changes/4";
  expect(activityDestination(staticHref,true,"uncertain")).toBe(staticHref);
 });

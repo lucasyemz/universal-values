@@ -17,9 +17,9 @@ it("copies the exact persisted plan through preview and confirmation with the sa
   const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
   const input = { id: "new", scanId: "old", digest: repeatDigest(scan) };
   await confirmRepeat(input); await confirmRepeat(input);
-  expect(rpc.mock.calls.map(call => call[0])).toEqual(["preview_cms_scan", "confirm_cms_scan", "preview_cms_scan", "confirm_cms_scan"]);
+  expect(rpc.mock.calls.map(call => call[0])).toEqual(["start_cms_scan", "start_cms_scan"]);
   expect(rpc.mock.calls[0]?.[1]).toEqual({ p_id: "new", p_site_id: "site", p_plan: scan.plan, p_truncated: false });
-  expect(rpc.mock.calls[2]?.[1]).toEqual(rpc.mock.calls[0]?.[1]); expect(fetcher).not.toHaveBeenCalled();
+  expect(rpc.mock.calls[1]?.[1]).toEqual(rpc.mock.calls[0]?.[1]); expect(fetcher).not.toHaveBeenCalled();
 });
 it("rejects stale summary, changed connection and running source before mutations", async () => {
   await expect(confirmRepeat({ id: "new", scanId: "old", digest: "stale" })).rejects.toThrow("configuração");

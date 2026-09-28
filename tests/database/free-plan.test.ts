@@ -11,7 +11,9 @@ beforeAll(async()=>{
 },30000);
 afterAll(async()=>{await db?.close();});
 async function rpc(actor:string, sql:string, args:unknown[]=[]) {
-  await db.exec('begin; set local role authenticated');
+  // Legacy preview helper is now internal to atomic start. Exercise its quota
+  // rules as the function owner, retaining auth.uid; other RPCs keep client grants.
+  await db.exec(sql.includes('public.preview_cms_scan(') ? 'begin' : 'begin; set local role authenticated');
   try { await db.query("select set_config('request.jwt.claim.sub',$1,true)",[actor]); const result=await db.query(sql,args); await db.exec('commit');return result; }
   catch(error){await db.exec('rollback');throw error;}
 }

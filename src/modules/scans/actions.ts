@@ -1,5 +1,6 @@
 "use server";
 import { parseScanSetup } from "./setup-form";
+import { scanStartError } from "./start-error";
 import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { redirect } from "next/navigation";
@@ -10,7 +11,8 @@ import { loadScanCollections } from "./service";
 import { confirmScanSchema, planSchema, processScanSchema, valuePreviewInputSchema, valuePreviewValidationError } from "./schema";
 import { getScan, getScanSite, loadValuePreview, processBatch } from "./service";
 
-export async function previewScan(form: FormData) {
+export async function startScan(form: FormData) {
+  if(form.get("confirmed")!=="yes")redirect("/dashboard?error=confirmation");
   const input = parseScanSetup(form);
   if (!input.success) {
     const siteId = z.uuid().safeParse(form.get("siteId"));
@@ -27,9 +29,9 @@ export async function previewScan(form: FormData) {
     truncated = false;
   } catch { redirect("/dashboard/sites/" + site.id + "/scans/new?error=provider"); }
   const { client } = await requireUser();
-  const result = await client.rpc("preview_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
+  const result = await client.rpc("start_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
-  if (result.error) redirect("/dashboard/sites/" + site.id + "/scans/new?error=preview");
+  if (result.error) redirect("/dashboard/sites/" + site.id + "/scans/new?error=" + scanStartError(result.error));
   redirect("/dashboard/scans/" + input.data.id);
 }
 export async function confirmScan(form: FormData) {
@@ -58,6 +60,24 @@ export async function runScanBatch(input: unknown) {
   if (!parsed.success) return { ok: false as const, message: "Pedido inválido." };
   try { return { ok: true as const, progress: await processBatch(parsed.data.id, parsed.data.revision) }; }
   catch { return { ok: false as const, message: "Não foi possível continuar. Atualize a página; se a conexão mudou, cancele este scan e inicie outro." }; }
+}
+export async function advanceScanQueue() {
+  const {client}=await requireUser();
+  const next=await client.rpc("next_cms_scan",{});
+  if(next.error)return {ok:false as const};
+  if(!next.data)return {ok:true as const,progress:null};
+  const input=processScanSchema.safeParse(next.data);
+  if(!input.success)return {ok:false as const};
+  return runScanBatch(input.data);
+}
+export async function readScanProgress(id:unknown) {
+  const parsed=z.uuid().parse(id);
+  const {client,user}=await requireUser();
+  const result=await client.from("cms_scans").select("id,site_id,status,revision,items_read,occurrences_count,retry_at,error_code,collection_index").eq("id",parsed).eq("actor_id",user.id).maybeSingle();
+  const {scanSchema}=await import("./schema");
+  const row=scanSchema.pick({id:true,site_id:true,status:true,revision:true,items_read:true,occurrences_count:true,retry_at:true,error_code:true,collection_index:true}).parse(result.data);
+  await getScanSite(row.site_id);
+  return {id:row.id,status:row.status,revision:row.revision,itemsRead:row.items_read,count:row.occurrences_count,retryAt:row.retry_at,error:row.error_code,collectionsDone:row.collection_index};
 }
 export async function previewManagedValue(form: FormData) {
   const payload = { id: form.get("id"), scanId: form.get("scanId"), name: form.get("name"), occurrenceIds: form.getAll("occurrenceIds") };

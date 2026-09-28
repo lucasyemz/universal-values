@@ -7,11 +7,11 @@ export async function generateMetadata() {
 
 import { TabLink } from "@/components/ui/tab-link";
 import { siteLink } from "@/modules/routes/links";
-import { ManagedValueContext } from "@/components/managed-value-context";
+import { ArrowRight, Database } from "lucide-react";
 import { getText } from "@/i18n/server";
 import Link from "next/link";
 import { SitePage, SitePagination } from "@/components/sites/site-page";
-import { DataTable, EmptyState } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { siteValuesPage } from "@/modules/sites/page-service";
 import { sitePageNumber, siteSearchSchema, valueFilterSchema } from "@/modules/sites/presentation";
 import { valueLabel, detectionLabels } from "@/modules/scans/schema";
@@ -25,7 +25,12 @@ export default async function ValuesPage({ params, searchParams }: { params: Pro
   return <SitePage site={view.site} title={t("Variáveis")} description={t("Gerencie o conteúdo que você atualiza com frequência, em um só lugar.")}>
     <form method="get" className="mb-5 flex flex-wrap items-end gap-3"><input type="hidden" name="filter" value={filter} /><label className="flex-1 text-sm font-medium">{t("Buscar por nome")}<input key={q} name="q" type="search" defaultValue={q} maxLength={200} placeholder={t("Ex.: Telefone comercial")} className="mt-2 block w-full" /></label><button className="ui-btn">{t("Buscar")}</button>{q && <Link className="ui-btn ui-btn-ghost" href={base+"?filter="+filter}>{t("Limpar")}</Link>}</form>
     <nav aria-label={t("Filtrar valores")} className="ui-tabs mb-6">{([['active',t("Ativos")],['archived',t("Arquivados")],['all',t("Todos")]] as const).map(([value,label])=><TabLink key={value} className="ui-tab" aria-current={filter===value?'page':undefined} href={base+'?'+new URLSearchParams({filter:value,q})}>{label}</TabLink>)}</nav>
-    {!view.values.length ? <EmptyState title={q ? t("Nenhum valor encontrado") : t("Nenhuma Variável neste filtro")} description={t("Crie um valor a partir das ocorrências encontradas em um scan.")} action={<Link className="ui-btn" href={`/dashboard/sites/${id}/scans`}>{t("Ver scans")}</Link>} /> : <DataTable label={t("Variáveis")}><thead><tr><th>{t("Nome")}</th><th>{t("Valor atual")}</th><th>{t("Fontes")}</th><th>{t("Scan de origem")}</th><th>{t("Tipo")}</th><th>{t("Estado")}</th><th><span className="sr-only">{t("Abrir valor")}</span></th></tr></thead><tbody>{view.values.map(value=><tr key={value.id} className="relative hover:bg-subtle/60 focus-within:bg-subtle"><td><Link href={view.valueLinks[value.id]!} className="font-medium after:absolute after:inset-0">{value.name}</Link></td><td><span className="block max-w-64 truncate text-sm text-muted" title={valueLabel(value.canonical)}>{valueLabel(value.canonical)}</span></td><td className="tabular-nums">{view.sources?.[value.id]?.count ?? "—"}</td><td>{origins[value.id] ? <Link prefetch={false} className="relative z-10 text-accent underline" href={origins[value.id]!.href}>#{origins[value.id]!.number}</Link> : <span className="text-xs text-muted">{t("Origem não registrada")}</span>}</td><td className="text-sm text-muted">{t(detectionLabels[value.canonical.type])}</td><td className="text-sm">{value.archived_at?t("Arquivado"):view.sources?.[value.id]?.uncertain?t("Conferir fontes"):t("Ativo")}</td><td><div className="flex flex-wrap gap-2"><ManagedValueContext siteId={id} valueId={value.id} />{!value.archived_at && <ManagedValueContext siteId={id} valueId={value.id} edit />}</div></td></tr>)}</tbody></DataTable>}
+    {!view.values.length ? <EmptyState title={q ? t("Nenhum valor encontrado") : t("Nenhuma Variável neste filtro")} description={t("Crie um valor a partir das ocorrências encontradas em um scan.")} action={<Link className="ui-btn" href={`/dashboard/sites/${id}/scans`}>{t("Ver scans")}</Link>} /> : <ul className="space-y-3">{view.values.map(value=><li key={value.id} className="ui-card flex flex-col gap-5 p-5 lg:flex-row lg:items-center">
+<span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Database size={24} aria-hidden="true" /></span>
+<div className="min-w-0 flex-1"><h2 className="font-semibold"><Link prefetch={false} href={view.valueLinks[value.id]!}>{value.name}</Link></h2><p className="mt-1 text-xs text-muted">{t(detectionLabels[value.canonical.type])} · {t(value.archived_at?"Arquivado":view.sources?.[value.id]?.uncertain?"Conferir fontes":"Ativo")}</p><p className="mt-2 line-clamp-2 break-all text-sm">{valueLabel(value.canonical)}</p></div>
+<div className="text-sm text-muted"><p>{view.sources?.[value.id]?.count ?? "—"} {t("fontes")}</p>{origins[value.id] && <Link prefetch={false} className="mt-1 block text-xs text-accent underline" href={origins[value.id]!.href}>{t("Scan de origem")} #{origins[value.id]!.number}</Link>}</div>
+<div className="flex flex-wrap gap-2"><Link prefetch={false} className="ui-btn" href={view.valueLinks[value.id]!+"#managed-sources"}>{t("Ver fontes")}</Link><Link prefetch={false} className="ui-btn ui-btn-primary" href={view.valueLinks[value.id]!+(value.archived_at?"":"#managed-editor")}>{t(value.archived_at?"Abrir Variável":"Editar")}<ArrowRight size={16} aria-hidden="true" /></Link></div>
+</li>)}</ul>}
     {view.sources===null && <p role="status" className="mt-3 text-sm text-muted">{t("Contagem de fontes indisponível. Abra o valor para consultar seus vínculos.")}</p>}
     <SitePagination page={page} total={view.total} base={base} query={{filter,q}} />
   </SitePage>;

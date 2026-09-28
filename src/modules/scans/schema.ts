@@ -24,7 +24,7 @@ export type DetectedOccurrence = z.infer<typeof occurrenceInputSchema>;
 export type Occurrence = z.infer<typeof occurrenceSchema>;
 export const scanSchema = z.object({
   id: z.uuid(), site_id: z.uuid(), workspace_id: z.uuid(), actor_id: z.uuid(), connection_id: z.uuid(),
-  status: z.enum(["preview", "running", "paused", "completed", "limited", "cancelled"]),
+  status: z.enum(["preview", "queued", "running", "paused", "completed", "limited", "cancelled"]),
   item_limit: z.number().int().min(1).max(500).optional(),
   plan: planSchema, collection_index: z.number().int(), item_offset: z.number().int(),
   collection_items_read: z.record(z.string(), z.number().int().nonnegative()).nullish(),

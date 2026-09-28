@@ -9,6 +9,8 @@ import { hashOAuthState, newOAuthState, verifyOAuthState } from "@/connectors/we
 import { requireUser } from "@/modules/auth/service";
 import { getConnectionReader, loadSitePreview, requireWorkspaceOwner } from "./service";
 import { confirmSiteSchema, sitePreviewInputSchema, startConnectionSchema } from "./schema";
+import { rememberConnectedSite } from "./metadata-service";
+import type { WebflowSite } from "@/connectors/webflow/schemas";
 
 export async function startWebflowConnection(form: FormData) {
   const input = startConnectionSchema.safeParse({ id: form.get("id"), workspaceId: form.get("workspaceId"), confirmed: form.get("confirmed") });
@@ -55,6 +57,7 @@ export async function confirmSiteConnection(form: FormData) {
   const input = confirmSiteSchema.safeParse({ id: form.get("id"), confirmed: form.get("confirmed") });
   if (!input.success) redirect("/dashboard?error=confirmation");
   const preview = await loadSitePreview(input.data.id);
+  let confirmedSite:WebflowSite|undefined;
   // A completed preview is idempotent even if provider access subsequently changes.
   if (!preview.site_id) {
     const { reader } = await getConnectionReader(preview.connection_id);
@@ -62,11 +65,13 @@ export async function confirmSiteConnection(form: FormData) {
     try { sites = await reader.sites(); } catch { redirect("/dashboard/sites/preview/" + input.data.id + "?error=provider"); }
     const site = sites.find((s) => s.id === preview.webflow_site_id);
     if (!site || site.displayName !== preview.display_name) redirect("/dashboard/sites/preview/" + input.data.id + "?error=changed");
+    confirmedSite=site;
   }
   const { client } = await requireUser();
   const result = await client.rpc("confirm_webflow_site", { p_id: input.data.id });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error || !result.data) redirect("/dashboard/sites/preview/" + input.data.id + "?error=confirmation");
+  if(confirmedSite)await rememberConnectedSite(result.data,confirmedSite).catch(()=>{ /* Metadata may be refreshed explicitly; connection is already confirmed. */ });
   revalidatePath("/dashboard/workspaces/" + preview.workspace_id + "/sites");
   redirect("/dashboard/sites/" + result.data + "/scans");
 }

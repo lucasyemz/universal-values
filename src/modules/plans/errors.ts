@@ -1,4 +1,5 @@
 const messages: Record<string, string> = {
+  quota_scan_queue: "A fila já tem 20 scans. Aguarde uma pesquisa terminar ou cancele um scan antes de iniciar outro.",
   quota_sites: "O plano gratuito permite 1 site Webflow por conta, somando todos os workspaces.",
   quota_scans_month: "Você atingiu os 5 scans deste mês. A cota renova no primeiro dia do próximo mês, às 00h UTC.",
   quota_fields_month: "Esta operação ultrapassa a cota de 50 campos confirmados por mês. Reduza a seleção ou aguarde a renovação.",

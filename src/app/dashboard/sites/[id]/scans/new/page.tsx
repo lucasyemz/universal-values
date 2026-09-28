@@ -29,9 +29,12 @@ export default async function NewScanPage({ params, searchParams }: { params: Pr
   const base = await siteLink(id);
   const metadata=await readMetadata(id,"collections");
   const collections=metadata.fresh?metadata.data?.collections:null;
-  return <SitePage site={site} title={t("Novo scan")} description={t("Escolha onde buscar e o que encontrar. Você revisará o escopo antes de iniciar.")}>
+  return <SitePage site={site} title={t("Novo scan")} description={t("Escolha as coleções e o que deseja encontrar. Clique em Pesquisar para iniciar.")}>
     <div className="mb-5"><FreshLink href={`/dashboard/sites/${id}/scans`}>{t("← Voltar aos scans")}</FreshLink></div>
-    {error && <Notice tone="danger" title={t("Não foi possível preparar o scan")}>{error==='scope'?t("Selecione de 1 a 20 coleções e pelo menos um tipo ou texto específico."):t("Confira a conexão com o Webflow e tente preparar a prévia novamente.")}</Notice>}
+    {error && <Notice tone={error==='active'?'warning':'danger'} title={t(error==='active'?"Já existe um scan ativo":"Não foi possível iniciar o scan")}>
+      {t(error==='active'?"Já existe um scan em andamento ou pausado neste site. Conclua ou cancele esse scan antes de iniciar outro.":error==='scope'?"Selecione de 1 a 20 coleções e pelo menos um tipo ou texto específico.":error==='provider'?"Confira a conexão com o Webflow e tente iniciar o scan novamente.":"Não foi possível iniciar a pesquisa. Atualize a página e tente novamente.")}
+      {error==='active' && <div className="mt-3"><FreshLink href={base+'/scans'}>{t("Ver scans do site")}</FreshLink></div>}
+    </Notice>}
     <MetadataRefresh siteId={id} fetchedAt={metadata.entry?.fetchedAt}/>
     {!collections ? <Notice tone="danger" title={t(metadata.denied ? "Conexão indisponível" : "Atualize as coleções para continuar")}>{t(metadata.denied ? "Confira as permissões nas configurações do Webflow." : "A estrutura salva está ausente ou expirou. Atualize quando quiser preparar um scan.")}</Notice> : <NewScanWizard siteId={id} operationId={randomUUID()} collections={collections} staticHref={base + "/static"} initialQuery={q?.slice(0,200)} />}
 

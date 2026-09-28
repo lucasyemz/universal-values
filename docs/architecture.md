@@ -44,7 +44,7 @@ Provider telemetry records action/endpoint class, read/write, status/429, durati
 
 ## Execution and monitoring
 
-Scans remain browser-scheduled bounded reads. CMS confirmed changes run independently in a durable FIFO queue. The worker's authoritative runnable predicate is reused by the SQL Cron gate; the gate neither claims nor reserves work. Idle Cron performs no Edge invocation. Immediate kicks are best-effort, durably deduplicated per confirmed operation; failure does not invalidate confirmation, and Cron recovers it.
+Scans remain browser-scheduled bounded reads. Confirmed scans enter a bounded FIFO queue; the visible, online dashboard activity runner dispatches eligible batches through the shared database predicate. Paused scans require explicit resume or cancellation. See the queue contract in [scans](scans.md). CMS confirmed changes run independently in a durable FIFO queue. The worker's authoritative runnable predicate is reused by the SQL Cron gate; the gate neither claims nor reserves work. Idle Cron performs no Edge invocation. Immediate kicks are best-effort, durably deduplicated per confirmed operation; failure does not invalidate confirmation, and Cron recovers it.
 
 Edge batches are sequential, at most three fields with a strict 90-second budget, pacing and reserved time before starting another field. Stop on cooldown, uncertainty or required attention. Preserve per-field dispatch intent, leases, result verification and no-resend behavior.
 

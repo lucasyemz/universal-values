@@ -86,6 +86,8 @@ export type Database = {
       finish_cms_change: { Args: { p_id: string; p_cursor: number; p_lease: string; p_result: Json; p_wait?: number }; Returns: string };
       cancel_cms_changes: { Args: { p_id: string }; Returns: string };
       preview_cms_scan: { Args: { p_id: string; p_site_id: string; p_plan: Json; p_truncated: boolean }; Returns: string };
+      start_cms_scan: { Args: { p_id: string; p_site_id: string; p_plan: Json; p_truncated: boolean }; Returns: string };
+      next_cms_scan: { Args: Record<string, never>; Returns: Json };
       confirm_cms_scan: { Args: { p_id: string }; Returns: string };
       claim_cms_scan_batch: { Args: { p_id: string; p_revision: number; p_lease: string }; Returns: boolean };
       save_cms_scan_batch: { Args: { p_id: string; p_revision: number; p_lease: string; p_rows: Json; p_items: number; p_next_collection: number; p_next_offset: number; p_truncated: boolean; p_skipped: number }; Returns: string };

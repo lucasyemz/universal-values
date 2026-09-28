@@ -5,12 +5,16 @@ import Link from "next/link";
 import type { Scan } from "@/modules/scans/schema";
 
 export function ScanCollectionCell({scan,href}:{scan:Pick<Scan,"plan">;href?:string}) {
+  return <CollectionTags collections={scan.plan} href={href} />;
+}
+
+export function CollectionTags({collections,href}:{collections:{id:string;name:string}[];href?:string}) {
   const t=useText();
   const [open,setOpen]=useState(false);
   const root=useRef<HTMLDivElement>(null);
   const trigger=useRef<HTMLButtonElement>(null);
   const popupId=useId();
-  const [first,...others]=scan.plan;
+  const [first,...others]=collections;
   useEffect(()=>{
     if(!open)return;
     const outside=(event:PointerEvent)=>{if(!root.current?.contains(event.target as Node))setOpen(false);};

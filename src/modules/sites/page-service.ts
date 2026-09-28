@@ -1,3 +1,4 @@
+import { ACTIVITY_PAGE_SIZE, loadActivityPage } from "./activity-batches";
 import { operationLinks, resourceLinks } from "@/modules/routes/links";
 import { scanListSchema, reviewSummarySchema, scanReviewSummary } from "@/modules/scans/list-summary";
 
@@ -6,17 +7,20 @@ import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
 import { getScanSite } from "@/modules/scans/service";
 import { savedValueSchema } from "@/modules/scans/schema";
-import { activityRowSchema, decodeActivityCursor, encodeActivityCursor } from "./activity-page";
-import { activityDestination, PAGE_SIZE } from "./presentation";
+import { activityDetailsSchema, activityRowSchema, decodeActivityCursor, encodeActivityCursor } from "./activity-page";
+import { activityDestination, PAGE_SIZE, SCANS_PAGE_SIZE } from "./presentation";
 
 export async function siteScansPage(id: string, page: number) {
   const site = await getScanSite(id); const { client } = await requireUser();
-  const result = await client.from("cms_scans").select("id,status,plan,created_at,collection_items_read", { count: "exact" }).eq("site_id", id).order("created_at", { ascending: false }).order("id").range((page-1)*PAGE_SIZE, page*PAGE_SIZE-1);
+  const result = await client.from("cms_scans").select("id,status,plan,created_at,collection_items_read", { count: "exact" }).eq("site_id", id).order("created_at", { ascending: false }).order("id").range((page-1)*SCANS_PAGE_SIZE, page*SCANS_PAGE_SIZE-1);
   if (result.error) throw new Error("Não foi possível carregar os scans. Atualize a página para tentar novamente.");
   const scans = z.array(scanListSchema).parse(result.data);
-  const summaries = scans.length ? await client.rpc("scan_review_summaries", {p_ids:scans.map(scan=>scan.id)}) : {data:[],error:null};
-  if(summaries.error)throw new Error("Não foi possível carregar as contagens de revisão. Confira a migration da Phase B.");
-  const summaryRows=z.array(reviewSummarySchema).parse(summaries.data);
+  const summaryRows: z.infer<typeof reviewSummarySchema>[] = [];
+  for (let start = 0; start < scans.length; start += 5) {
+    const summaries = await client.rpc("scan_review_summaries", {p_ids:scans.slice(start,start+5).map(scan=>scan.id)});
+    if(summaries.error) throw new Error("Não foi possível carregar as contagens de revisão. Confira a migration da Phase B.");
+    summaryRows.push(...z.array(reviewSummarySchema).parse(summaries.data));
+  }
   const reviewCounts=Object.fromEntries(scans.map(scan=>{const row=summaryRows.find(r=>r.scan_id===scan.id);return [scan.id,row?scanReviewSummary(scan,row):null];}));
   return { site, scans, reviewCounts, scanLinks: await resourceLinks("scans",scans.map(scan=>scan.id)), total: result.count ?? 0 };
 }
@@ -34,17 +38,19 @@ export async function siteValuesPage(id: string, page: number, query: string, fi
   const sources=Object.fromEntries(z.array(z.object({managed_value_id:z.uuid(),count:z.number().int().nonnegative(),uncertain:z.boolean()})).parse(bindings.data).map(row=>[row.managed_value_id,{count:row.count,uncertain:row.uncertain}]));
   return { site, values, sources, valueLinks: await resourceLinks("managed-values",values.map(value=>value.id)), total: result.count ?? 0 };
 }
-export type SiteActivity = { id: string; source: "cms" | "static"; title: string; target: string; status: string; label?: string; verified: number; total: number; createdAt: string; href: string; attention: boolean };
+export type SiteActivity = { id: string; source: "cms" | "static"; title: string; target: string; status: string; label?: string; verified: number; total: number; createdAt: string; href: string; attention: boolean; details?: z.infer<typeof activityDetailsSchema> | null };
 export async function siteChangesPage(id: string, page: number, filter: string, cursor?: string, previous = false) {
   const site = await getScanSite(id); const { client } = await requireUser();
   const decoded = decodeActivityCursor(cursor);
-  const result = await client.rpc("site_activity_page", { p_site: id, p_filter: filter, p_offset: (page-1)*PAGE_SIZE, p_cursor: decoded ?? null, p_previous: !!decoded && previous });
-  if (result.error) throw new Error("Não foi possível carregar o histórico completo. Atualize a página ou selecione uma origem.");
-  const rows = z.array(activityRowSchema).parse(result.data);
-  const visible = rows.slice(0,PAGE_SIZE);
+  const rows = await loadActivityPage(async (cursor, offset) => {
+    const result = await client.rpc("site_activity_page", { p_site: id, p_filter: filter, p_offset: offset, p_cursor: cursor, p_previous: !!decoded && previous });
+    if (result.error) throw new Error("Não foi possível carregar o histórico completo. Atualize a página ou selecione uma origem.");
+    return z.array(activityRowSchema).parse(result.data);
+  }, decoded, decoded ? 0 : (page-1)*ACTIVITY_PAGE_SIZE);
+  const visible = rows.slice(0,ACTIVITY_PAGE_SIZE);
   if (decoded && previous) visible.reverse();
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(visible.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",visible.filter(row=>row.source==="static").map(row=>row.id))]);
-  return { site, rows: visible.map(row=>({...row, createdAt: row.created_at, label: row.label ?? undefined, href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!, row.attention, row.status)})), hasMore: decoded && previous ? true : rows.length>PAGE_SIZE, limited: filter === "attention",
+  return { site, rows: visible.map(row=>({...row, createdAt: row.created_at, label: row.label ?? undefined, href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!, row.attention, row.status)})), hasMore: decoded && previous ? true : rows.length>ACTIVITY_PAGE_SIZE, limited: filter === "attention",
     nextCursor: visible.length ? encodeActivityCursor(visible[visible.length-1]!) : undefined,
     previousCursor: visible.length ? encodeActivityCursor(visible[0]!) : undefined };
 }

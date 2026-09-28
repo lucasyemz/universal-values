@@ -23,6 +23,18 @@ export async function readMetadata(siteId:string,kind:MetadataKind='site',collec
  return {...snapshot,data,fresh,denied};
 }
 // Only pending work is shared. Never a resolved credential/result cache or authorization cache.
+export async function rememberConnectedSite(siteId:string, remote:unknown) {
+ const data={site:siteSchema.parse(remote)};
+ const before=await readMetadata(siteId,'site');
+ if(before.status!=='ready'||before.site.webflow_site_id!==data.site.id)return;
+ const {client}=await requireUser();
+ const args={p_site:siteId,p_kind:'site',p_collection:'',p_generation:before.generation,p_lease:randomUUID()};
+ const claim=await client.rpc('webflow_metadata',{...args,p_action:'claim'});
+ if(claim.error||z.object({status:z.string()}).parse(claim.data).status!=='claimed')return;
+ const result=await client.rpc('webflow_metadata',{...args,p_action:'finish',p_data:data});
+ if(result.error)throw new Error('Saved Webflow metadata unavailable.');
+}
+
 const flights=new Map<string,Promise<void>>();
 export async function refreshMetadata(siteId:string,kind:MetadataKind='collections',collection='') {
  const before=await readMetadata(siteId,kind,collection); // Every caller independently checks current ownership.

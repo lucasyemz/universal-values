@@ -9,6 +9,7 @@ import { failedChangesForRetry } from "./retry-changes";
 import { buildRevertPlan, reversibleFieldCount } from "./revert-changes";
 
 export const changeRequestSchema = z.object({
+  created_at: z.string().optional(),
   id: z.uuid(), scan_id: z.uuid().nullable(), site_id: z.uuid(), workspace_id: z.uuid(), actor_id: z.uuid(), connection_id: z.uuid(),
   slug_updates: slugUpdatesSchema.nullish(),
   changes: z.union([changesSchema, z.tuple([])]),

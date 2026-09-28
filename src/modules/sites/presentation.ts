@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const siteSearchSchema = z.string().trim().max(200).catch("");
 export const PAGE_SIZE = 5;
+export const SCANS_PAGE_SIZE = 20;
 export const sitePageNumber = (input?: string) => z.coerce.number().int().min(1).max(200).catch(1).parse(input ?? 1);
 export const changeFilterSchema = z.enum(["all", "cms", "static", "attention"]);
 export const valueFilterSchema = z.enum(["active", "archived", "all"]);
@@ -16,10 +17,10 @@ export function cmsOperationSummary(input: { status: string; results: unknown; e
 }
 
 export function activityDestination(href: string, attention: boolean, status: string) {
-  const [path, query = ""] = href.split("?");
+  const [path, query = ""] = href.split("#")[0]!.split("?");
   if (!path || !/\/scans\/[1-9][0-9]*$/.test(path)) return href;
   const params = new URLSearchParams(query);
   // Failed/unresolved fields are not reviewed. Keep operation context, show both sets.
   if (attention || ["confirmed", "preview", "expired", "cancelled"].includes(status)) params.set("filter", "all");
-  return path + (params.size ? "?" + params : "");
+  return path + (params.size ? "?" + params : "") + (/^[1-9][0-9]*$/.test(params.get("operation") ?? "") ? "#operation-results" : "");
 }
