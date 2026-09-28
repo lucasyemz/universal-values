@@ -53,6 +53,18 @@ export async function siteOverview(id: string) {
   const response = await client.rpc("site_overview_summary", { p_site: id });
   if(response.error) throw new Error("Não foi possível carregar o resumo. Atualize a página para tentar novamente.");
   const data = z.object({activeValues:z.number(),scanCount:z.number(),latestScanAt:z.string().nullable(), scans:z.array(z.object({id:z.uuid(),status:z.string(),occurrences_count:z.number(),created_at:z.string()})), running:z.array(z.object({id:z.uuid(),status:z.string()})),uncertainCount:z.number(),uncertain:z.array(z.object({managed_value_id:z.uuid()})), recent:z.array(activityRowSchema),activity:z.array(z.object({id:z.uuid(),source:z.enum(["cms","static","scan"])}))}).parse(response.data);
+  const recentIds = data.scans.slice(0, 3).map(scan => scan.id);
+  const [scanRows, summaryResult] = recentIds.length ? await Promise.all([
+    client.from("cms_scans").select("id,status,plan,created_at,collection_items_read").eq("site_id", id).in("id", recentIds),
+    client.rpc("scan_review_summaries", { p_ids: recentIds }),
+  ]) : [{ data: [], error: null }, { data: [], error: null }];
+  if (scanRows.error || summaryResult.error) throw new Error("Não foi possível carregar os scans. Atualize a página para tentar novamente.");
+  const recentScans = z.array(scanListSchema).parse(scanRows.data).sort((a,b) => recentIds.indexOf(a.id) - recentIds.indexOf(b.id));
+  const summaryRows = z.array(reviewSummarySchema).parse(summaryResult.data);
+  const reviewCounts = Object.fromEntries(recentScans.map(scan => {
+    const row = summaryRows.find(summary => summary.scan_id === scan.id);
+    return [scan.id, row ? scanReviewSummary(scan, row) : null];
+  }));
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(data.recent.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",data.recent.filter(row=>row.source==="static").map(row=>row.id))]);
   const recent={rows:data.recent.map(row=>({...row,createdAt:row.created_at,label:row.label??undefined,href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!,row.attention,row.status)}))};
   const scans={data:data.scans,count:data.scanCount},running={data:data.running},uncertain={data:data.uncertain,count:data.uncertainCount};
@@ -62,5 +74,5 @@ export async function siteOverview(id: string) {
     ...recent.rows.map(row => ({ id: row.id, title: row.title, description: `${row.target} · ${row.verified}/${row.total} verificados`, createdAt: row.createdAt, status: row.status, label: row.label, href: row.href })),
   ].sort((a,b)=>data.activity.findIndex(row=>row.id===a.id)-data.activity.findIndex(row=>row.id===b.id)).filter(row=>data.activity.some(item=>item.id===row.id));
   const attention = !!running.data?.length || (uncertain.count ?? 0)>0 || recent.rows.some(row=>row.attention);
-  return { attention, activity, site, scanLinks, valueLinks, activeValues: data.activeValues, scanCount: scans.count ?? 0, scans: scans.data ?? [], running: running.data ?? [], uncertainCount: uncertain.count ?? 0, uncertain: uncertain.data ?? [], recent: recent.rows };
+  return { recentScans, reviewCounts, attention, activity, site, scanLinks, valueLinks, activeValues: data.activeValues, scanCount: scans.count ?? 0, scans: scans.data ?? [], running: running.data ?? [], uncertainCount: uncertain.count ?? 0, uncertain: uncertain.data ?? [], recent: recent.rows };
 }

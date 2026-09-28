@@ -226,3 +226,25 @@
  .scan-group-direct-actions { position: relative; top: auto; right: auto; justify-content: flex-end; flex-wrap: wrap; margin: 0 0 12px; }
  .scan-group-shell:has(.scan-group-direct-actions) .scan-group-heading-actions { padding-right: 0; }
 }
+
+/* Shared scan history presentation, condensed for the overview column. */
+.scan-history-card.scan-history-card-compact { grid-template-columns:minmax(0,1fr); gap:12px; padding:16px; }
+.scan-history-card-compact .scan-history-counts { border-left:0; padding-left:0; gap:16px; }
+.scan-history-card-compact .scan-history-count>span { min-width:30px; height:30px; font-size:14px; }
+.scan-history-card-compact .scan-history-actions { grid-column:1/-1; justify-content:flex-start; }
+@media(min-width:640px) {
+ .scan-history-card.scan-history-card-compact { grid-template-columns:minmax(0,1fr) auto; }
+ .scan-history-card-compact > :nth-child(2) { grid-column:1/-1; grid-row:2; }
+ .scan-history-card-compact > :nth-child(4) { grid-column:2; grid-row:1; }
+ .scan-history-card-compact .scan-history-counts { grid-column:1/-1; }
+}
+
+.change-history-card { display:flex; flex-direction:column; min-width:0; height:100%; padding:16px; border:1px solid var(--border-default); border-radius:14px; background:white; box-shadow:0 3px 14px #102a5605; }
+.scan-history-card-compact .scan-history-actions { align-self:end; }
+@media(min-width:1280px) {
+ .overview-history { align-items:stretch; grid-template-rows:auto repeat(3,auto); row-gap:12px; }
+ .overview-history > section { display:grid; grid-row:span 4; grid-template-rows:subgrid; }
+ .overview-history > section > :first-child { margin-bottom:4px; }
+ .overview-history > section > ul { display:grid; grid-row:span 3; grid-template-rows:subgrid; }
+ .overview-history > section > ul > li { margin:0; height:100%; }
+}

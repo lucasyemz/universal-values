@@ -1,3 +1,5 @@
+import { ChangeCard } from "@/components/sites/change-card";
+import { ScanHistoryList } from "@/components/scans/history-list";
 import { dashboardMetadata } from "@/modules/dashboard/metadata";
 
 export async function generateMetadata() {
@@ -9,7 +11,7 @@ import { QuickSearch } from "@/components/sites/quick-search";
 import { savedQuerySchema } from "@/modules/scans/saved-search";
 import { getText } from "@/i18n/server";
 import Link from "next/link";
-import { CircleCheck, CircleAlert, ArrowUpRight, ArrowRight, FileText, History, Database, TriangleAlert, Compass, Plus } from "lucide-react";
+import { CircleCheck, CircleAlert, ArrowUpRight, ArrowRight, FileText, Database, TriangleAlert, Compass, Plus } from "lucide-react";
 import { SitePage } from "@/components/sites/site-page";
 import { StatusBadge, EmptyState } from "@/components/ui";
 import { siteOverview } from "@/modules/sites/page-service";
@@ -43,20 +45,14 @@ export default async function OverviewPage({ params, searchParams }: { params: P
       {view.recent.filter(row=>row.attention).map(row=><li key={row.id}><Link prefetch={false} href={row.href} className="inline-flex flex-wrap items-center gap-2 underline">{t(row.title)} · {row.target} · {siteDate(row.createdAt,t.dateLocale)}<StatusBadge status={row.status} label={row.label}/></Link></li>)}</ul>
       <p className="mt-3 text-xs text-muted">{t("Resumo dos registros salvos e das últimas cinco operações. Não é uma verificação em tempo real do Webflow; confira os resultados dos scans para revisar o conteúdo encontrado.")}</p>
     </section>
-    <div className="grid items-start gap-6 xl:grid-cols-2">
+    <div className="overview-history grid items-start gap-6 xl:grid-cols-2">
       <section aria-labelledby="recent-scans-heading" className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 id="recent-scans-heading" className="text-lg font-semibold">{t("Scans recentes")}</h2><Link prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline" href={base + '/scans'}>{t("Ver todos os scans")}<ArrowRight size={15} aria-hidden="true" /></Link></div>
-        {!view.scans.length ? <EmptyState title={t("Seu histórico começa com um scan")} description={t("Buscas e operações registradas aparecerão aqui.")} /> : <ul className="space-y-3">{view.scans.slice(0, 3).map(scan => <li key={scan.id} className="rounded-xl border bg-white p-5">
-          <div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><FileText size={23} aria-hidden="true" /></span><div className="min-w-0 flex-1"><h3 className="font-semibold">{t("Scan do CMS")} #{view.scanLinks[scan.id]!.split('/').at(-1)}</h3><p className="mt-1 text-xs text-muted">{siteDate(scan.created_at, t.dateLocale)}</p></div><StatusBadge status={scan.status} /></div>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-3"><div><p className="text-2xl font-semibold tabular-nums">{scan.occurrences_count}</p><p className="text-xs text-muted">{t("ocorrências")}</p></div><Link prefetch={false} className="ui-btn" href={view.scanLinks[scan.id]!}>{t("Ver resultados")}<ArrowRight size={15} aria-hidden="true" /></Link></div>
-        </li>)}</ul>}
+        {!view.scans.length ? <EmptyState title={t("Seu histórico começa com um scan")} description={t("Buscas e operações registradas aparecerão aqui.")} /> : <ScanHistoryList compact scans={view.recentScans} links={view.scanLinks} counts={view.reviewCounts} />}
       </section>
       <section aria-labelledby="recent-changes-heading" className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 id="recent-changes-heading" className="text-lg font-semibold">{t("Alterações recentes")}</h2><Link prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline" href={base + '/changes'}>{t("Ver todas as alterações")}<ArrowRight size={15} aria-hidden="true" /></Link></div>
-        {!view.recent.length ? <EmptyState title={t("Nenhuma alteração registrada")} description={t("As alterações do CMS e do Designer aparecerão aqui.")} /> : <ul className="space-y-3">{view.recent.slice(0, 3).map(row => <li key={row.id} className="rounded-xl border bg-white p-5">
-          <div className="flex items-start gap-3"><span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><History size={23} aria-hidden="true" /></span><div className="min-w-0 flex-1"><h3 className="font-semibold">{t(row.title)}</h3><p className="mt-1 break-words text-xs text-muted">{row.target} · {siteDate(row.createdAt, t.dateLocale)}</p></div><StatusBadge status={row.status} label={row.label} /></div>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-3"><div><p className="text-2xl font-semibold tabular-nums">{row.verified}<span className="text-base font-normal text-muted"> / {row.total}</span></p><p className="text-xs text-muted">{t("verificados")}</p></div><Link prefetch={false} className="ui-btn" href={row.href}>{t("Ver detalhes")}<ArrowRight size={15} aria-hidden="true" /></Link></div>
-        </li>)}</ul>}
+        {!view.recent.length ? <EmptyState title={t("Nenhuma alteração registrada")} description={t("As alterações do CMS e do Designer aparecerão aqui.")} /> : <ul className="space-y-3">{view.recent.slice(0, 3).map(row => <ChangeCard key={row.source + row.id} row={row} />)}</ul>}
       </section>
     </div>
   </SitePage>;
