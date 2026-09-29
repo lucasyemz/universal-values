@@ -23,6 +23,8 @@ Centralizing creates bindings, not a Webflow write. Changing a central value req
 
 CMS writes target staged content and never publish automatically. External edits are conflicts, not something to overwrite silently. A completed operation can contain partial failure; show each source outcome. A dispatched write with an unknown result must be reconciled rather than resent.
 
+For a recorded Variable conflict, an explicit reference review may reread the selected field. Unchanged, unambiguous managed text can receive a separately confirmed reference-only update that preserves external surrounding edits. Healthy fields remain untouched. Missing/changed/ambiguous ranges and uncertain writes cannot be silently rebound. Updating the variable afterwards still uses the normal confirmed write workflow. See [reference resolution](managed-value-sync.md).
+
 ## Interface
 
 Use a light, compact list + inspector for editing, shared before/after presentation and accessible focus/loading/error states. Selected tabs need an indicator beyond color. Site inventories use compact responsive cards; activity uses tables/lists. Show readable item/field/class/component context instead of UUIDs or raw image JSON. Original image thumbnails remain in the list; load the replacement preview when its URL changes.
@@ -40,3 +42,5 @@ See [scans](scans.md), [CMS changes](cms-changes.md), [Variables](managed-value-
 ## Shared terminology
 
 Dashboard and Designer use ReplaceAll, Find, Review occurrences, Replace with, Preview changes, Apply changes, Variables, History and CMS Explorer. PT-BR: Buscar, Revisar ocorrências, Substituir por, Conferir alterações, Aplicar alterações, Variáveis, Histórico and CMS Explorer. Historical Global Facts is labelled Business reference (legacy). These are presentation changes only; domain, API/MCP, draft and security identifiers remain compatible. See [Slice 1](terminology-slice-1.md).
+
+Resource cards for scans, history and Variables show the permanent public resource number in the leading badge and the type icon beside the title, including recent overview cards. History uses the operation number when linking into a scan. Numbers come from existing authenticated links, never list positions or internal UUIDs. This presentation adds no Q/W/I/E/G work.

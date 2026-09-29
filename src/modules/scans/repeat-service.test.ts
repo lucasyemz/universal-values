@@ -17,8 +17,8 @@ it("copies the exact persisted plan through preview and confirmation with the sa
   const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
   const input = { id: "new", scanId: "old", digest: repeatDigest(scan) };
   await confirmRepeat(input); await confirmRepeat(input);
-  expect(rpc.mock.calls.map(call => call[0])).toEqual(["start_cms_scan", "start_cms_scan"]);
-  expect(rpc.mock.calls[0]?.[1]).toEqual({ p_id: "new", p_site_id: "site", p_plan: scan.plan, p_truncated: false });
+  expect(rpc.mock.calls.map(call => call[0])).toEqual(["repeat_cms_scan", "repeat_cms_scan"]);
+  expect(rpc.mock.calls[0]?.[1]).toEqual({ p_id: "new", p_scan_id: "old" });
   expect(rpc.mock.calls[1]?.[1]).toEqual(rpc.mock.calls[0]?.[1]); expect(fetcher).not.toHaveBeenCalled();
 });
 it("rejects stale summary, changed connection and running source before mutations", async () => {
@@ -33,6 +33,11 @@ it("does not confirm a failed preview", async () => {
   rpc.mockResolvedValueOnce({ error: { message: "quota" } });
   await expect(confirmRepeat({ id: "new", scanId: "old", digest: repeatDigest(scan) })).rejects.toThrow("limite");
   expect(rpc).toHaveBeenCalledTimes(1);
+});
+it("lets the atomic gateway recover an already-confirmed repeat after its source became historical",async()=>{
+ mocks.getScan.mockResolvedValue({...scan,is_latest:false});
+ await expect(confirmRepeat({id:"new",scanId:"old",digest:repeatDigest(scan)})).resolves.toBe("new");
+ expect(rpc).toHaveBeenCalledWith("repeat_cms_scan",{p_id:"new",p_scan_id:"old"});
 });
 it("resolves repeat numbers within current account and site and never mutates on open", async () => {
   const eq = vi.fn(); const chain = { select: () => chain, eq, maybeSingle: async () => ({ data: { resource_id: "old" }, error: null }) }; eq.mockReturnValue(chain);

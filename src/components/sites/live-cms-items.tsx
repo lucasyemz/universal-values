@@ -1,5 +1,5 @@
 "use client";
-import {useState,useRef,useEffect,useCallback} from "react";
+import {useState,useRef,useEffect,useCallback,useMemo} from "react";
 import {useText} from "@/i18n/use-text";
 import {ContentFreshness} from "./content-freshness";
 import {filterExplorerItems,explorerItemDate} from "@/modules/sites/explorer-presentation";
@@ -52,6 +52,8 @@ export function LiveCmsItems({scope,collections,initialCollection,initialDetails
   finally{if(sequence.current===current)setPending(false);}
  };
  const view=result?.view;
+ const filteredItems=useMemo(()=>view?.page ? filterExplorerItems(view.page.items,query) : [],[view,query]);
+ const fieldNames=useMemo(()=>new Map(view?.details?.fields.map(field=>[field.slug,field.displayName]) ?? []),[view]);
  return <section>
  <MetadataRefresh disabled={pending||cooldown>0} onRateLimit={rateLimit} onRefreshStart={clear} compact siteId={scope.siteId} kind={collectionId?'schema':'collections'} collection={collectionId} fetchedAt={fetchedAt}/>
  {!fresh&&<p className="mb-3 text-xs text-muted">{t("Atualização recomendada")}</p>}
@@ -65,13 +67,13 @@ export function LiveCmsItems({scope,collections,initialCollection,initialDetails
  {error&&<div role="alert" className="mt-4"><p>{error}</p><button className="ui-btn mt-2" disabled={pending||cooldown>0} onClick={()=>void load(offset)}>{t("Tentar novamente")}</button></div>}
      {view?.details && view.page && <section className="mt-10">
       <div className="flex flex-wrap items-center justify-between gap-3"><label className="block min-w-0 sm:w-80"><span className="sr-only">{t("Pesquisar nesta página")}</span><input type="search" value={query} onChange={event=>setQuery(event.target.value)} placeholder={t("Pesquisar nesta página")} className="w-full"/></label><p className="text-sm text-muted">{t("Mostrando {0}–{1} de {2}",view.page.items.length?view.page.pagination.offset+1:0,view.page.pagination.offset+view.page.items.length,view.page.pagination.total)}</p></div>
-      {query&&<p className="mt-2 text-xs text-muted">{t("{0} resultados nesta página",filterExplorerItems(view.page.items,query).length)}</p>}
+      {query&&<p className="mt-2 text-xs text-muted">{t("{0} resultados nesta página",filteredItems.length)}</p>}
       {!view.page.items.length && <EmptyState title={t("Nenhum item nesta página")} description={t("Escolha outra coleção ou volte à primeira página.")} action={view.page.pagination.offset > 0 ? <button className="ui-btn" disabled={pending||cooldown>0} onClick={()=>load(0)}>{t("Primeira página")}</button> : undefined} /> }
-      <div className="mt-4"><DataTable label={t("Itens do CMS")}><thead><tr><th>Item</th><th>{t("Estado")}</th><th>{t("Atualizado")}</th><th>{t("Conteúdo")}</th></tr></thead><tbody>{filterExplorerItems(view.page.items,query).map((item) => <tr key={item.id + ":" + (item.cmsLocaleId ?? "")}>
+      <div className="mt-4"><DataTable label={t("Itens do CMS")}><thead><tr><th>Item</th><th>{t("Estado")}</th><th>{t("Atualizado")}</th><th>{t("Conteúdo")}</th></tr></thead><tbody>{filteredItems.map((item) => <tr key={item.id + ":" + (item.cmsLocaleId ?? "")}>
         <td className="min-w-44 align-top"><h3 className="font-semibold">{typeof item.fieldData.name === "string" ? item.fieldData.name : item.id}</h3>{item.cmsLocaleId && localeLabels[item.cmsLocaleId] && <p className="mt-2 text-xs text-muted">{localeLabels[item.cmsLocaleId]}</p>}</td>
         <td className="align-top"><StatusBadge status={item.isDraft ? "draft" : "ready"} label={item.isDraft ? t("Rascunho") : t("Preparado")} />{item.isArchived && <p className="mt-2 text-xs text-muted">{t("Arquivado")}</p>}</td>
         <td className="whitespace-nowrap align-top text-sm text-muted">{explorerItemDate(item.lastUpdated,t.dateLocale)}</td>
-        <td className="min-w-64"><details><summary className="font-medium text-accent">{t("Ver campos do item")}</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{view.details!.fields.find((f) => f.slug === field)?.displayName ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" || typeof value === "number" ? String(value) : typeof value === "boolean" ? t(value ? "Sim" : "Não") : value === null ? t("Não informado") : <details><summary className="text-xs text-muted">{t("Ver dados estruturados")}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
+        <td className="min-w-64"><details><summary className="font-medium text-accent">{t("Ver campos do item")}</summary><dl className="mt-4 space-y-4">{Object.entries(item.fieldData).map(([field, value]) => <div key={field}><dt className="text-xs font-semibold text-muted">{fieldNames.get(field) ?? field}</dt><dd className="mt-1 whitespace-pre-wrap break-words text-sm">{typeof value === "string" || typeof value === "number" ? String(value) : typeof value === "boolean" ? t(value ? "Sim" : "Não") : value === null ? t("Não informado") : <details><summary className="text-xs text-muted">{t("Ver dados estruturados")}</summary><pre className="mt-2 whitespace-pre-wrap break-all text-xs">{JSON.stringify(value, null, 2)}</pre></details>}</dd></div>)}</dl></details></td>
       </tr>)}</tbody></DataTable></div>
       <nav aria-label={t("Paginação de itens")} className="mt-6 flex gap-6">
         {view.page.pagination.offset > 0 && <button className="ui-btn" disabled={pending||cooldown>0} onClick={()=>load(Math.max(0,view.page!.pagination.offset-25))}>{t("Anterior")}</button>}

@@ -35,7 +35,9 @@ export async function confirmRepeat(input: { id: string; scanId: string; digest:
   const { client } = await requireUser();
   // Same immutable preview, confirmation, quota, audit and idempotency gateways.
   // Current remote authorization/collection scope is checked by readScanBatch, after confirmation.
-  const confirmed = await client.rpc("start_cms_scan", { p_id: input.id, p_site_id: site.id, p_plan: repeatPlan(scan), p_truncated: false });
+  const confirmed = await client.rpc("repeat_cms_scan", { p_id: input.id, p_scan_id: scan.id });
+  if (confirmed.error?.message === "Wait for scan changes to finish") throw new Error("Aguarde as alterações deste scan terminarem antes de criar outra versão.");
+  if (confirmed.error?.message === "Historical scan is read-only") throw new Error("Esta versão é somente leitura. Abra a versão mais recente.");
   if (confirmed.error) throw new Error(scanStartError(confirmed.error)==='active' ? "Já existe um scan em andamento ou pausado neste site. Conclua ou cancele esse scan antes de iniciar outro." : "Não foi possível confirmar. Confira seu limite e se já existe um scan ativo.");
   return input.id;
 }

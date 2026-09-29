@@ -1,6 +1,6 @@
 "use client";
 import { LiveTextContext } from "@/components/live-text-context";
-import { liveTextPreview } from "@/modules/scans/live-text-preview";
+import { createLiveTextPreview } from "@/modules/scans/live-text-preview";
 import { variableSelection } from "@/modules/scans/variable-selection";
 import { prepareVariableChanges, confirmVariableChanges } from "@/modules/scans/variable-actions";
 
@@ -11,7 +11,7 @@ import { useText } from "@/i18n/use-text";
 import { AiSuggestion } from "@/components/ai/suggestion";
 import { scanEditingOptions } from "@/modules/scans/centralization";
 import { LockKeyhole, ListChecks, Pencil, MousePointer2 } from "lucide-react";
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useEditorSelection } from "./use-editor-selection";
 import { selectedOccurrenceChanges } from "@/modules/scans/editor-selection";
 import { InlineReview } from "./inline-review";
@@ -24,8 +24,10 @@ import { ReplacementInput } from "./replacement-input";
 import { ImageSelectionEditor } from "./image-selection-editor";
 import { ImageThumbnail } from "./image-thumbnail";
 
+const EMPTY_IDS: string[] = [];
+const EMPTY_LINKS = {};
 type Row = { occurrence: Occurrence; display: ReturnType<typeof occurrencePresentation> };
-export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewedIds = [], editableBoundOccurrenceIds = [], linkedValues = {} }: { outcomes?: Record<string, {status:string; message?:string}>; rows: Row[]; scanId: string; userId: string; reviewedIds?: string[]; editableBoundOccurrenceIds?: string[]; linkedValues?: Record<string, { id: string; name: string; divergence?: boolean; bindingId?: string }> }) {
+export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewedIds = EMPTY_IDS, editableBoundOccurrenceIds = EMPTY_IDS, linkedValues = EMPTY_LINKS }: { outcomes?: Record<string, {status:string; message?:string}>; rows: Row[]; scanId: string; userId: string; reviewedIds?: string[]; editableBoundOccurrenceIds?: string[]; linkedValues?: Record<string, { id: string; name: string; divergence?: boolean; bindingId?: string }> }) {
   const t = useText();
 
   const [variableMode, setVariableMode] = useState(false);
@@ -34,16 +36,19 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
   const [individualMode, setIndividualMode] = useState<{ scope: string; enabled: boolean } | null>(null);
   const editorId = useId();
   const [pending, setPending] = useState(false);
-  const { available: occurrences, protectedIds } = scanEditingOptions(rows.map(row => row.occurrence), linkedValues, editableBoundOccurrenceIds);
-  const { inputs, setInputs, ready, storageError } = useScanDrafts(userId, scanId, rows.map(row => row.occurrence), [...reviewedIds, ...protectedIds]);
-  const selectionSignature = JSON.stringify(occurrences.map(o => [o.id, o.source_value, o.start_pos, o.end_pos]));
+  const sourceOccurrences = useMemo(() => rows.map(row => row.occurrence), [rows]);
+  const { available: occurrences, protectedIds } = useMemo(() => scanEditingOptions(sourceOccurrences, linkedValues, editableBoundOccurrenceIds), [sourceOccurrences, linkedValues, editableBoundOccurrenceIds]);
+  const excludedIds = useMemo(() => [...reviewedIds, ...protectedIds], [reviewedIds, protectedIds]);
+  const { inputs, setInputs, ready, storageError } = useScanDrafts(userId, scanId, sourceOccurrences, excludedIds);
+  const selectionSignature = useMemo(() => JSON.stringify(occurrences.map(o => [o.id, o.source_value, o.start_pos, o.end_pos])), [occurrences]);
   const selectionKey = "copyreplace:editor-selection:" + userId + ":" + scanId + ":" + JSON.stringify(rows[0]?.occurrence.canonical);
   const { ids: selectedIds, setIds: setSelectedIds } = useEditorSelection(selectionKey, selectionSignature);
   const protectedOccurrence = (o: Occurrence) => protectedIds.has(o.id);
   const type = rows[0]?.occurrence.canonical.type;
-  const review = selectedOccurrenceChanges(occurrences, selectedIds, inputs);
+  const review = useMemo(() => selectedOccurrenceChanges(occurrences, selectedIds, inputs), [occurrences, selectedIds, inputs]);
   const selected = review.occurrences;
-  const liveText = liveTextPreview(selected, inputs);
+  const [previewText] = useState(createLiveTextPreview);
+  const liveText = useMemo(() => previewText(selected, inputs), [previewText, selected, inputs]);
   const selectedSet = new Set(selected.map(o => o.id));
   const modeScope = JSON.stringify(selected.map(o => o.id));
   const individual = individualMode?.scope === modeScope ? individualMode.enabled : new Set(selected.map(o => inputs[o.id] ?? editableValue(o.canonical))).size > 1;
@@ -51,7 +56,7 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
   const editorGroups = individual ? selectedRows.map(row => [row]) : selectedRows.length ? [selectedRows] : [];
   const allSelected = occurrences.length > 0 && selected.length === occurrences.length;
   const changes = review.changes.map(change => ({ occurrenceId: change.occurrenceId, after: change.after }));
-  const variable = variableSelection(selected, inputs, linkedValues);
+  const variable = useMemo(() => variableSelection(selected, inputs, linkedValues), [selected, inputs, linkedValues]);
   const nameValid = variableName.trim().length >= 2 && variableName.trim().length <= 80 && !/[\p{Cc}]/u.test(variableName);
   const previewContentKey = ready && selected.length && !Object.keys(review.errors).length
     ? JSON.stringify({scanId, selected: selected.map(o => [o.id, o.source_value, o.start_pos, o.end_pos]), changes}) : "";
@@ -102,7 +107,7 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
       <ul className="mt-1 space-y-1 text-xs text-muted">{targets.map(target => <li key={target.id}>{target.collection_name} → {target.item_name} → {target.field_name}</li>)}</ul>
       <RememberedDetails stateId={"source:" + o.id} className="text-xs text-muted"><summary>{t("Detalhes da origem")}</summary><p>{o.collection_name} · Locale {o.locale || t("padrão")} · {t("posição")} {o.start_pos}</p></RememberedDetails>
       </header>
-      {type === "text" && <div className="mb-3"><label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={type === "text"} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
+      {type === "text" && <div className="mb-3"><label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={type === "text"} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} label={t("Novo valor") + ": " + targets.map(target => target.item_name + " → " + target.field_name).join(" · ")} invalid={targets.some(target => !!review.errors[target.id])} errorIds={targets.filter(target => review.errors[target.id]).map(target => "error-" + target.id).join(" ")} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
       </label></div>}
       <div className="scan-value-comparison rounded-lg border bg-surface p-3">
       <div className="min-w-0"><h5 className="mb-3 text-sm font-semibold">{t("Antes")}</h5>
@@ -114,14 +119,14 @@ export function OccurrenceEditor({ rows, scanId, userId, outcomes = {}, reviewed
       </div>}
       </div>)}</div>
       </div><div className="min-w-0"><h5 className="mb-3 text-sm font-semibold">{t(type === "text" ? "Novo valor" : "Depois")}</h5>
-      <>{type !== "text" && <label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={false} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
+      <>{type !== "text" && <label className="scan-replacement-field block text-sm font-medium"><span className="sr-only">{t("Novo valor")}</span><ReplacementInput text={false} longText={editableValue(o.canonical).length > 120 || editableValue(o.canonical).includes("\n")} disabled={!ready || pending || protectedOccurrence(o)} label={t("Novo valor") + ": " + targets.map(target => target.item_name + " → " + target.field_name).join(" · ")} invalid={targets.some(target => !!review.errors[target.id])} errorIds={targets.filter(target => review.errors[target.id]).map(target => "error-" + target.id).join(" ")} descriptionId={"hint-" + o.id} value={inputs[o.id] ?? editableValue(o.canonical)} onChange={value => { setInputs(fillOccurrenceValues(targets, inputs, value)); }} />
       </label>}
       {type === "text" && liveText.fields.filter(field => targets.some(target => target.source_key === field.sourceKey)).map(field => <LiveTextContext matches={field.matches} key={field.sourceKey} before={field.before} after={field.after} label={targets.length > 1 ? field.item + " → " + field.field : ""} removalLabel={t("O trecho removido não aparece no resultado acima.")}/>)}
       {type === "text" && liveText.error && <p role="alert">{t(liveText.error)}</p>}
       {targets.some(target => target.field_slug === "name" && target.field_type === "PlainText") && <p className="mt-2 text-sm text-accent">{t("Nome do item CMS: a prévia abaixo também inclui o slug sugerido a partir do nome completo.")}</p>}
       <p id={"hint-" + o.id} className="mt-1 text-xs text-faint">{t(inputHints[type])}{type === "text" && targets.some(target => target.field_type === "RichText") && t(" A substituição mantém as tags e a formatação ao redor do trecho, incluindo títulos e parágrafos. Este campo edita somente o texto; HTML digitado não cria formatação, e quebras de linha não criam novos parágrafos.")}</p>
       {type === "text" && inputs[o.id] !== undefined && !inputs[o.id]!.trim() && <p className="mt-2 text-sm font-medium text-amber-800">{t("Este trecho será removido após revisar e confirmar.")}</p>}
-      {targets.map(target => review.errors[target.id] && <p key={target.id} role="alert" className="mt-2 text-sm text-red-700">{target.item_name}: {t(review.errors[target.id]!)}</p>)}</>
+      {targets.map(target => review.errors[target.id] && <p id={"error-" + target.id} key={target.id} role="alert" className="mt-2 text-sm text-red-700">{target.item_name}: {t(review.errors[target.id]!)}</p>)}</>
       </div>
       <div className="scan-value-actions">
       <button type="button" disabled={!ready || pending || protectedOccurrence(o)} onClick={() => { setInputs({ ...inputs, ...Object.fromEntries(targets.map(target => [target.id, editableValue(target.canonical)])) });  }} className="ui-btn">{t("Manter valor atual")}</button>

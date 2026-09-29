@@ -5,7 +5,10 @@ import { editableValue } from "@/modules/scans/changes";
 import { createDraftStore } from "@/modules/scans/draft-store";
 
 export function useScanDrafts(userId: string, scanId: string, occurrences: Occurrence[], excludedIds: string[]) {
-  const signature = JSON.stringify(occurrences.map(o => ({ id: o.id, source: o.source_value, original: editableValue(o.canonical), excluded: excludedIds.includes(o.id) })));
+  const signature = useMemo(() => {
+    const excluded = new Set(excludedIds);
+    return JSON.stringify(occurrences.map(o => ({ id: o.id, source: o.source_value, original: editableValue(o.canonical), excluded: excluded.has(o.id) })));
+  }, [occurrences, excludedIds]);
   const store = useMemo(() => createDraftStore(userId, scanId, signature, () => window.localStorage), [userId, scanId, signature]);
   useEffect(() => {
     window.addEventListener("copyreplace:drafts", store.refresh);

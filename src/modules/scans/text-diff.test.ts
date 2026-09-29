@@ -19,3 +19,14 @@ it("bounds work on large differences while retaining strings", () => {
  const before="old ".repeat(1000), after="new ".repeat(1000);
  expect(textDiff(before,after).after.map(p=>p.text).join("")).toBe(after);
 });
+
+it("coalesces equal-status segments without losing whitespace or change boundaries",()=>{
+ const before="A comfortable house with gardens. ".repeat(100);
+ const after=before.replace("comfortable","beautiful");
+ const result=textDiff(before,after);
+ expect(result.before).toHaveLength(3);
+ expect(result.after).toHaveLength(3);
+ expect(result.after.map(part=>part.text).join("")).toBe(after);
+ expect(result.after.filter(part=>part.changed)).toEqual([{text:"beautiful",changed:true}]);
+ expect(textDiff(before,before).before).toEqual([{text:before,changed:false}]);
+});

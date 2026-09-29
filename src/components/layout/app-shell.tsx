@@ -1,13 +1,15 @@
 "use client";
 
+import { SidebarDisclosure } from "./sidebar-disclosure";
 import { AppLimitations } from "@/components/app-limitations";
 import { useText } from "@/i18n/use-text";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, ChevronDown, ChevronRight, Globe2, History, LayoutGrid, Layers3, Menu, ScanLine, ShieldCheck, X } from "lucide-react";
+import { BookOpen, ChevronRight, Globe2, History, LayoutGrid, Layers3, Menu, ScanLine, ShieldCheck, X } from "lucide-react";
 import { RememberedLink } from "./navigation-state";
 import { AccountMenu } from "./account-menu";
+import { SiteSwitcher, type NavigationWorkspace } from "./site-switcher";
 import { Brand } from "./brand";
 
 type Context = { title: string; siteName?: string; siteId?: string; workspaceId?: string; pathname: string };
@@ -18,7 +20,7 @@ export function SiteContext({ title, siteName, siteId, workspaceId }: Omit<Conte
   useEffect(() => { set({ title, siteName, siteId, workspaceId, pathname }); return () => set(null); }, [set, title, siteName, siteId, workspaceId, pathname]);
   return null;
 }
-export function AppShell({ children, workspaces, email, workspaceError, plan }: { children: ReactNode; workspaces: { id: string; name: string; href:string }[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
+export function AppShell({ children, workspaces, email, workspaceError, plan, userId }: { children: ReactNode; userId: string; workspaces: NavigationWorkspace[]; email?: string; workspaceError?: boolean; plan: "free" | "admin" }) {
   const t = useText();
 
   const pathname = usePathname();
@@ -31,7 +33,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
   const [context, setContext] = useState<Context | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const current = context?.pathname === pathname ? context : null;
-  const routeWorkspace = workspaces.find(w=>pathname===w.href || pathname===w.href.replace(/sites$/,"settings/webflow"))?.id ?? pathname.match(/\/workspaces\/([^/]+)\/sites/)?.[1];
+  const routeWorkspace = workspaces.find(w=>pathname===w.href || pathname===w.href.replace(/sites$/,"settings/webflow") || pathname.startsWith(w.href + "/"))?.id ?? pathname.match(/\/workspaces\/([^/]+)\/sites/)?.[1];
   const workspaceId = routeWorkspace ?? current?.workspaceId ?? (workspaces.length === 1 ? workspaces[0]?.id : undefined);
   const activeWorkspace = workspaces.find(workspace => workspace.id === workspaceId);
   const siteId = current?.siteId;
@@ -57,12 +59,14 @@ export function AppShell({ children, workspaces, email, workspaceError, plan }: 
     </label>
     <nav aria-label={t("Navegação principal")} className="space-y-1">
       <Link onClick={close} href="/dashboard?view=overview" className="ui-nav-link" aria-current={pathname === "/dashboard" ? "page" : undefined}><LayoutGrid size={17} aria-hidden="true" />{t("Visão geral")}</Link>
-      {workspaceId && <Link onClick={close} href={activeWorkspace?.href ?? "/dashboard?view=overview"} className="ui-nav-link" aria-current={!!routeWorkspace || /\/sites$/.test(pathname) && !current?.siteId ? "page" : undefined}><Globe2 size={17} aria-hidden="true" />{t("Sites")}</Link>}
+      {activeWorkspace && <SiteSwitcher userId={userId} workspace={activeWorkspace} pathname={pathname} onNavigate={close} />}
       {siteBase && <><p title={siteName} className="truncate px-3 pb-2 pt-6 text-[11px] font-semibold uppercase tracking-wider text-faint">{siteName}</p>
-        <RememberedLink onClick={close} href={siteBase + "/overview"} className="ui-nav-link" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span><ChevronDown size={14} className="shrink-0 text-faint" aria-hidden="true" /></RememberedLink>
+        <SidebarDisclosure preferenceKey={userId+":overview"} expandLabel={t("Expandir páginas do site")} collapseLabel={t("Recolher páginas do site")} navigation={<RememberedLink onClick={close} href={siteBase + "/overview"} className="ui-nav-link min-w-0 flex-1" aria-current={isOverview ? "page" : undefined}><LayoutGrid size={17} className="shrink-0" aria-hidden="true" /><span className="min-w-0 flex-1">{t("Visão geral do site")}</span></RememberedLink>}>
+
         <ul aria-label={t("Páginas de ") + siteName} className="ml-5 space-y-1 border-l pl-2">
           {siteSections.map(({path,label,Icon}) => <li key={path}><RememberedLink onClick={close} href={siteBase + "/" + path} className="ui-nav-link" aria-current={activeSection?.path === path ? "page" : undefined}><Icon size={16} className="shrink-0" aria-hidden="true" /><span>{label}</span></RememberedLink></li>)}
         </ul>
+        </SidebarDisclosure>
         <details className="pt-2" open={pathname.startsWith(siteBase + "/facts") || pathname === siteBase + "/static" || undefined}><summary className="px-3 py-2 text-xs font-medium text-muted">{t("Avançado")}</summary>
           <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />{t("Referência do negócio (legado)")}</Link>
         </details>

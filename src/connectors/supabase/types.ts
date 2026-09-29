@@ -18,7 +18,7 @@ export type Database = {
       designer_sessions: ReadTable<{ id: string; site_id: string; actor_id: string; created_at: string; expires_at: string; revoked_at: string | null }>;
       designer_changes: ReadTable<{ id: string; site_id: string; actor_id: string; session_id: string; plan: Json; search_text: string; events: Json; created_at: string; expires_at: string }>;
       cms_change_requests: ReadTable<{ queue_order: number | null; background_paused: boolean; background_next_at: string; worker_error: string | null; managed_value_id: string | null; managed_version: number | null; managed_after: Json | null; managed_baseline: Json | null; managed_resolution: Json | null; managed_before: Json | null; managed_snapshot: Json | null; reverts_request_id: string | null; id: string; scan_id: string | null; site_id: string; workspace_id: string; actor_id: string; connection_id: string; changes: Json; status: string; cursor: number; total: number; dispatched: boolean; lease_token: string | null; lease_until: string | null; retry_at: string | null; results: Json; expires_at: string; created_at: string }>;
-      cms_scans: ReadTable<{ item_limit: number; id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; plan: Json; status: string; collection_index: number; item_offset: number; revision: number; items_read: number; occurrences_count: number; truncated: boolean; skipped_fields: number; error_code: string | null; retry_at: string | null; expires_at: string; created_at: string; lease_token: string | null; lease_until: string | null }>;
+      cms_scans: ReadTable<{ series_id: string; scan_version: number; is_latest: boolean; repeated_from: string | null; item_limit: number; id: string; site_id: string; workspace_id: string; actor_id: string; connection_id: string; plan: Json; status: string; collection_index: number; item_offset: number; revision: number; items_read: number; occurrences_count: number; truncated: boolean; skipped_fields: number; error_code: string | null; retry_at: string | null; expires_at: string; created_at: string; lease_token: string | null; lease_until: string | null }>;
       scan_occurrences: ReadTable<{ id: string; scan_id: string; site_id: string; workspace_id: string; collection_id: string; collection_name: string; item_id: string; item_name: string; locale: string; field_slug: string; field_name: string; field_type: string; source_value: string; raw_match: string; start_pos: number; end_pos: number; canonical: Json; source_key: string }>;
       managed_value_archives: ReadTable<{ id: string; managed_value_id: string; workspace_id: string; actor_id: string; version: number; snapshot: Json; created_at: string; expires_at: string; confirmed_at: string | null }>;
       managed_values: ReadTable<{ archived_at: string | null; id: string; site_id: string; workspace_id: string; name: string; canonical: Json; version: number; created_at: string }>;
@@ -39,6 +39,11 @@ export type Database = {
     };
     Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      managed_reference_results: {Args:{p_request:string};Returns:Json};
+      preview_managed_reference_system: {Args:{p_id:string;p_reference:string};Returns:string};
+      preview_managed_reference: {Args:{p_id:string;p_request:string;p_binding:string;p_source:string};Returns:Json};
+      read_managed_reference: {Args:{p_id:string};Returns:Json};
+      confirm_managed_reference: {Args:{p_id:string;p_source:string};Returns:string};
       workspace_overview_counts: {Args:Record<string,never>;Returns:Json};
       preview_workspace_edit: {Args:{p_id:string;p_workspace:string;p_name:string;p_slug:string};Returns:Json};
       confirm_workspace_edit: {Args:{p_id:string};Returns:string};
@@ -86,6 +91,8 @@ export type Database = {
       finish_cms_change: { Args: { p_id: string; p_cursor: number; p_lease: string; p_result: Json; p_wait?: number }; Returns: string };
       cancel_cms_changes: { Args: { p_id: string }; Returns: string };
       preview_cms_scan: { Args: { p_id: string; p_site_id: string; p_plan: Json; p_truncated: boolean }; Returns: string };
+      repeat_cms_scan: { Args: { p_id: string; p_scan_id: string }; Returns: string };
+      start_matching_cms_scan: { Args: { p_id: string; p_site_id: string; p_plan: Json; p_truncated: boolean }; Returns: string };
       start_cms_scan: { Args: { p_id: string; p_site_id: string; p_plan: Json; p_truncated: boolean }; Returns: string };
       next_cms_scan: { Args: Record<string, never>; Returns: Json };
       confirm_cms_scan: { Args: { p_id: string }; Returns: string };

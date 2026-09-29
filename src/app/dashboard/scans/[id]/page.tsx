@@ -1,3 +1,4 @@
+import { ScanVersionSelector } from "@/components/scans/version-selector";
 import { scanDisplayStatus } from "@/modules/scans/list-summary";
 import { CreatedVariables } from "@/components/scans/created-variables";
 import { scanCreatedVariables } from "@/modules/scans/created-variables";
@@ -33,7 +34,7 @@ import { detectionLabels } from "@/modules/scans/schema";
 import { countReviewedOccurrences, filterReviewedGroups, withoutVariableFields } from "@/modules/scans/reviewed-content";
 import { ReviewFlag } from "@/components/scans/review-flag";
 import { resultsSearchSchema, searchResultGroups } from "@/modules/scans/search-results";
-import { Notice, StatusBadge, SectionHeader, Steps, ContextHelp, EmptyState } from "@/components/ui";
+import { PageHeader, Notice, StatusBadge, SectionHeader, Steps, ContextHelp, EmptyState } from "@/components/ui";
 import { SiteContext } from "@/components/layout/app-shell";
 import { SubmitButton } from "@/components/ui/submit-button";
 
@@ -55,13 +56,19 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const created = await scanCreatedVariables(view.scan,page,filter === "variables");
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter === "variables" ? "pending" : filter);
   const { scan } = view;
+  const readOnly = !scan.is_latest;
   const site = await getScanSite(scan.site_id);
   return <main className="ui-page">
     <SiteContext siteName={site.display_name} title={t("Scan do CMS")} siteId={scan.site_id} workspaceId={scan.workspace_id} />
-    <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap items-center gap-3"><RememberedLink className="text-sm font-medium text-muted hover:text-accent" href={scanHref.replace(/\/\d+$/, "")}>{t("← Scans")}</RememberedLink><h1 className="text-2xl font-semibold tracking-tight">{scan.status === "preview" ? t("Revisar scan") : t("Revisão do scan")}</h1><StatusBadge status={displayStatus}/></div>
-      {["completed", "limited", "cancelled"].includes(scan.status) && scan.plan.length > 0 && <Link prefetch={false} className="ui-btn" href={scanHref.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + scanHref.split("/").at(-1)}>{t("Repetir scan")}</Link>}
-    </header>
+    <PageHeader
+      navigation={<RememberedLink className="ui-btn" href={scanHref.replace(/\/\d+$/, "")}>{t("← Scans")}</RememberedLink>}
+      eyebrow={site.display_name}
+      title={scan.status === "preview" ? t("Revisar scan") : t("Revisão do scan")}
+      status={<><StatusBadge status={displayStatus}/><ScanVersionSelector id={scan.id} version={scan.scan_version}/></>}
+      actions={!readOnly && ["completed", "limited", "cancelled"].includes(scan.status) && scan.plan.length > 0 ? <Link prefetch={false} className="ui-btn" href={scanHref.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + scanHref.split("/").at(-1)}>{t("Repetir scan")}</Link> : undefined}
+    />
+
+    {readOnly && <Notice title={t("Versão anterior · somente leitura")}>{t("Consulte os resultados desta versão. Para editar, selecione a versão mais recente.")}</Notice>}
     {scan.plan.some(entry => entry.placeholders) && <p className="mt-3 text-sm">{t("Busca de textos de exemplo: inclui ocorrências únicas, sem exigir repetição.")}</p>}
     {scan.plan[0]?.searchText && <p className="mt-3 break-words">{t("Busca específica:")} <strong>“{scan.plan[0].searchText}”</strong> — {t(searchOptionsLabel(scan.plan[0].searchOptions))}.</p>}
     {error && <p role="alert" className="mt-5 rounded border bg-amber-50 p-4">{error === "name" ? t("Use um nome de 2 a 80 caracteres, como Link de cadastro. Este campo dá um nome ao valor encontrado; ele não substitui a URL.") : error === "invalid" ? t("A solicitação de revisão é inválida. Atualize o scan e tente novamente.") : error === "selection" ? t("Selecione de 2 a 100 ocorrências do mesmo valor, em pelo menos dois campos de origem diferentes e ainda não gerenciados.") : t("Não foi possível concluir. A prévia pode ter expirado, a conexão mudou ou já existe um scan ativo para este site.")}</p>}
@@ -98,14 +105,14 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       </div>
       {scan.status === "limited" && <Notice tone="warning" title={t("Cobertura parcial")}>{t("Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.")}</Notice>}
 
-      {filter === "variables" ? <><CreatedVariables view={created} page={page} href={scanHref} siteId={scan.site_id} occurrences={view.occurrences} linkedValues={view.linkedValues}/>      {view.divergences.some(d=>created.createdIds.includes(d.value.id)) && <details className="mt-5" aria-label={t("Divergências de Variáveis")}><summary className="cursor-pointer font-medium">{t("Verificar Variáveis")}</summary>
+      {filter === "variables" ? <><CreatedVariables view={created} page={page} href={scanHref} siteId={scan.site_id} occurrences={view.occurrences} linkedValues={view.linkedValues}/>      {!readOnly && view.divergences.some(d=>created.createdIds.includes(d.value.id)) && <details className="mt-5" aria-label={t("Divergências de Variáveis")}><summary className="cursor-pointer font-medium">{t("Verificar Variáveis")}</summary>
         <SectionHeader title={t("Verificar Variáveis")} description={t("Comparação das fontes detectadas neste scan com o último registro dos vínculos. Não é monitoramento em tempo real; campos sem ocorrências detectadas não foram comparados aqui.")} />
         <p className="mt-2 text-xs text-muted">{t("Scan iniciado em")} {new Date(scan.created_at).toLocaleString(t.dateLocale, { timeZone: "UTC" })}  {t("UTC. As divergências aparecem mesmo que a ocorrência não seja repetida ou tenha sido marcada como revisada.")}</p>
         {view.divergences.filter(d=>created.createdIds.includes(d.value.id)).map(d => <ManagedDivergence key={d.binding.id} id={randomUUID()} scanId={scan.id} bindingId={d.binding.id} name={d.value.name} valueId={d.value.id} version={d.value.version} central={d.value.canonical} before={d.binding.source_value} observed={d.observed} rows={d.rows} stale={d.stale} uncertain={d.binding.uncertain} />)}
       </details>}
 </> : <>
 
-      {operation && <ReviewOperationControls id={operation} scanId={id} error={operationError}/>}
+      {!readOnly && operation && <ReviewOperationControls id={operation} scanId={id} error={operationError}/>}
       {view.reviewsMissing && <p role="status" className="mt-3 text-sm text-amber-800">{t("Aplique a sétima migration para habilitar as marcações de revisão.")}</p>}
 
 
@@ -115,18 +122,19 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
         <SectionHeader title={t(section.label)} action={<span className="text-xs text-muted">{section.duplicates.length}  {t("grupos neste filtro")}</span>} />
         {!section.duplicates.length && <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted">{t("Nenhum grupo neste filtro. Alterne entre Pendentes e Revisados ou limpe a pesquisa.")}</p>}
         {section.duplicates.map((group, groupIndex) => <div key={filter + query + group.label} className="scan-group-shell relative mt-4">
-          {group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <GroupActions>
+          {!readOnly && group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <GroupActions>
           {!view.reviewsMissing && <ReviewFlag compact scanId={id} pendingIds={group.occurrences.filter((o) => !view.reviewedIds.includes(o.id)).map((o) => o.id)} reviewedIds={group.occurrences.filter((o) => view.reviewedIds.includes(o.id)).map((o) => o.id)} />}
           </GroupActions>}
           <RememberedDetails initiallyOpen={groupIndex === 0} stateId={"group:" + JSON.stringify(group.occurrences[0]?.canonical)} key={filter + query + group.label} className="scan-workspace-group ui-card p-4"><summary className={"cursor-pointer break-words font-semibold " + (group.occurrences.some(o => !view.reviewedIds.includes(o.id)) ? "scan-group-heading-actions" : "")}>{group.occurrences[0]?.canonical.type === "image" ? <span className="inline-flex max-w-[95%] items-start gap-3 align-middle">
             <ImageThumbnail url={group.occurrences[0].canonical.url} alt=""/>
             <span className="min-w-0"><span className="block">{imageFilename(group.occurrences[0].canonical.url)}</span><span className="sr-only">{group.occurrences[0].canonical.url}</span><span className="mt-2 block text-xs font-normal">{group.occurrences.length} {t("ocorrências")}</span><span className="mt-1 block truncate text-xs font-normal text-muted" title={[...new Set(group.occurrences.map(o => o.item_name))].join(" · ")}>{[...new Set(group.occurrences.map(o => o.item_name))].join(" · ")}</span></span>
           </span> : <>{group.label} · {group.occurrences.length} {t("ocorrências")}</>}</summary>
-          {group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <AiBatch selectionScoped scanId={id} groupId={group.occurrences[0]!.id}>
+          {!readOnly && group.occurrences.some(o => !view.reviewedIds.includes(o.id)) && <AiBatch selectionScoped scanId={id} groupId={group.occurrences[0]!.id}>
           <OccurrenceEditor outcomes={view.outcomes} userId={scan.actor_id} editableBoundOccurrenceIds={view.editableBoundOccurrenceIds} reviewedIds={view.reviewedIds} scanId={scan.id} linkedValues={view.linkedValues} rows={group.occurrences.filter(o => !view.reviewedIds.includes(o.id)).map((occurrence) => ({ occurrence, display: occurrencePresentation(occurrence) }))} />
 
           </AiBatch>}
-          <ReviewedOperations occurrences={group.occurrences.filter(o => view.reviewedIds.includes(o.id))} history={view.reviewHistory} outcomes={view.outcomes} />
+          {readOnly && group.occurrences.filter(o=>!view.reviewedIds.includes(o.id)).map(o=><section key={o.id} className="mt-4 rounded-xl border p-4"><h3 className="font-semibold">{o.item_name}</h3><p className="text-xs text-muted">{o.collection_name} → {o.field_name}</p>{o.canonical.type === "image" ? <ImageThumbnail url={o.canonical.url} alt=""/> : <p className="mt-3 whitespace-pre-wrap break-words text-sm">{o.source_value}</p>}</section>)}
+          <ReviewedOperations readOnly={readOnly} occurrences={group.occurrences.filter(o => view.reviewedIds.includes(o.id))} history={view.reviewHistory} outcomes={view.outcomes} />
         </RememberedDetails></div>)}
       </section>)}
       </>}

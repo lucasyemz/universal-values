@@ -4,7 +4,8 @@ import type { Occurrence } from "@/modules/scans/schema";
 import { InlineRevert } from "./inline-revert";
 import { ReviewedOccurrence } from "./reviewed-occurrence";
 
-export async function ReviewedOperations({ occurrences, history, outcomes }: {
+export async function ReviewedOperations({ occurrences, history, outcomes, readOnly = false }: {
+  readOnly?: boolean;
   occurrences: Occurrence[];
   history: Record<string, ReviewedChange>;
   outcomes: Record<string, { status: string; message?: string }>;
@@ -19,12 +20,12 @@ export async function ReviewedOperations({ occurrences, history, outcomes }: {
         {date && Number.isFinite(date.getTime()) && <p className="mt-1 text-xs text-muted"><time dateTime={date.toISOString()}>{date.toLocaleString(t.dateLocale, { timeZone: "UTC" })} UTC</time></p>}
         <p className="mt-2 text-sm text-muted">{t("{0} ocorrências · {1} campos neste grupo", group.occurrences.length, new Set(group.occurrences.map(o => o.source_key)).size)}</p>
         <p className="mt-1 break-words text-sm">{[...new Set(group.occurrences.map(o => o.item_name))].join(" · ")}</p>
-        {group.requestId && group.sources.length > 1 && <>
+        {!readOnly && group.requestId && group.sources.length > 1 && <>
           <InlineRevert key={JSON.stringify(group.sources)} requestId={group.requestId} sources={group.sources} />
           <p className="mt-2 text-xs text-muted">{t("A reversão deste bloco abrange somente os campos deste bloco. Outros grupos e operações ficam de fora.")}</p>
         </>}
       </header>
-      {group.occurrences.map(o => <ReviewedOccurrence key={o.id} occurrence={o} history={history[o.id]} outcome={outcomes[o.id]} />)}
+      {group.occurrences.map(o => <ReviewedOccurrence readOnly={readOnly} key={o.id} occurrence={o} history={history[o.id]} outcome={outcomes[o.id]} />)}
     </section>;
   });
 }

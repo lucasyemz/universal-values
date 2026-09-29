@@ -29,7 +29,7 @@ export async function startScan(form: FormData) {
     truncated = false;
   } catch { redirect("/dashboard/sites/" + site.id + "/scans/new?error=provider"); }
   const { client } = await requireUser();
-  const result = await client.rpc("start_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
+  const result = await client.rpc("start_matching_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/sites/" + site.id + "/scans/new?error=" + scanStartError(result.error));
   redirect("/dashboard/scans/" + input.data.id);

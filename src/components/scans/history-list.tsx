@@ -1,7 +1,9 @@
 "use client";
+import { ScanVersionSelector } from "./version-selector";
+import { ResourceNumber } from "@/components/ui/resource-number";
 import { scanDisplayStatus } from "@/modules/scans/list-summary";
 import type { ScanListRow } from "@/modules/scans/list-summary";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, FileText, ImageIcon, Link2, RotateCw, ScanLine, Search } from "lucide-react";
 import { useText } from "@/i18n/use-text";
@@ -16,7 +18,7 @@ export function ScanHistoryList({ scans, links, counts, compact = false }: { com
  const t = useText();
  const [filter, setFilter] = useState<"all" | "pending" | "reviewed">("all");
  const [query, setQuery] = useState("");
- const labels = Object.fromEntries(scans.map(scan => [scan.id, searchedScanTypes(scan).map(type => t(type === "text" && scan.plan.some(entry => entry.placeholders) ? "Textos de exemplo" : detectionLabels[type])).join(", ")]));
+ const labels = useMemo(() => Object.fromEntries(scans.map(scan => [scan.id, searchedScanTypes(scan).map(type => t(type === "text" && scan.plan.some(entry => entry.placeholders) ? "Textos de exemplo" : detectionLabels[type])).join(", ")])), [scans,t]);
  const visible = filterScanHistory(scans, counts, labels, query, filter);
  return <>
   {!compact && <><div className="mb-2 flex flex-wrap items-center justify-between gap-4">
@@ -29,8 +31,8 @@ export function ScanHistoryList({ scans, links, counts, compact = false }: { com
    const review=counts[scan.id], href=links[scan.id]!;
    const displayStatus=scanDisplayStatus(scan.status,review);
    return <li key={scan.id} className={"scan-history-card" + (compact ? " scan-history-card-compact" : "")}>
-    <div className="flex min-w-0 items-center gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={25} aria-hidden="true" /></span><div className="min-w-0"><RememberedLink href={href} className="break-words font-semibold hover:text-accent">{scan.plan[0]?.searchText ? `“${scan.plan[0].searchText}”` : labels[scan.id]}</RememberedLink>{scan.plan[0]?.searchText && <p className="mt-1 text-xs text-muted">{labels[scan.id]}</p>}</div></div>
-    <div className="min-w-0 space-y-2"><p className="flex items-center gap-2 text-xs text-muted"><CalendarDays size={15} className="shrink-0" aria-hidden="true" />{siteDate(scan.created_at,t.dateLocale)}</p><ScanCollectionCell scan={scan} href={href} /></div>
+    <div className="flex min-w-0 items-center gap-4"><ResourceNumber href={href} /><div className="min-w-0"><div className="flex items-start gap-2"><RememberedLink href={href} className="inline-flex items-center gap-2 break-words font-semibold hover:text-accent"><Icon size={17} className="shrink-0 text-accent" aria-hidden="true" /><span>{scan.plan[0]?.searchText ? `“${scan.plan[0].searchText}”` : labels[scan.id]}</span></RememberedLink></div>{scan.plan[0]?.searchText && <p className="mt-1 text-xs text-muted">{labels[scan.id]}</p>}</div></div>
+    <div className="flex min-w-0 items-center justify-between gap-4"><div className="min-w-0 space-y-2"><p className="flex items-center gap-2 text-xs text-muted"><CalendarDays size={15} className="shrink-0" aria-hidden="true" />{siteDate(scan.created_at,t.dateLocale)}</p><ScanCollectionCell scan={scan} href={href} /></div><ScanVersionSelector id={scan.id} version={scan.scan_version}/></div>
     <div className="scan-history-counts">{review ? <><Link prefetch={false} href={href + "?filter=pending"} className="scan-history-count"><span className={review.pending ? "bg-orange-50 text-orange-800" : "bg-subtle text-muted"}>{review.pending}</span>{t("Pendentes")}</Link><Link prefetch={false} href={href + "?filter=reviewed"} className="scan-history-count"><span className={review.reviewed ? "bg-accent-soft text-accent" : "bg-subtle text-muted"}>{review.reviewed}</span>{t("Revisados")}</Link></> : <span className="text-xs text-muted">{t("Contagens indisponíveis")}</span>}</div>
     <div><StatusBadge status={displayStatus} /></div>
     <div className="scan-history-actions">{displayStatus!=="no_results" && <RememberedLink href={href} className="ui-btn ui-btn-primary">{t("Revisar resultados")}<ArrowRight size={16} aria-hidden="true" /></RememberedLink>}{["completed","limited","cancelled"].includes(scan.status) && scan.plan.length>0 && <Link prefetch={false} className="ui-btn" href={href.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + href.split("/").at(-1)}><RotateCw size={16} aria-hidden="true" />{t("Repetir scan")}</Link>}</div>

@@ -20,8 +20,7 @@ export default async function SitePreviewPage({ params, searchParams }: {
   const preview = await loadSitePreview((await params).id);
   const { error } = await searchParams;
   return <main className="ui-page !max-w-2xl">
-    <FreshLink href={"/dashboard/connections/" + preview.connection_id}>{t("← Escolher site")}</FreshLink>
-    <PageHeader title={t("Tudo pronto para conectar?")} description={t("Confira o site antes de confirmar o vínculo.")} />
+    <PageHeader navigation={<FreshLink href={"/dashboard/connections/" + preview.connection_id}>{t("← Escolher site")}</FreshLink>} title={t("Tudo pronto para conectar?")} description={t("Confira o site antes de confirmar o vínculo.")} />
     <Steps steps={[t("Autorizar"), t("Escolher site"), t("Revisar vínculo")]} current={2} />
     <section className="mt-6 ui-card p-6">
       <h2 className="text-xl font-semibold">{preview.display_name}</h2>

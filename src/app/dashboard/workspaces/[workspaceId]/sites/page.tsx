@@ -27,8 +27,7 @@ export default async function WorkspaceSitesPage({ params, searchParams }: {
   const { error } = await searchParams;
   return <main className="ui-page">
     <SiteContext title={view.name} workspaceId={workspaceId} />
-    <FreshLink href="/dashboard?workspaces=1" >{t("← Workspaces")}</FreshLink>
-    <PageHeader eyebrow={view.name} title={t("Seus sites")} description={t("Conecte o Webflow e mantenha as informações do seu CMS organizadas.")} actions={<Link href={settings} className="ui-btn ui-btn-primary"><Plus size={16} />{t("Conectar site")}</Link>} />
+    <PageHeader navigation={<FreshLink href="/dashboard?workspaces=1" >{t("← Workspaces")}</FreshLink>} eyebrow={view.name} title={t("Seus sites")} description={t("Conecte o Webflow e mantenha as informações do seu CMS organizadas.")} actions={<Link href={settings} className="ui-btn ui-btn-primary"><Plus size={16} />{t("Conectar site")}</Link>} />
     {error && <p role="alert" className="mt-6 rounded border border-amber-200 bg-amber-50 p-4">{error === "denied" ? t("A autorização foi cancelada no Webflow.") : t("A conexão não foi concluída. Confira as permissões e inicie uma nova autorização.")}</p>}
     {view.missingMigration ? <p role="status" className="mt-8 rounded border border-amber-200 bg-amber-50 p-5">{t("A configuração de sites ainda está pendente. Aplique a migration Webflow indicada no README para continuar.")}</p> : <>
       <section aria-label={t("Sites conectados")} className="mt-8">

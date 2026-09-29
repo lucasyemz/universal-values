@@ -35,6 +35,8 @@ Account slugs are stable names derived from the email prefix (never the full ema
 
 Site cards link to `/dashboard/{workspace}/sites/{site}/overview`. The bare site entry currently redirects to `/scans`; use an explicit section URL when that destination matters. Other sections include `/scans/new`, `/variables`, `/changes` and `/cms`.
 
+Variable Syncs history and active-operation links resolve operation numbers through `resourceLinks`, linking directly to the canonical `/operations/{number}` address. Missing mappings fail closed. This adds one batched route lookup plus existing request-scoped namespace reads; W/I/E/G remain zero. Existing UUID entry URLs remain compatibility redirects.
+
 ## Implementation and regression contract
 
 Use `src/modules/routes/resources.ts` for resources, `links.ts` for server links, `resolve.ts` for resource resolution, `site-resolve.ts` for site/workspace scope, `workspace-resolve.ts` for workspace lists and `src/modules/sites/workspace-url.ts` for workspace formats. The authenticated proxy handles compatibility. Test both workspaces, foreign-account rejection, ambiguous legacy aliases, query preservation and POST rewrites, plus stable/concurrent resource allocation and site/scan operation ownership.

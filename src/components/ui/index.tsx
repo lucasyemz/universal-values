@@ -9,8 +9,10 @@ export function Input(props: ComponentProps<"input">) { return <input {...props}
 export function Select(props: ComponentProps<"select">) { return <select {...props} />; }
 export function Checkbox(props: Omit<ComponentProps<"input">, "type">) { return <input type="checkbox" {...props} />; }
 export function Card({ children, className = "", ...props }: ComponentProps<"section">) { return <section className={`ui-card p-6 ${className}`} {...props}>{children}</section>; }
-export function PageHeader({ title, description, eyebrow, actions, status }: { title: string; description?: ReactNode; eyebrow?: string; actions?: ReactNode; status?: ReactNode }) {
-  return <header className="mb-8 flex flex-wrap items-start justify-between gap-4"><div className="min-w-0">{eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[.12em] text-muted">{eyebrow}</p>}<div className="flex flex-wrap items-center gap-3"><h1 className="text-[28px] font-semibold leading-tight tracking-tight">{title}</h1>{status}</div>{description && <div className="mt-3 max-w-2xl text-sm leading-6 text-muted">{description}</div>}</div>{actions && <div className="flex flex-wrap gap-2">{actions}</div>}</header>;
+export function PageHeader({ title, description, eyebrow, actions, status, navigation, embedded = false }: { title: string; description?: ReactNode; eyebrow?: string; actions?: ReactNode; status?: ReactNode; navigation?: ReactNode; embedded?: boolean }) {
+  const Title = embedded ? "h2" : "h1";
+  const heading=<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 flex-1">{eyebrow && <p className="mb-2 text-xs font-semibold uppercase tracking-[.12em] text-muted">{eyebrow}</p>}<div className="flex flex-wrap items-center gap-3"><Title className={`break-words font-semibold leading-tight tracking-tight ${embedded ? "text-xl" : "text-2xl sm:text-[28px]"}`}>{title}</Title>{status}</div>{description && <div className="mt-3 max-w-2xl text-sm leading-6 text-muted">{description}</div>}</div>{actions && <div className="flex flex-wrap gap-2">{actions}</div>}</div>;
+  return <header className={embedded ? "mb-5 border-b pb-5" : "ui-card mb-6"}>{navigation && <div className="flex flex-wrap items-center gap-3 border-b px-5 py-3">{navigation}</div>}<div className={embedded ? undefined : "p-5 sm:p-6"}>{heading}</div></header>;
 }
 export function SectionHeader({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return <div className="mb-5 flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold tracking-tight">{title}</h2>{description && <p className="mt-1 text-sm text-muted">{description}</p>}</div>{action}</div>;
@@ -51,9 +53,9 @@ export function Diff({ before, after, beforeLabel, afterLabel }: { before: React
   const t = useText();
 
   return <div className="mt-4 grid items-stretch gap-2 sm:grid-cols-[1fr_auto_1fr]">
-    <div className="min-w-0 rounded-lg border border-red-200 bg-red-50/50 p-3"><p className="mb-2 text-xs font-semibold text-red-800">{beforeLabel ?? t("Valor atual")}</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div>
+    <div className="min-w-0 rounded-lg border border-[var(--diff-before-border)] bg-[var(--diff-before-bg)] p-3"><p className="mb-2 text-xs font-semibold text-[var(--diff-before-label)]">{beforeLabel ?? t("Valor atual")}</p><div className="whitespace-pre-wrap break-words text-sm">{before}</div></div>
     <ArrowRight size={16} aria-hidden="true" className="self-center text-muted max-sm:rotate-90" />
-    <div className="min-w-0 rounded-lg border border-emerald-200 bg-emerald-50/50 p-3"><p className="mb-2 text-xs font-semibold text-emerald-800">{afterLabel ?? t("Novo valor")}</p><div className="whitespace-pre-wrap break-words text-sm">{after}</div></div>
+    <div className="min-w-0 rounded-lg border border-[var(--diff-after-border)] bg-[var(--diff-after-bg)] p-3"><p className="mb-2 text-xs font-semibold text-[var(--diff-after-label)]">{afterLabel ?? t("Novo valor")}</p><div className="whitespace-pre-wrap break-words text-sm">{after}</div></div>
   </div>;
 }
 

@@ -2,6 +2,10 @@ export type TextPart = { text: string; changed: boolean };
 
 /** Display-only word diff. Never use these segments as a provider payload. */
 export function textDiff(before: string, after: string): { before: TextPart[]; after: TextPart[] } {
+  if (before === after) {
+    const parts = before ? [{ text: before, changed: false }] : [];
+    return { before: parts, after: parts };
+  }
   const tokens = (text: string) => text.match(/\s+|[\p{L}\p{N}_]+|[^\s\p{L}\p{N}_]/gu) ?? [];
   const a = tokens(before), b = tokens(after);
   const left = a.map(text => ({ text, changed: true })), right = b.map(text => ({ text, changed: true }));
@@ -19,5 +23,14 @@ export function textDiff(before: string, after: string): { before: TextPart[]; a
       else if (matrix[i+1]![j]! >= matrix[i]![j+1]!) i++; else j++;
     }
   }
-  return { before: left, after: right };
+  const compact = (parts: TextPart[]) => {
+    const result: TextPart[] = [];
+    for (const part of parts) {
+      const last = result.at(-1);
+      if (last?.changed === part.changed) last.text += part.text;
+      else result.push({ ...part });
+    }
+    return result;
+  };
+  return { before: compact(left), after: compact(right) };
 }

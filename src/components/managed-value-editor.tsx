@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { useText } from "@/i18n/use-text";
 import { prepareInlineManagedSync } from "@/modules/managed-values/sync-actions";
 import type { ManagedValue } from "@/modules/managed-values/schema";
@@ -9,17 +9,19 @@ import type { InlinePreview } from "@/modules/scans/inline-preview";
 import { liveTextComparison, type LiveTextSource } from "@/modules/managed-values/live-text-preview";
 import { InlineReview } from "@/components/scans/inline-review";
 
-export function ManagedValueEditor({ valueId, version, canonical, disabled, sourcesContent, initialFields, sourcesFooter, textSources = [] }: { id: string; valueId: string; version: number; canonical: ManagedValue; disabled: boolean; sourcesContent?: ReactNode; initialFields?: InlinePreview["fields"]; sourcesFooter?: ReactNode; textSources?: LiveTextSource[] }) {
+const EMPTY_SOURCES: LiveTextSource[] = [];
+export function ManagedValueEditor({ valueId, version, canonical, disabled, sourcesContent, initialFields, sourcesFooter, textSources = EMPTY_SOURCES }: { id: string; valueId: string; version: number; canonical: ManagedValue; disabled: boolean; sourcesContent?: ReactNode; initialFields?: InlinePreview["fields"]; sourcesFooter?: ReactNode; textSources?: LiveTextSource[] }) {
   const t=useText();
   const inputId = useId(), hintId = useId();
   const [replacement,setReplacement]=useState(editableValue(canonical));
   const [pending,setPending]=useState(false),[checking,setChecking]=useState(false);
   const draftKey=!disabled && replacement.trim() && (checking || replacement!==editableValue(canonical)) ? JSON.stringify({valueId,version,replacement}) : "";
-  const liveFields=!disabled && canonical.type==="text" && replacement!==editableValue(canonical) ? initialFields?.map(field=>{
-    const source=textSources.find(source=>source.sourceKey===field.sourceKey);
+  const sourceByKey=useMemo(()=>new Map(textSources.map(source=>[source.sourceKey,source])),[textSources]);
+  const liveFields=useMemo(()=>!disabled && canonical.type==="text" && replacement!==editableValue(canonical) ? initialFields?.map(field=>{
+    const source=sourceByKey.get(field.sourceKey);
     const comparison=source && liveTextComparison(source,replacement);
     return comparison?{...field,...comparison}:field;
-  }) : undefined;
+  }) : undefined, [disabled, canonical, replacement, initialFields, sourceByKey]);
   return <><section id="managed-editor" className="ui-card mt-6 scroll-mt-6 space-y-4 p-6">
     <h2 className="text-lg font-semibold">{t("Editar variável")}</h2><p className="text-sm text-muted">{t("Altere o valor e confira abaixo como cada item ficará antes de aplicar.")}</p>
     <div className="grid gap-5 md:grid-cols-2"><div><p className="mb-2 text-sm font-medium">{t("Valor atual da variável")}</p><div className="min-h-28 whitespace-pre-wrap break-words rounded-lg border bg-subtle p-3 text-sm">{valueLabel(canonical)}</div></div><div>

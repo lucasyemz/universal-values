@@ -38,7 +38,26 @@ function readable(source: string, rich: boolean, occurrences: Occurrence[] = [])
 }
 
 // Same exact-range replacement builder as confirmation; no provider or persistence work.
+export function createLiveTextPreview() {
+  // Component-local, bounded display cache. Never used to authorize provider writes.
+  const cache = new Map<string, ReturnType<typeof readable>>();
+  const read: typeof readable = (source, rich, occurrences = []) => {
+    const key = JSON.stringify([source, rich, occurrences.map(o => [o.start_pos, o.end_pos, o.raw_match])]);
+    const saved = cache.get(key);
+    if (saved) return saved;
+    const result = readable(source, rich, occurrences);
+    if (cache.size >= 200) cache.delete(cache.keys().next().value!);
+    cache.set(key, result);
+    return result;
+  };
+  return (selected: Occurrence[], inputs: Record<string, string>) => preview(selected, inputs, read);
+}
+
 export function liveTextPreview(selected: Occurrence[], inputs: Record<string, string>) {
+  return preview(selected, inputs, readable);
+}
+
+function preview(selected: Occurrence[], inputs: Record<string, string>, read: typeof readable) {
   const text = selected.filter(o => o.canonical.type === "text");
   const draft = prepareOccurrenceChanges(text, inputs);
   if (Object.keys(draft.errors).length) return {fields: [], error: "Corrija os campos indicados antes de continuar."};
@@ -46,8 +65,8 @@ export function liveTextPreview(selected: Occurrence[], inputs: Record<string, s
     const changed = draft.changes.length ? buildFieldChanges(text, draft.changes.map(({occurrenceId, after}) => ({occurrenceId, after}))) : [];
     const fields = [...new Map(text.map(o => [o.source_key, o])).values()].map(o => {
       const field = changed.find(f => f.sourceKey === o.source_key);
-      const before=readable(o.source_value,o.field_type==="RichText",text.filter(row=>row.source_key===o.source_key));
-      return {sourceKey:o.source_key, item:o.item_name, field:o.field_name, rawBefore:o.source_value, rawAfter:field ? String(field.after) : o.source_value, before:before.text, matches:before.matches, after:readable(field ? String(field.after) : o.source_value,o.field_type==="RichText").text};
+      const before=read(o.source_value,o.field_type==="RichText",text.filter(row=>row.source_key===o.source_key));
+      return {sourceKey:o.source_key, item:o.item_name, field:o.field_name, rawBefore:o.source_value, rawAfter:field ? String(field.after) : o.source_value, before:before.text, matches:before.matches, after:read(field ? String(field.after) : o.source_value,o.field_type==="RichText").text};
     });
     return {fields, error:null};
   } catch {

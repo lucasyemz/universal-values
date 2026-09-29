@@ -2,6 +2,10 @@
 
 :root {
   color-scheme: light;
+  --diff-before-bg: #fff5f5; --diff-before-border: #fecaca; --diff-before-label: #991b1b;
+  --diff-after-bg: #f0fdf7; --diff-after-border: #a7f3d0; --diff-after-label: #065f46;
+  --match-before-bg: #fef3c7; --match-before-text: #451a03;
+  --match-after-bg: #d1fae5; --match-after-text: #022c22;
   --bg-app: #F7F9FC; --bg-surface: #fff; --bg-subtle: #EEF2F7;
   --text-primary: #111827; --text-secondary: #626C80; --text-tertiary: #626C80;
   --border-default: #D9E0EA; --border-strong: #8490A3;
@@ -52,7 +56,6 @@
   .ui-btn-ghost { background: transparent; border-color: transparent; }
   .ui-card { border: 1px solid var(--border-default); border-radius: 12px; background: var(--bg-surface); box-shadow: 0 1px 2px #10204005; }
   .ui-page { min-width: 0; overflow-wrap: anywhere; width: 100%; max-width: 1440px; margin: auto; padding: 32px; }
-  .ui-page > a:first-child { display: inline-flex; margin-bottom: 6px; font-size: 13px; }
   .ui-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
   .ui-table th { position: sticky; top: 0; z-index: 20; background: var(--bg-subtle); color: var(--text-secondary); font-size: 12px; font-weight: 600; padding: 12px 18px; white-space: nowrap; }
   .ui-table td { overflow-wrap: anywhere; border-top: 1px solid var(--border-default); padding: 16px 18px; vertical-align: middle; }
@@ -60,7 +63,7 @@
   .ui-table caption { text-align: left; padding: 16px 18px; font-weight: 600; }
   .ui-nav-link { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 12px; color: var(--text-secondary); font-weight: 500; font-size: 13px; }
   .ui-nav-link:hover { background: var(--bg-subtle); }
-  .ui-nav-link[aria-current=page] { box-shadow: inset 3px 0 var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .ui-nav-link[aria-current=page], .ui-nav-link[aria-current=location] { box-shadow: inset 3px 0 var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .ui-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 4px; background: var(--bg-subtle); border-radius: 10px; width: fit-content; }
   .ui-tab { display: inline-flex; align-items: center; min-height: 40px; max-width: 100%; overflow-wrap: anywhere; padding: 7px 14px; border: 1px solid transparent; border-radius: 7px; font-weight: 600; font-size: 13px; color: var(--text-secondary); }
   .ui-tab:hover { background: #fff9; color: var(--text-primary); }
@@ -148,12 +151,12 @@
  .scan-history-list { grid-template-columns:minmax(150px,1fr) minmax(140px,.8fr) max-content max-content max-content; column-gap:18px; }
  .scan-history-list > .scan-history-card { grid-template-columns:subgrid; grid-column:1/-1; }
  .scan-history-list .scan-history-actions { grid-column:auto; justify-content:flex-end; flex-wrap:nowrap; }
- .scan-history-list .scan-history-counts { display:grid; grid-template-columns:1fr 1fr; }
+ .scan-history-list .scan-history-counts { display:grid; grid-template-columns:1fr 1fr; border-left:1px solid var(--border-default); padding-left:20px; }
  .scan-history-list .scan-history-counts > span { grid-column:1/-1; }
 }
 @media(min-width:768px) { .scan-history-card { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .scan-history-actions { grid-column:1/-1; } }
-@media(min-width:1440px) { .scan-history-card { grid-template-columns:minmax(160px,1.2fr) minmax(140px,.8fr) auto auto; } .scan-history-counts { border-left:1px solid var(--border-default); padding-left:20px; } .scan-history-actions { grid-column:1/-1; justify-content:flex-end; } }
-@media(min-width:1440px) { .scan-history-card { grid-template-columns:minmax(150px,1fr) minmax(140px,.8fr) auto auto auto; gap:18px; } .scan-history-actions { grid-column:auto; } }
+
+
 
 @container (min-width: 900px) {
   .scan-workbench-unified { grid-template-columns: minmax(240px, .7fr) minmax(0, 1.6fr); }
@@ -262,3 +265,6 @@
  .change-history-card-horizontal > :first-child { flex:1; align-items:center; }
  .change-history-card-horizontal > :last-child { margin-top:0; padding-top:0; flex-wrap:nowrap; gap:32px; }
 }
+
+.ui-touch-target { min-width:24px; min-height:24px; }
+@media (pointer:coarse) { .ui-touch-target, .ui-btn, .ui-tab { min-height:44px; min-width:44px; } }

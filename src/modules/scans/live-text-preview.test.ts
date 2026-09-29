@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { liveTextPreview } from "./live-text-preview";
+import { createLiveTextPreview, liveTextPreview } from "./live-text-preview";
 import { detectTextMentions } from "./text-mentions";
 import type { Occurrence } from "./schema";
 function rows(source: string, rich = false) {
@@ -31,4 +31,17 @@ it("maps only selected saved ranges to yellow display highlights, including Unic
  expect(field.before).toBe("🎉 Acme & Acme");
  expect(field.matches).toEqual([{start:10,end:14}]);
  expect(field.before.slice(field.matches[0]!.start,field.matches[0]!.end)).toBe("Acme");
+});
+
+it("cached display previews keep current selection, snapshot and invalid-range checks",()=>{
+ const preview=createLiveTextPreview();
+ const all=rows('<p>🎉 Acme &amp; Acme</p>',true);
+ const input={[all[1]!.id]:"New"};
+ expect(preview(all,input)).toEqual(liveTextPreview(all,input));
+ expect(preview([all[1]!],input)).toEqual(liveTextPreview([all[1]!],input));
+ const fresh=rows('<p>Changed Acme</p>',true);
+ expect(preview(fresh,{})).toEqual(liveTextPreview(fresh,{}));
+ expect(preview([{...fresh[0]!,start_pos:1}],{[fresh[0]!.id]:"New"}).error).toBeTruthy();
+ for(let i=0;i<205;i++) preview(rows('Acme '+i),{});
+ expect(preview(all,input)).toEqual(liveTextPreview(all,input));
 });

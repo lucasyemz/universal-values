@@ -12,7 +12,7 @@ import { activityDestination, PAGE_SIZE, SCANS_PAGE_SIZE } from "./presentation"
 
 export async function siteScansPage(id: string, page: number) {
   const site = await getScanSite(id); const { client } = await requireUser();
-  const result = await client.from("cms_scans").select("id,status,plan,created_at,collection_items_read", { count: "exact" }).eq("site_id", id).order("created_at", { ascending: false }).order("id").range((page-1)*SCANS_PAGE_SIZE, page*SCANS_PAGE_SIZE-1);
+  const result = await client.from("cms_scans").select("id,status,plan,created_at,collection_items_read,series_id,scan_version,is_latest", { count: "exact" }).eq("site_id", id).eq("is_latest", true).order("created_at", { ascending: false }).order("id").range((page-1)*SCANS_PAGE_SIZE, page*SCANS_PAGE_SIZE-1);
   if (result.error) throw new Error("Não foi possível carregar os scans. Atualize a página para tentar novamente.");
   const scans = z.array(scanListSchema).parse(result.data);
   const summaryRows: z.infer<typeof reviewSummarySchema>[] = [];
@@ -59,9 +59,11 @@ export async function siteOverview(id: string) {
   const response = await client.rpc("site_overview_summary", { p_site: id });
   if(response.error) throw new Error("Não foi possível carregar o resumo. Atualize a página para tentar novamente.");
   const data = z.object({activeValues:z.number(),scanCount:z.number(),latestScanAt:z.string().nullable(), scans:z.array(z.object({id:z.uuid(),status:z.string(),occurrences_count:z.number(),created_at:z.string()})), running:z.array(z.object({id:z.uuid(),status:z.string()})),uncertainCount:z.number(),uncertain:z.array(z.object({managed_value_id:z.uuid()})), recent:z.array(activityRowSchema),activity:z.array(z.object({id:z.uuid(),source:z.enum(["cms","static","scan"])}))}).parse(response.data);
-  const recentIds = data.scans.slice(0, 3).map(scan => scan.id);
+  const latest = await client.from("cms_scans").select("id").eq("site_id", id).eq("is_latest",true).order("created_at",{ascending:false}).order("id").limit(3);
+  if(latest.error) throw new Error("Não foi possível carregar as versões dos scans.");
+  const recentIds = (latest.data ?? []).map(scan => scan.id);
   const [scanRows, summaryResult] = recentIds.length ? await Promise.all([
-    client.from("cms_scans").select("id,status,plan,created_at,collection_items_read").eq("site_id", id).in("id", recentIds),
+    client.from("cms_scans").select("id,status,plan,created_at,collection_items_read,series_id,scan_version,is_latest").eq("site_id", id).in("id", recentIds),
     client.rpc("scan_review_summaries", { p_ids: recentIds }),
   ]) : [{ data: [], error: null }, { data: [], error: null }];
   if (scanRows.error || summaryResult.error) throw new Error("Não foi possível carregar os scans. Atualize a página para tentar novamente.");
@@ -74,7 +76,7 @@ export async function siteOverview(id: string) {
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(data.recent.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",data.recent.filter(row=>row.source==="static").map(row=>row.id))]);
   const recent={rows:data.recent.map(row=>({...row,createdAt:row.created_at,label:row.label??undefined,href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!,row.attention,row.status)}))};
   const scans={data:data.scans,count:data.scanCount},running={data:data.running},uncertain={data:data.uncertain,count:data.uncertainCount};
-  const [scanLinks,valueLinks]=await Promise.all([resourceLinks("scans",[...new Set([...(scans.data??[]),...(running.data??[])].map(scan=>scan.id))]),resourceLinks("managed-values",[...new Set((uncertain.data??[]).map(binding=>binding.managed_value_id))])]);
+  const [scanLinks,valueLinks]=await Promise.all([resourceLinks("scans",[...new Set([...(scans.data??[]),...recentScans,...(running.data??[])].map(scan=>scan.id))]),resourceLinks("managed-values",[...new Set((uncertain.data??[]).map(binding=>binding.managed_value_id))])]);
   const activity = [
     ...(scans.data ?? []).map(scan => ({ id: scan.id, title: "Scan do CMS", description: `${scan.occurrences_count} ocorrências registradas`, createdAt: scan.created_at, status: scan.status, label: undefined as string | undefined, href: scanLinks[scan.id]! })),
     ...recent.rows.map(row => ({ id: row.id, title: row.title, description: `${row.target} · ${row.verified}/${row.total} verificados`, createdAt: row.createdAt, status: row.status, label: row.label, href: row.href })),

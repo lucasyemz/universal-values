@@ -18,8 +18,7 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
   const preview = await getWorkspacePreview((await params).id);
   if (!preview) notFound();
   return <main className="ui-page !max-w-2xl">
-    <FreshLink href="/dashboard" >{t("← Workspaces")}</FreshLink>
-    <PageHeader title={t("Revisar workspace")} description={t("Confira o nome. Você poderá conectar seus sites depois da criação.")} />
+    <PageHeader navigation={<FreshLink href="/dashboard" >{t("← Workspaces")}</FreshLink>} title={t("Revisar workspace")} description={t("Confira o nome. Você poderá conectar seus sites depois da criação.")} />
     <Steps steps={[t("Nomear workspace"), t("Revisar e criar")]} current={1} />
     <section className="mt-6 ui-card p-6">
       <h2 className="text-xl font-semibold">{preview.name}</h2>

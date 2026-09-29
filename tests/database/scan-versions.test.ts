@@ -1,0 +1,60 @@
+import {beforeAll,afterAll,it,expect} from 'vitest';
+import {randomUUID} from 'node:crypto';
+import {queryDatabase,tenant,asActor,savedScan} from './phase-b-fixture';
+let db:Awaited<ReturnType<typeof queryDatabase>>;
+beforeAll(async()=>{db=await queryDatabase();},30000);
+afterAll(async()=>{await db.close();});
+it('creates stable series versions, preserves resource numbers and reuses repeat identity',async()=>{
+ const t=await tenant(db),first=await savedScan(db,t,2),next=randomUUID();
+ const repeat=()=>asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[next,first]));
+ await repeat();await repeat();
+ expect((await db.query('select scan_version,is_latest,series_id from cms_scans where series_id=$1 order by scan_version',[first])).rows).toEqual([{scan_version:1,is_latest:false,series_id:first},{scan_version:2,is_latest:true,series_id:first}]);
+ expect((await db.query('select number from dashboard_resource_routes where resource_id=any($1) order by number',[[first,next]])).rows).toHaveLength(2);
+ await expect(asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[randomUUID(),first]))).rejects.toThrow('Historical scan');
+ await db.query("update cms_scans set status='cancelled' where id=$1",[next]);
+ const third=randomUUID();await asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[third,next]));
+ expect((await db.query('select scan_version from cms_scans where id=$1',[third])).rows).toEqual([{scan_version:3}]);
+});
+it('rejects foreign repeats and operation identity reuse across series',async()=>{
+ const t=await tenant(db),foreign=await tenant(db),scan=await savedScan(db,t,1),other=await savedScan(db,t,1),id=randomUUID();
+ await expect(asActor(db,foreign.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[id,scan]))).rejects.toThrow();
+ await asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[id,scan]));
+ await expect(asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[id,other]))).rejects.toThrow('Operation key conflict');
+ expect((await asActor(db,foreign.actor,()=>db.query('select id from cms_scans where series_id=$1',[scan]))).rows).toHaveLength(0);
+});
+it('rejects old previews and manual review after a new version, preserving saved evidence',async()=>{
+ const t=await tenant(db),scan=await savedScan(db,t,101),preview=randomUUID();
+ const ids=(await db.query<{id:string}>("select id from scan_occurrences where scan_id=$1 and canonical->>'text'='group1'",[scan])).rows.map(row=>row.id);
+ const changes=JSON.stringify([{occurrenceId:ids[0],after:{type:'text',text:'Changed'}}]);
+ await asActor(db,t.actor,()=>db.query('select public.preview_cms_changes($1,$2,$3)',[preview,scan,changes]));
+ const value=randomUUID();await asActor(db,t.actor,()=>db.query("select public.preview_managed_value($1,$2,'Shared',$3)",[value,scan,ids]));
+ await asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[randomUUID(),scan]));
+ await db.query("update cms_scans set status='completed' where series_id=$1 and is_latest",[scan]);
+ await expect(asActor(db,t.actor,()=>db.query('select public.confirm_cms_changes($1)',[preview]))).rejects.toThrow('Historical scan');
+ await expect(asActor(db,t.actor,()=>db.query('select public.confirm_managed_value($1)',[value]))).rejects.toThrow('Historical scan');
+ await expect(asActor(db,t.actor,()=>db.query('select public.preview_cms_changes($1,$2,$3)',[randomUUID(),scan,changes]))).rejects.toThrow('Historical scan');
+ await expect(asActor(db,t.actor,()=>db.query('select public.set_scan_content_reviewed($1,$2,$3,true)',[randomUUID(),scan,ids]))).rejects.toThrow('Historical scan');
+ expect((await db.query('select count(*)::int n from scan_occurrences where scan_id=$1',[scan])).rows).toEqual([{n:101}]);
+});
+it('does not supersede a scan whose confirmed website changes are still running',async()=>{
+ const t=await tenant(db),scan=await savedScan(db,t,1),preview=randomUUID(),next=randomUUID();
+ const occurrence=(await db.query<{id:string}>('select id from scan_occurrences where scan_id=$1',[scan])).rows[0]!.id;
+ await asActor(db,t.actor,()=>db.query('select public.preview_cms_changes($1,$2,$3)',[preview,scan,JSON.stringify([{occurrenceId:occurrence,after:{type:'text',text:'Changed'}}])]));
+ await asActor(db,t.actor,()=>db.query('select public.confirm_cms_changes($1)',[preview]));
+ await expect(asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[next,scan]))).rejects.toThrow('Wait for scan changes');
+ expect((await db.query('select is_latest from cms_scans where id=$1',[scan])).rows).toEqual([{is_latest:true}]);
+ expect((await db.query('select id from cms_scans where id=$1',[next])).rows).toHaveLength(0);
+});
+it('paginates series instead of old versions and rolls back a quota-rejected repeat',async()=>{
+ const t=await tenant(db),first=await savedScan(db,t,0),next=randomUUID();
+ for(let i=0;i<20;i++)await savedScan(db,t,0);
+ await asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[next,first]));
+ const read=(offset:number)=>asActor(db,t.actor,()=>db.query<{id:string}>('select id from cms_scans where site_id=$1 and is_latest order by created_at desc,id limit 20 offset $2',[t.site,offset]));
+ const a=(await read(0)).rows,b=(await read(20)).rows;
+ expect(a).toHaveLength(20);expect(b).toHaveLength(1);expect([...a,...b].some(row=>row.id===first)).toBe(false);
+ await db.query("update cms_scans set status='completed' where id=$1",[next]);
+ await db.query('update app_private.account_usage set scans=5 where user_id=$1',[t.actor]);
+ const failed=randomUUID();await expect(asActor(db,t.actor,()=>db.query('select public.repeat_cms_scan($1,$2)',[failed,next]))).rejects.toThrow();
+ expect((await db.query('select is_latest,scan_version from cms_scans where id=$1',[next])).rows).toEqual([{is_latest:true,scan_version:2}]);
+ expect((await db.query('select id from cms_scans where id=$1',[failed])).rows).toHaveLength(0);
+});

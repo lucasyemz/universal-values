@@ -24,8 +24,7 @@ export default async function ValuePreviewPage({ params, searchParams }: { param
   const site = await getScanSite(preview.site_id);
   return <main className="ui-page">
     <SiteContext siteName={site.display_name} title={t("Revisar centralização")} siteId={preview.site_id} workspaceId={site.workspace_id} />
-    <FreshLink href={"/dashboard/scans/" + preview.scan_id}>{t("← Sugestões do scan")}</FreshLink>
-    <PageHeader title={t("Revisar centralização")} description={t("Confira o valor e as origens que serão vinculadas.")} />
+    <PageHeader navigation={<FreshLink href={"/dashboard/scans/" + preview.scan_id}>{t("← Sugestões do scan")}</FreshLink>} title={t("Revisar centralização")} description={t("Confira o valor e as origens que serão vinculadas.")} />
     <section className="mt-8 ui-card p-6">
       <h2 className="text-xl font-semibold">{preview.name}</h2><p className="mt-3 text-sm">{t("Valor encontrado que será mantido:")}</p><p className="mt-2 break-words">{valueLabel(preview.canonical)}</p>
       <p className="mt-4 leading-7 text-muted">{t("Serão criados o valor e seus vínculos com as fontes abaixo, usando o conteúdo observado no scan. Esta etapa organiza as fontes e não altera o Webflow. Após criar, você poderá editar o valor central e revisar uma sincronização das fontes vinculadas.")}</p>

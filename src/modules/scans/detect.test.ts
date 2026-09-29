@@ -62,7 +62,7 @@ describe("conservative CMS detection", () => {
   });
 });
 
-const scan: Scan = {
+const scan: Scan = { scan_version:1, is_latest:true,
   id: "scan", site_id:"site",workspace_id:"workspace",actor_id:"actor",connection_id:"connection",
   status:"running",plan:[{ id:collectionId,name:"Planos" }],collection_index:0,item_offset:0,revision:0,items_read:0,
   occurrences_count:0,truncated:false,skipped_fields:0,error_code:null,retry_at:null,expires_at:"",created_at:"",

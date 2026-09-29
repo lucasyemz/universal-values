@@ -39,6 +39,7 @@ export async function confirmInlineChanges(input: unknown) {
     // The existing RPC locks the immutable request, revalidates permissions/bindings,
     // reserves quota once, audits confirmation and schedules the conflict-aware worker.
     const result = await client.rpc("confirm_cms_changes", { p_id: parsed.data.id });
+    if (result.error?.message === "Historical scan is read-only") return { ok:false as const, refresh:true, message:"Esta versão é somente leitura. Abra a versão mais recente." };
     if (result.error?.code === "23505" && result.error.message.includes("one_confirmed_change_per_site")) return { ok:false as const, refresh:true, message:"A fila de alterações ainda não está habilitada no banco. Aplique a migration 20260922000300_cms_change_queue.sql." };
     if (result.error?.message === "Managed value already queued") return { ok:false as const, refresh:true, message:"Este Managed Value já tem uma alteração na fila. Aguarde a conclusão antes de preparar outra versão." };
     if (result.error) return { ok:false as const, refresh:true, message:quotaMessage(quotaErrorCode(result.error)) ?? "Não foi possível confirmar. A conexão, os vínculos ou a versão podem ter mudado, ou há outra operação ativa." };
