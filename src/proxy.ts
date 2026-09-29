@@ -11,6 +11,10 @@ import type { Database } from "@/connectors/supabase/types";
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
   response.headers.set("Cache-Control", "private, no-store");
+  if (["/signup", "/forgot-password"].includes(request.nextUrl.pathname) || request.nextUrl.pathname.startsWith("/auth/")) {
+    response.headers.set("Referrer-Policy", "no-referrer");
+    return response;
+  }
   const config = getSupabaseConfig();
   if (!config) return response;
   const client = createServerClient<Database>(config.url, config.key, {
@@ -83,4 +87,4 @@ export async function proxy(request: NextRequest) {
   return response;
 }
 
-export const config = { matcher: ["/login", "/dashboard/:path*", "/api/connectors/webflow/:path*"] };
+export const config = { matcher: ["/login", "/signup", "/forgot-password", "/auth/:path*", "/dashboard/:path*", "/api/connectors/webflow/:path*"] };

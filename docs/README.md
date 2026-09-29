@@ -21,6 +21,7 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 | Visual implementation | [Dashboard/Designer pattern](dashboard-designer-ui-pattern.md) · [Brand](brand-guide.md) |
 | Language and public site | [Internationalization](internationalization.md) · [Landing page](landing-page.md) |
 | Test expectations | [Verification](verification.md) |
+| Closed-beta production readiness | [Production checklist](production-checklist.md) |
 | Site transfer and card validation | [Implementation and QA](qa/site-cards-and-transfers.md) |
 | Unimplemented design | [Group pagination](design/group-pagination.md) |
 | Dated plans and original evidence | [Archive](archive/2026-09/README.md) |
@@ -36,3 +37,7 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 Keep one canonical rule per subject and link to it. Guides describe current contracts; reports describe evidence at a date. Do not infer current deployment, pricing or completion from an old report. If implementation and rules disagree, identify the difference and fix/document it rather than silently treating the archive as authority.
 
 - [CMS Explorer UX, request budgets and session cache](cms-explorer-ux-plan.md)
+
+- [Authentication and recovery](authentication.md): social providers, email signup and one-time recovery setup.
+- [Webflow sign-in](webflow-login.md): custom OAuth provider, existing app reuse and public adapter setup.
+- [Guia de configuração dos logins (PT-BR)](login-setup-pt-BR.md): checklist para e-mail, Google, Microsoft, Webflow e Apple, com roteiro de retomada.
