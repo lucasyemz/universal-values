@@ -30,7 +30,7 @@ async function fixture(admin=false) {
     await rpc(actor,'select public.preview_cms_scan($1,$2,$3::jsonb,false)',[id,site,JSON.stringify([{id:col,name:'Collection',types:['link']}])]);return id;
   };
   const scan=await previewScan();
-  const usage=async()=>((await rpc(actor,'select public.account_plan_usage() as value')).rows[0] as {value:{plan:string;scans:number;fields:number;sites:number}}).value;
+  const usage=async()=>((await rpc(actor,'select public.account_plan_usage() as value')).rows[0] as {value:{plan:string;scans:number;fields:number;sites:number;scansToday:number}}).value;
   const change=async(total:number)=>{
     const id=randomUUID(); await db.query("insert into public.cms_change_requests(id,scan_id,site_id,workspace_id,actor_id,connection_id,changes,total) values($1,$2,$3,$4,$5,$6,'[]',$7)",[id,scan,site,workspace,actor,connection,total]);return id;
   };
@@ -43,18 +43,20 @@ describe('free account quotas',()=>{
     await expect(rpc(f.actor,'update app_private.account_usage set scans=0')).rejects.toThrow('permission denied');
     await expect(rpc(f.actor,'select public.read_webflow_credential_unmetered($1)',[f.connection])).rejects.toThrow('permission denied');
   });
-  it('counts one site across workspaces but permits reconnecting the same site',async()=>{
+  it('counts two sites across workspaces but permits reconnecting the same site',async()=>{
     const f=await fixture(), workspace=randomUUID(), connection=randomUUID();
     await db.query("insert into public.workspaces(id,name) values($1,'Another')",[workspace]);
     await db.query("insert into public.workspace_members(workspace_id,user_id,role) values($1,$2,'owner')",[workspace,f.actor]);
     await db.query("insert into public.webflow_connections(id,workspace_id,actor_id,state_hash,status) values($1,$2,$3,$4,'ready')",[connection,workspace,f.actor,'c'.repeat(64)]);
     const p=randomUUID();await rpc(f.actor,'select public.preview_webflow_site($1,$2,$3,$4)',[p,connection,'c'.repeat(24),'Second']);
-    await expect(rpc(f.actor,'select public.confirm_webflow_site($1)',[p])).rejects.toThrow('quota_sites');
+    await rpc(f.actor,'select public.confirm_webflow_site($1)',[p]);
+    const third=randomUUID();await rpc(f.actor,'select public.preview_webflow_site($1,$2,$3,$4)',[third,connection,'e'.repeat(24),'Third']);
+    await expect(rpc(f.actor,'select public.confirm_webflow_site($1)',[third])).rejects.toThrow('quota_sites');
     const again=randomUUID();await rpc(f.actor,'select public.preview_webflow_site($1,$2,$3,$4)',[again,f.connection,'b'.repeat(24),'Site']);
     await rpc(f.actor,'select public.confirm_webflow_site($1)',[again]);
-    expect((await f.usage()).sites).toBe(1);
+    expect((await f.usage()).sites).toBe(2);
   });
-  it('allows five scans, preserves retry idempotency and resets next month',async()=>{
+  it('allows five scans, preserves retry idempotency and resets next UTC day',async()=>{
     const f=await fixture();
     for(let i=0;i<5;i++){
       const id=i===0?f.scan:await f.previewScan();
@@ -62,19 +64,20 @@ describe('free account quotas',()=>{
       await rpc(f.actor,'select public.confirm_cms_scan($1)',[id]);
       await rpc(f.actor,'select public.cancel_cms_scan($1)',[id]);
     }
-    expect((await f.usage()).scans).toBe(5);
-    const sixth=await f.previewScan();await expect(rpc(f.actor,'select public.confirm_cms_scan($1)',[sixth])).rejects.toThrow('quota_scans_month');
-    await db.query("update app_private.account_usage set month=month-interval '1 month' where user_id=$1",[f.actor]);
-    await rpc(f.actor,'select public.confirm_cms_scan($1)',[sixth]);expect((await f.usage()).scans).toBe(1);
+    expect((await f.usage()).scansToday).toBe(5);
+    const sixth=await f.previewScan();await expect(rpc(f.actor,'select public.confirm_cms_scan($1)',[sixth])).rejects.toThrow('quota_scans_day');
+    await db.query("update app_private.quota_events set created_at=created_at-interval '1 day' where actor_id=$1",[f.actor]);
+    await rpc(f.actor,'select public.confirm_cms_scan($1)',[sixth]);expect((await f.usage()).scansToday).toBe(1);
   });
   it('reserves field totals at confirmation and never refunds cancellation',async()=>{
     const f=await fixture(); const first=await f.change(30);
     await rpc(f.actor,'select public.confirm_cms_changes($1)',[first]);
     await rpc(f.actor,'select public.confirm_cms_changes($1)',[first]);
     await rpc(f.actor,'select public.cancel_cms_changes($1)',[first]);
-    const over=await f.change(21); await expect(rpc(f.actor,'select public.confirm_cms_changes($1)',[over])).rejects.toThrow('quota_fields_month');
-    expect((await f.usage()).fields).toBe(30);
-    const exact=await f.change(20);await rpc(f.actor,'select public.confirm_cms_changes($1)',[exact]);expect((await f.usage()).fields).toBe(50);
+    const over=await f.change(21); await rpc(f.actor,'select public.confirm_cms_changes($1)',[over]);
+    await rpc(f.actor,'select public.cancel_cms_changes($1)',[over]);
+    expect((await f.usage()).fields).toBe(51);
+    const exact=await f.change(20);await rpc(f.actor,'select public.confirm_cms_changes($1)',[exact]);expect((await f.usage()).fields).toBe(71);
   });
   it('blocks scan and change overlap across operation types',async()=>{
     const f=await fixture();await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
@@ -148,14 +151,14 @@ describe('persistent plan selection',()=>{
     await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
     expect((await db.query('select item_limit from public.cms_scans where id=$1',[f.scan])).rows).toEqual([{item_limit:100}]);
     await rpc(f.actor,'select public.cancel_cms_scan($1)',[f.scan]);
-    expect((await f.usage()).scans).toBe(1);
+    expect((await f.usage()).scansToday).toBe(1);
     await rpc(f.actor,"select public.select_account_plan($1,'admin','free')",[randomUUID()]);
     expect((await f.usage()).plan).toBe('admin');
     // Retrying an old request must not undo a newer selection.
     await rpc(f.actor,"select public.select_account_plan($1,'free','admin')",[id]);
     expect((await f.usage()).plan).toBe('admin');
     await rpc(f.actor,"select public.select_account_plan($1,'free','admin')",[randomUUID()]);
-    expect((await f.usage()).scans).toBe(1);
+    expect((await f.usage()).scansToday).toBe(1);
     expect((await db.query('select count(*)::int as count from app_private.plan_changes where user_id=$1',[f.actor])).rows).toEqual([{count:3}]);
   });
   it('rejects stale previews, reused ids with changed payload and invalid plans',async()=>{
@@ -257,4 +260,27 @@ describe('administrator usage visibility',()=>{
     expect((await f.usage()).scans).toBe(1);
     expect((await db.query('select count(*)::int as n from app_private.admin_usage where user_id=$1',[f.actor])).rows[0]).toEqual({n:2});
   });
+});
+
+it('deletes only owned site history, preserves usage and supports retry',async()=>{
+ const f=await fixture(),other=await fixture(),operation=randomUUID();
+ await rpc(f.actor,'select public.confirm_cms_scan($1)',[f.scan]);
+ await expect(rpc(f.actor,'select public.delete_site_history($1,$2)',[operation,f.site])).rejects.toThrow('Site operation in progress');
+ await rpc(f.actor,'select public.cancel_cms_scan($1)',[f.scan]);
+ const oldSlug=(await db.query<{slug:string}>('select slug from public.sites where id=$1',[f.site])).rows[0]!.slug;
+ const change=await f.change(1);
+ await expect(rpc(other.actor,'select public.delete_site_history($1,$2)',[operation,f.site])).rejects.toThrow('Owner required');
+ await rpc(f.actor,'select public.delete_site_history($1,$2)',[operation,f.site]);
+ await rpc(f.actor,'select public.delete_site_history($1,$2)',[operation,f.site]);
+ expect((await f.usage()).sites).toBe(0);
+ expect((await f.usage()).scans).toBe(1);
+ expect((await db.query('select id from public.cms_scans where id=$1',[f.scan])).rows).toHaveLength(0);
+ expect((await db.query('select id from public.sites where id=$1',[other.site])).rows).toHaveLength(1);
+ expect((await db.query('select id from public.cms_change_requests where id=$1',[change])).rows).toHaveLength(0);
+ const reconnect=randomUUID();
+ await rpc(f.actor,'select public.preview_webflow_site($1,$2,$3,$4)',[reconnect,f.connection,'b'.repeat(24),'Site']);
+ await rpc(f.actor,'select public.confirm_webflow_site($1)',[reconnect]);
+ expect((await f.usage()).sites).toBe(1);
+ expect((await f.usage()).scansToday).toBe(1);
+ expect((await db.query<{slug:string}>('select slug from public.sites where connection_id=$1',[f.connection])).rows[0]!.slug).not.toBe(oldSlug);
 });

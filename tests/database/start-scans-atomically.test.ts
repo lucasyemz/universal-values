@@ -18,7 +18,7 @@ it("only commits confirmed scans, reuses operation identity and blocks direct dr
 it("rolls back scan, audit and resource allocation when confirmation fails",async()=>{
  const t=await tenant(db),first=randomUUID(),second=randomUUID();
  await asActor(db,t.actor,()=>db.query("select public.start_cms_scan($1,$2,$3::jsonb,false)",[first,t.site,plan]));
- await db.query("update app_private.account_usage set scans=5 where user_id=$1",[t.actor]);
+ await db.query("insert into app_private.quota_events(operation_id,kind,actor_id,amount) values(gen_random_uuid(),'scan',$1,5)",[t.actor]);
  await expect(asActor(db,t.actor,()=>db.query("select public.start_cms_scan($1,$2,$3::jsonb,false)",[second,t.site,plan]))).rejects.toThrow();
  expect((await db.query("select id from public.cms_scans where id=$1",[second])).rows).toHaveLength(0);
  expect((await db.query("select id from public.scan_audit_events where operation_id=$1",[second])).rows).toHaveLength(0);

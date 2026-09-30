@@ -25,7 +25,7 @@ it("does not confirm invalid input or failed preparation", async () => {
 });
 
 it("rejects creation when the account site allowance is full", async () => {
-  usage.mockResolvedValue({plan:"free",sites:1});
+  usage.mockResolvedValue({plan:"free",sites:2});
   await expect(createWorkspace(form())).rejects.toThrow("quota_sites");
   const confirmation = form(); confirmation.set("confirmed", "yes");
   await expect(confirmWorkspace(confirmation)).rejects.toThrow("quota_sites");
@@ -34,7 +34,7 @@ it("rejects creation when the account site allowance is full", async () => {
 it("allows administrators and preserves completed operation replay", async () => {
   usage.mockResolvedValue({plan:"admin",sites:100});
   await expect(createWorkspace(form())).rejects.toThrow(`/dashboard/workspaces/${id}/settings/webflow`);
-  usage.mockResolvedValue({plan:"free",sites:1});
+  usage.mockResolvedValue({plan:"free",sites:2});
   preview.mockResolvedValue({workspace_id:id});
   const confirmation = form(); confirmation.set("confirmed", "yes");
   await expect(confirmWorkspace(confirmation)).rejects.toThrow(`/dashboard/workspaces/${id}/settings/webflow`);

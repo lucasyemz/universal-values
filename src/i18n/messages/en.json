@@ -1981,7 +1981,20 @@
   "Os resultados parciais serão desconsiderados e este scan não poderá criar novas Variáveis.": "Partial results will be disregarded and this scan will not be able to create new Variables.",
   "Exemplo de alteração": "Example change",
   "Vazio": "Empty",
-"activity.newValue": "New value",
-"activity.fullValue": "View full value",
-  "activity.detailsHint": "Full value in details"
+  "activity.newValue": "New value",
+  "activity.fullValue": "View full value",
+  "activity.detailsHint": "Full value in details",
+  "O plano gratuito permite 2 sites Webflow por conta, somando todos os workspaces.": "The free plan allows 2 Webflow sites per account across all workspaces.",
+  "Você atingiu os 5 scans de hoje. A cota renova diariamente às 00h UTC.": "You have reached today's 5 scans. The quota resets daily at 00:00 UTC.",
+  "Por dia · renova às 00h UTC": "Per day · resets at 00:00 UTC",
+  "scans hoje": "scans today",
+  "2 sites · 5 scans/dia · 100 itens/scan · 50 campos CMS/mês · 1 operação ativa.": "2 sites · 5 scans/day · 100 items/scan · 50 CMS fields/month · 1 active operation.",
+  "Excluir projeto": "Delete project",
+  "Excluir projeto e histórico": "Delete project and history",
+  "Excluindo…": "Deleting…",
+  "O projeto, scans, variáveis e histórico serão excluídos do ReplaceAll. O site no Webflow não será alterado. Os scans usados hoje continuam contando.": "The project, scans, variables and history will be deleted from ReplaceAll. The Webflow site will not be changed. Scans used today still count.",
+  "Revise a confirmação.": "Review the confirmation.",
+  "Finalize ou cancele as operações e revogue as sessões do Designer antes de excluir.": "Finish or cancel operations and revoke Designer sessions before deleting.",
+  "Não foi possível excluir o projeto. Confira seu acesso e a migration de exclusão.": "Could not delete the project. Check access and the deletion migration.",
+  "2 sites · 5 scans/dia · 100 itens/scan · sem cota mensal de campos.": "2 sites · 5 scans/day · 100 items/scan · no monthly field quota."
 }

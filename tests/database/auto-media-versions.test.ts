@@ -34,7 +34,7 @@ it('isolates sites/accounts and rolls back grouping when admission fails',async(
  const t=await tenant(db),other=await tenant(db);const first=await start(t,plan()),foreign=await start(other,plan());
  expect((await db.query('select series_id from cms_scans where id=$1',[foreign])).rows).toEqual([{series_id:foreign}]);
  await expect(asActor(db,other.actor,()=>db.query('select public.start_matching_cms_scan($1,$2,$3,false)',[randomUUID(),t.site,JSON.stringify(plan())]))).rejects.toThrow('Site unavailable');
- await db.query('update app_private.account_usage set scans=5 where user_id=$1',[t.actor]);
+ await db.query("insert into app_private.quota_events(operation_id,kind,actor_id,amount) values(gen_random_uuid(),'scan',$1,5)",[t.actor]);
  await expect(start(t,plan())).rejects.toThrow();
  expect((await db.query('select is_latest,scan_version from cms_scans where id=$1',[first])).rows).toEqual([{is_latest:true,scan_version:1}]);
 });

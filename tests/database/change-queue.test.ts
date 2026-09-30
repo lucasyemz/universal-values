@@ -57,9 +57,9 @@ it('caps queued confirmations and keeps an overflow as an uncharged preview',asy
  const extra=await f.preview();await expect(f.confirm(extra)).rejects.toThrow('quota_change_queue');
  expect((await db.query('select status,queue_order from public.cms_change_requests where id=$1',[extra])).rows[0]).toEqual({status:'preview',queue_order:null});
 });
-it('still enforces field quota across queued work and preview expiry',async()=>{
+it('allows more than fifty fields while enforcing preview expiry',async()=>{
  const f=await fixture();await f.confirm(await f.preview(30));
- await expect(f.confirm(await f.preview(21))).rejects.toThrow('quota_fields_month');
+ await f.confirm(await f.preview(21));
  const expired=await f.preview();await db.query("update public.cms_change_requests set expires_at=now()-interval '1 minute' where id=$1",[expired]);
  await expect(f.confirm(expired)).rejects.toThrow('Preview expired');
 });

@@ -1981,7 +1981,20 @@
   "Os resultados parciais serão desconsiderados e este scan não poderá criar novas Variáveis.": "Os resultados parciais serão desconsiderados e este scan não poderá criar novas Variáveis.",
   "Exemplo de alteração": "Exemplo de alteração",
   "Vazio": "Vazio",
-"activity.newValue": "Novo valor",
-"activity.fullValue": "Ver valor completo",
-  "activity.detailsHint": "Valor completo nos detalhes"
+  "activity.newValue": "Novo valor",
+  "activity.fullValue": "Ver valor completo",
+  "activity.detailsHint": "Valor completo nos detalhes",
+  "O plano gratuito permite 2 sites Webflow por conta, somando todos os workspaces.": "O plano gratuito permite 2 sites Webflow por conta, somando todos os workspaces.",
+  "Você atingiu os 5 scans de hoje. A cota renova diariamente às 00h UTC.": "Você atingiu os 5 scans de hoje. A cota renova diariamente às 00h UTC.",
+  "Por dia · renova às 00h UTC": "Por dia · renova às 00h UTC",
+  "scans hoje": "scans hoje",
+  "2 sites · 5 scans/dia · 100 itens/scan · 50 campos CMS/mês · 1 operação ativa.": "2 sites · 5 scans/dia · 100 itens/scan · 50 campos CMS/mês · 1 operação ativa.",
+  "Excluir projeto": "Excluir projeto",
+  "Excluir projeto e histórico": "Excluir projeto e histórico",
+  "Excluindo…": "Excluindo…",
+  "O projeto, scans, variáveis e histórico serão excluídos do ReplaceAll. O site no Webflow não será alterado. Os scans usados hoje continuam contando.": "O projeto, scans, variáveis e histórico serão excluídos do ReplaceAll. O site no Webflow não será alterado. Os scans usados hoje continuam contando.",
+  "Revise a confirmação.": "Revise a confirmação.",
+  "Finalize ou cancele as operações e revogue as sessões do Designer antes de excluir.": "Finalize ou cancele as operações e revogue as sessões do Designer antes de excluir.",
+  "Não foi possível excluir o projeto. Confira seu acesso e a migration de exclusão.": "Não foi possível excluir o projeto. Confira seu acesso e a migration de exclusão.",
+  "2 sites · 5 scans/dia · 100 itens/scan · sem cota mensal de campos.": "2 sites · 5 scans/dia · 100 itens/scan · sem cota mensal de campos."
 }

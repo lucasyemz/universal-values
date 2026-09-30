@@ -6,6 +6,7 @@ import { ArrowRightLeft, ExternalLink, Globe2, History, Layers3, MoreHorizontal,
 import { useText } from "@/i18n/use-text";
 import { StatusBadge } from "@/components/ui";
 import { MetadataRefresh } from "./metadata-refresh";
+import { DeleteSite } from "./delete-site";
 import { SiteTransfer } from "./site-transfer";
 
 export function SiteCard({ siteId,settings,fetchedAt,name, href, url, image, connected }: { siteId:string;settings:string;fetchedAt:string|null;name: string; href: string; url: string | null; image: string | null; connected: boolean }) {
@@ -33,6 +34,7 @@ export function SiteCard({ siteId,settings,fetchedAt,name, href, url, image, con
    <nav aria-label={t("Site options: {0}",name)}>{links.map(({href,label,Icon})=><Link key={href} href={href} prefetch={false} onClick={()=>panel.current?.hidePopover()} className="ui-nav-link"><Icon size={17} aria-hidden="true"/>{label}</Link>)}</nav>
    <div className="mt-1 border-t px-2"><MetadataRefresh siteId={siteId} kind="site" fetchedAt={fetchedAt}/></div>
    <div className="mt-1 border-t pt-1"><button type="button" className="ui-nav-link w-full text-left" onClick={()=>{panel.current?.hidePopover();setTransfer(true);}}><ArrowRightLeft size={17} aria-hidden="true"/>{t("Transfer site")}</button></div>
+   <div className="mt-1 border-t pt-1"><DeleteSite siteId={siteId} name={name} onOpen={()=>panel.current?.hidePopover()}/></div>
   </div>
   {transfer&&<SiteTransfer siteId={siteId} name={name} onClose={()=>{setTransfer(false);trigger.current?.focus();}}/>}
  </article>;

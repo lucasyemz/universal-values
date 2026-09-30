@@ -6,7 +6,7 @@ it("retains known quota failures without returning raw database errors", () => {
   expect(connectionFailure(new Error("sensitive token"))).toBe("unavailable");
 });
 it("shows safe diagnostic copy and never echoes URL input", () => {
-  expect(connectionErrorMessage("quota_sites")).toContain("1 site");
+  expect(connectionErrorMessage("quota_sites")).toContain("2 sites");
   expect(connectionErrorMessage("other_workspace")).toContain("Transferir");
   expect(connectionErrorMessage("arbitrary sensitive input")).not.toContain("arbitrary");
 });

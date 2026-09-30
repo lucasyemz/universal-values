@@ -41,6 +41,7 @@ export type Database = {
     };
     Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      delete_site_history: {Args:{p_id:string;p_site:string};Returns:undefined};
       create_support_ticket: { Args: {p_request:string;p_category:string;p_subject:string;p_body:string}; Returns:number };
       reply_support_ticket: { Args: {p_request:string;p_ticket:number;p_body:string;p_status:string}; Returns:number };
       managed_reference_results: {Args:{p_request:string};Returns:Json};

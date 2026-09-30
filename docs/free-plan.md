@@ -6,14 +6,14 @@ tags: [replaceall, guia]
 
 # Plano gratuito e administrador
 
-A migration `20260920001600_free_plan_limits.sql` aplica cotas no PostgreSQL, inclusive para chamadas diretas às RPCs. A UI somente apresenta consumo e erros; não decide privilégios.
+As cotas são aplicadas no PostgreSQL, inclusive para chamadas diretas às RPCs. A política abaixo depende da migration `20260930184842_free_daily_scans_two_sites.sql`, aplicada ao projeto Supabase em 30/09/2026. A UI somente apresenta consumo e erros; não decide privilégios.
 
 | Recurso | Free | Administrador |
 | --- | --- | --- |
-| Sites Webflow por conta, somando workspaces | 1 | Sem cota comercial |
-| Scans confirmados/mês | 5 | Sem cota comercial |
+| Sites Webflow por conta, somando workspaces | 2 | Sem cota comercial |
+| Scans confirmados/dia (UTC) | 5 | Sem cota comercial |
 | Itens processados/scan novo | 100 | 500 (limite técnico) |
-| Campos CMS confirmados/mês | 50 | Sem cota comercial |
+| Campos CMS confirmados/mês | Sem cota comercial individual | Sem cota comercial |
 | Operações ativas (scan ou alteração CMS) | 1 | Sem cota comercial |
 | Preparações de operações/mês | 200 | Sem cota comercial |
 | Acessos à integração/mês | 1.000 | Sem cota comercial |
@@ -21,7 +21,7 @@ A migration `20260920001600_free_plan_limits.sql` aplica cotas no PostgreSQL, in
 
 Acesso à integração significa obtenção autorizada da credencial pelo executor, não cada requisição HTTP externa. Uma leitura pode envolver várias páginas/endpoints. Preparações incluem conexão, workspace, scan, alterações, Variables, Global Facts e sessões/alterações Designer. Essas proteções não limitam todas as requisições HTTP, autenticação ou leituras do banco.
 
-O consumo mensal renova no primeiro dia às 00h UTC. A reserva acontece na confirmação, na mesma transação da operação; repetir a confirmação não consome novamente. Cancelamentos e falhas não devolvem cotas. Campos incluem sincronização de Variables, resolução de divergências e reversões CMS. Scans pausados continuam ocupando a operação ativa. Dados e histórico anteriores são preservados; scans já iniciados conservam seu limite original. Consumo novo começa na ativação da migration.
+Scans renovam diariamente às 00h UTC; excluir um projeto não devolve scans consumidos. A cota individual mensal de campos foi removida; as proteções técnicas mensais permanecem. O consumo mensal renova no primeiro dia às 00h UTC. A reserva acontece na confirmação, na mesma transação da operação; repetir a confirmação não consome novamente. Cancelamentos e falhas não devolvem cotas. Campos incluem sincronização de Variables, resolução de divergências e reversões CMS. Scans pausados continuam ocupando a operação ativa. Dados e histórico anteriores são preservados; scans já iniciados conservam seu limite original. Consumo novo começa na ativação da migration.
 
 ## Proteção global
 
@@ -48,7 +48,7 @@ update app_private.plan_policy set paused=true where singleton;
 
 O dashboard exibe o plano e o consumo. O painel de atividades consulta a cada 15 segundos com atividade e 60 segundos sem atividade; consultas pausam com aba oculta ou offline. O andamento de alterações consulta a cada 15 segundos e também pausa nessas condições.
 
-Testes em `tests/database/free-plan.test.ts` cobrem isolamento de privilégios, confirmação idempotente, renovação mensal, cotas, capacidade global, auditoria administrativa e limite de leitura do scan. Não simulam saturação real dos serviços externos.
+Testes em `tests/database/free-plan.test.ts` cobrem isolamento de privilégios, confirmação idempotente, renovação diária dos scans e mensal das proteções técnicas, cotas, capacidade global, auditoria administrativa e limite de leitura do scan. Não simulam saturação real dos serviços externos.
 
 ## Plano e consumo na conta
 
@@ -83,3 +83,9 @@ unavailable. It is a point-in-time minute allowance, not a monthly balance.
 The current Supabase app credentials and Gemini generation key do not provide
 organization/project billing balances; the UI links to the official usage pages
 instead of presenting estimated or hardcoded Free-tier allowances as real quotas.
+
+## Atualização de limites e exclusão (aplicada em 30/09/2026)
+
+Migrations 20260930184842 e 20260930185005: dois sites simultâneos por conta e cinco scans por dia UTC. O contador mensal interno e a proteção global continuam preservados. A exclusão confirmada remove site e histórico local, libera a vaga e não chama o Webflow. Operações CMS ativas e sessões Designer válidas bloqueiam exclusão. Recibos mínimos de exclusão, cotas e reservas de URLs permanecem; slugs excluídos não são reutilizados. Usuários só excluem projetos de workspaces dos quais são donos. A operação é idempotente.
+
+Delta por exclusão: Q +1 RPC, W/I/E/G 0, além das releituras da interface. Consulta do plano mantém uma RPC; apuração diária usa registros existentes. As duas migrations foram aplicadas com autorização e verificadas no banco remoto. O histórico remoto tem lacunas de versões antigas: o envio foi isolado para não reaplicar scripts anteriores. A exclusão fica no menu de três pontinhos do projeto, com confirmação centralizada.
