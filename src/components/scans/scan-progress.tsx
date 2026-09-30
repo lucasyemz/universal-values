@@ -1,16 +1,16 @@
 "use client";
 
 import { useText } from "@/i18n/use-text";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { runScanBatch, readScanProgress } from "@/modules/scans/actions";
 import {createPoller} from "@/modules/polling/scheduler";
-import {notifyActivityChanged} from "@/modules/activity/polling";
+import {ACTIVITY_CHANGED, notifyActivityChanged} from "@/modules/activity/polling";
 import type { scanProgress } from "@/modules/scans/service";
 import { Notice, StatusBadge, Progress as ProgressBar } from "@/components/ui";
 
 type Progress = ReturnType<typeof scanProgress>;
-export function ScanProgress({ initial }: { initial: Progress }) {
+export function ScanProgress({ initial, children }: { initial: Progress; children?: ReactNode }) {
   const t = useText();
 
   const router = useRouter();
@@ -35,8 +35,8 @@ export function ScanProgress({ initial }: { initial: Progress }) {
       return 15000;
     },()=>!document.hidden&&navigator.onLine);
     const wake=()=>poller.wake();
-    document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);poller.wake();
-    return()=>{disposed=true;poller.stop();document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake);};
+    window.addEventListener(ACTIVITY_CHANGED,wake);document.addEventListener('visibilitychange',wake);window.addEventListener('online',wake);window.addEventListener('offline',wake);poller.wake();
+    return()=>{disposed=true;poller.stop();window.removeEventListener(ACTIVITY_CHANGED,wake);document.removeEventListener('visibilitychange',wake);window.removeEventListener('online',wake);window.removeEventListener('offline',wake);};
   }, [initial.id, router]);
   return <section aria-label={t("Progresso do scan")} className="mt-6 ui-card p-6">
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">{active ? t("Lendo seu CMS") : t("Progresso salvo")}</h2><StatusBadge status={active ? "running" : progress.status} /></div>
@@ -48,5 +48,6 @@ export function ScanProgress({ initial }: { initial: Progress }) {
     {message && <p role="alert" className="mt-3 text-amber-800">{t(message)}</p>}
     {progress.status==='paused' && <button disabled={resuming} onClick={async()=>{setResuming(true);setMessage('');try{const result=await runScanBatch({id:progress.id,revision:progress.revision});if(result.ok){setProgress(result.progress);notifyActivityChanged();router.refresh();}else setMessage(result.message);}catch{setMessage("A comunicação foi interrompida. Retome para consultar o progresso salvo.");}finally{setResuming(false);}}} className="mt-5 ui-btn ui-btn-primary">{t("Retomar scan")}</button>}
     {active && <p className="mt-4 text-sm text-accent">{t("Processando em lotes…")}</p>}
+    {children && <div className="mt-5 space-y-4 border-t pt-4">{children}</div>}
   </section>;
 }

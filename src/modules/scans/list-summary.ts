@@ -4,7 +4,8 @@ import {numericSearchValue} from './numeric-search';
 export const scanListSchema=scanSchema.pick({series_id:true,scan_version:true,is_latest:true,id:true,status:true,plan:true,created_at:true,collection_items_read:true});
 export type ScanListRow=z.infer<typeof scanListSchema>;
 export const reviewSummarySchema=z.object({scan_id:z.uuid(),pending:z.number().int().nonnegative(),reviewed:z.number().int().nonnegative(),total:z.number().int().nonnegative(),numeric_singletons:z.array(z.object({collection_id:z.string(),number:z.string(),reviewed:z.boolean()})).max(1000)});
-export function scanReviewSummary(scan:Pick<ScanListRow,"plan">,row:z.infer<typeof reviewSummarySchema>) {
+export function scanReviewSummary(scan:Pick<ScanListRow,"plan"> & Partial<Pick<ScanListRow,"status">>,row:z.infer<typeof reviewSummarySchema>) {
+ if(scan.status === "cancelled") return {pending:0,reviewed:0,all:0};
  let pending=row.pending,reviewed=row.reviewed;
  for(const candidate of row.numeric_singletons)if(scan.plan.some(entry=>entry.id===candidate.collection_id && numericSearchValue(entry.searchText)===candidate.number)) {
   if(candidate.reviewed)reviewed++;else pending++;

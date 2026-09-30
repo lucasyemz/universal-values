@@ -1,4 +1,6 @@
 "use client";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+
 import { LoaderCircle } from "lucide-react";
 import type { InlinePreview } from "@/modules/scans/inline-preview";
 import { TextChangeDiff } from "./text-change-diff";
@@ -71,8 +73,8 @@ export function InlineReview({ liveFields, initialFields, sourcesFooter, sources
       {preview.slugCount>0 && <Notice tone="warning">{t("Mudar o slug altera o endereço da página quando publicada. Redirecionamentos não são criados automaticamente. Os slugs alterados estão incluídos na quantidade de campos.")}</Notice>}
       {draftKey && state.stage!=="confirmed" && <>
         {confirmationOptions}
-        <p className="text-sm text-muted">{t("Ao aplicar, você confirma exatamente os valores e slugs exibidos. O site não será publicado. Campos alterados no Webflow serão bloqueados; os demais podem ser aplicados.")}</p>
-        <button type="button" className="ui-btn ui-btn-primary disabled:opacity-40" aria-busy={validating || state.stage==="confirming"} disabled={!fresh||state.stage!=="ready"||ai?.busy} onClick={()=>void store.confirm(draftKey,receipt=>confirm({id:receipt.id,digest:receipt.digest,confirmed:true}))}>{(validating || state.stage==="confirming") && <LoaderCircle size={16} className="motion-safe:animate-spin" aria-hidden="true"/>}{state.stage==="confirming"?t("Confirmando operação…"):confirmLabel ? confirmLabel : reverting?t("Confirmar reversão de {0} campos",preview.fieldCount):preview.fieldCount===1?t("Aplicar em 1 campo"):t("Aplicar em {0} campos",preview.fieldCount)}</button>
+<ConfirmationDialog key={preview.digest} title={confirmLabel ?? (reverting ? t("Confirmar reversão de {0} campos",preview.fieldCount) : preview.fieldCount===1 ? t("Aplicar em 1 campo") : t("Aplicar em {0} campos",preview.fieldCount))} disabled={!fresh||state.stage!=="ready"||ai?.busy} busy={state.stage==="confirming"}>        <p className="text-sm text-muted">{t("Ao aplicar, você confirma exatamente os valores e slugs exibidos. O site não será publicado. Campos alterados no Webflow serão bloqueados; os demais podem ser aplicados.")}</p>
+        <button type="button" className="ui-btn ui-btn-primary disabled:opacity-40" aria-busy={validating || state.stage==="confirming"} disabled={!fresh||state.stage!=="ready"||ai?.busy} onClick={()=>void store.confirm(draftKey,receipt=>confirm({id:receipt.id,digest:receipt.digest,confirmed:true}))}>{(validating || state.stage==="confirming") && <LoaderCircle size={16} className="motion-safe:animate-spin" aria-hidden="true"/>}{state.stage==="confirming"?t("Confirmando operação…"):confirmLabel ? confirmLabel : reverting?t("Confirmar reversão de {0} campos",preview.fieldCount):preview.fieldCount===1?t("Aplicar em 1 campo"):t("Aplicar em {0} campos",preview.fieldCount)}</button></ConfirmationDialog>
       </>}
       {state.stage==="confirmed" && <><Notice tone="success">{t("Alteração confirmada. Acompanhe o processamento abaixo ou continue navegando.")}</Notice><ChangeProgress id={preview.id} cursor={0} total={preview.fields.length} paused={false} onCompleted={onCompleted ? () => { onCompleted(); store.finish(); } : undefined}/><Link className="ui-btn" href={changeDestination(preview.id,preview.scanId)}>{t("Ver revisados")}</Link></>}
     </>}

@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { textDiff } from "./text-diff";
+import { recordedTextParts, textDiff } from "./text-diff";
 
 it("highlights separated replacements without marking unchanged context", () => {
  const diff = textDiff("A luxurious home with 3 rooms.", "A cozy home with 4 rooms.");
@@ -29,4 +29,9 @@ it("coalesces equal-status segments without losing whitespace or change boundari
  expect(result.after.map(part=>part.text).join("")).toBe(after);
  expect(result.after.filter(part=>part.changed)).toEqual([{text:"beautiful",changed:true}]);
  expect(textDiff(before,before).before).toEqual([{text:before,changed:false}]);
+});
+
+it("highlights only recorded occurrences in identical fields, using Unicode offsets", () => {
+ expect(recordedTextParts("😀 same same", [{start:2,end:6,raw:"same"}])).toEqual([{text:"😀 ",changed:false},{text:"same",changed:true},{text:" same",changed:false}]);
+ expect(recordedTextParts("same", [{start:0,end:4,raw:"old"}])).toEqual([{text:"same",changed:false}]);
 });

@@ -34,3 +34,18 @@ export function textDiff(before: string, after: string): { before: TextPart[]; a
   };
   return { before: compact(left), after: compact(right) };
 }
+
+/** Highlight exact recorded ranges even when a verified value was already present. */
+export function recordedTextParts(text: string, ranges: readonly { start: number; end: number; raw: string }[]): TextPart[] {
+  const chars = [...text];
+  const parts: TextPart[] = [];
+  let cursor = 0;
+  for (const range of ranges) {
+    if (!Number.isInteger(range.start) || !Number.isInteger(range.end) || range.start < cursor || range.end <= range.start || range.end > chars.length || chars.slice(range.start, range.end).join("") !== range.raw) return [{ text, changed: false }];
+    if (range.start > cursor) parts.push({ text: chars.slice(cursor, range.start).join(""), changed: false });
+    parts.push({ text: range.raw, changed: true });
+    cursor = range.end;
+  }
+  if (cursor < chars.length) parts.push({ text: chars.slice(cursor).join(""), changed: false });
+  return parts;
+}

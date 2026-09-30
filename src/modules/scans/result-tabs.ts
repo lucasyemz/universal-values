@@ -6,3 +6,16 @@ export function scanResultTab(input:string|undefined,counts:{pending:number;revi
   // every match has already been reviewed, without retaining an All screen.
   return input==="all" && counts.pending===0 && counts.reviewed>0 ? "reviewed" : "pending";
 }
+
+// Visibility uses the whole scan, not the currently searched subset.
+export function visibleScanResultTabs(counts: { reviewed: number; variables: number }) {
+  return scanResultTabs.filter(tab => tab === "pending" || counts[tab] > 0);
+}
+export function availableScanResultTab(
+  input: string | undefined,
+  counts: { pending: number; reviewed: number },
+  available: readonly (typeof scanResultTabs)[number][],
+) {
+  const requested = scanResultTab(input, counts);
+  return available.includes(requested) ? requested : "pending";
+}

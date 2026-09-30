@@ -1,4 +1,5 @@
 "use client";
+import { RecordCard, RecordHeading } from "@/components/ui/record-card";
 import { ScanVersionSelector } from "./version-selector";
 import { ResourceNumber } from "@/components/ui/resource-number";
 import { scanDisplayStatus } from "@/modules/scans/list-summary";
@@ -30,13 +31,18 @@ export function ScanHistoryList({ scans, links, counts, compact = false }: { com
    const types=searchedScanTypes(scan), Icon=types.length===1 ? types[0]==="image" ? ImageIcon : types[0]==="link" ? Link2 : FileText : ScanLine;
    const review=counts[scan.id], href=links[scan.id]!;
    const displayStatus=scanDisplayStatus(scan.status,review);
-   return <li key={scan.id} className={"scan-history-card" + (compact ? " scan-history-card-compact" : "")}>
-    <div className="flex min-w-0 items-center gap-4"><ResourceNumber href={href} /><div className="min-w-0"><div className="flex items-start gap-2"><RememberedLink href={href} className="inline-flex items-center gap-2 break-words font-semibold hover:text-accent"><Icon size={17} className="shrink-0 text-accent" aria-hidden="true" /><span>{scan.plan[0]?.searchText ? `“${scan.plan[0].searchText}”` : labels[scan.id]}</span></RememberedLink></div>{scan.plan[0]?.searchText && <p className="mt-1 text-xs text-muted">{labels[scan.id]}</p>}</div></div>
-    <div className="flex min-w-0 items-center justify-between gap-4"><div className="min-w-0 space-y-2"><p className="flex items-center gap-2 text-xs text-muted"><CalendarDays size={15} className="shrink-0" aria-hidden="true" />{siteDate(scan.created_at,t.dateLocale)}</p><ScanCollectionCell scan={scan} href={href} /></div><ScanVersionSelector id={scan.id} version={scan.scan_version}/></div>
-    <div className="scan-history-counts">{review ? <><Link prefetch={false} href={href + "?filter=pending"} className="scan-history-count"><span className={review.pending ? "bg-orange-50 text-orange-800" : "bg-subtle text-muted"}>{review.pending}</span>{t("Pendentes")}</Link><Link prefetch={false} href={href + "?filter=reviewed"} className="scan-history-count"><span className={review.reviewed ? "bg-accent-soft text-accent" : "bg-subtle text-muted"}>{review.reviewed}</span>{t("Revisados")}</Link></> : <span className="text-xs text-muted">{t("Contagens indisponíveis")}</span>}</div>
-    <div><StatusBadge status={displayStatus} /></div>
-    <div className="scan-history-actions">{displayStatus!=="no_results" && <RememberedLink href={href} className="ui-btn ui-btn-primary">{t("Revisar resultados")}<ArrowRight size={16} aria-hidden="true" /></RememberedLink>}{["completed","limited","cancelled"].includes(scan.status) && scan.plan.length>0 && <Link prefetch={false} className="ui-btn" href={href.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + href.split("/").at(-1)}><RotateCw size={16} aria-hidden="true" />{t("Repetir scan")}</Link>}</div>
-   </li>;
+   const noReviewResults = scan.status === "cancelled" || review?.pending === 0 && review.reviewed === 0;
+   return <RecordCard key={scan.id} compact={compact}>
+    <RecordHeading icon={<Icon size={25} aria-hidden="true" />}
+      title={<RememberedLink href={href} className="block truncate hover:text-accent" title={scan.plan[0]?.searchText || labels[scan.id]}>{scan.plan[0]?.searchText ? `“${scan.plan[0].searchText}”` : labels[scan.id]}</RememberedLink>}
+      subtitle={<>{scan.plan[0]?.searchText && <>{labels[scan.id]} · </>}<ResourceNumber href={href} inline /></>}
+      status={<StatusBadge status={displayStatus} label={scan.status === "cancelled" ? "Scan cancelado" : undefined} />} />
+    <div className="record-metadata"><div className="record-scope"><p className="flex items-center gap-2 text-sm text-muted"><CalendarDays size={17} className="shrink-0" aria-hidden="true" />{siteDate(scan.created_at,t.dateLocale)}</p><ScanCollectionCell scan={scan} href={href} /></div><ScanVersionSelector id={scan.id} version={scan.scan_version}/></div>
+    <div className="record-footer">
+    {!noReviewResults && <div className="record-counts">{review ? <><Link prefetch={false} href={href + "?filter=pending"} className="record-count"><span className={review.pending ? "text-orange-700" : "text-muted"}>{review.pending}</span>{t("Pendentes")}</Link><Link prefetch={false} href={href + "?filter=reviewed"} className="record-count"><span className="text-muted">{review.reviewed}</span>{t("Revisados")}</Link></> : <span className="text-xs text-muted">{t("Contagens indisponíveis")}</span>}</div>}
+    <div className="record-actions">{displayStatus!=="no_results" && scan.status!=="cancelled" && <RememberedLink href={href} className="ui-btn ui-btn-primary">{t("Revisar resultados")}<ArrowRight size={16} aria-hidden="true" /></RememberedLink>}{["completed","limited","cancelled"].includes(scan.status) && scan.plan.length>0 && <Link prefetch={false} className="ui-btn" href={href.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + href.split("/").at(-1)}><RotateCw size={16} aria-hidden="true" />{t("Repetir scan")}</Link>}</div>
+    </div>
+   </RecordCard>;
   })}</ul>}
  </>;
 }

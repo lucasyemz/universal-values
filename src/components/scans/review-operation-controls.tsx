@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ReviewedOccurrence } from "./reviewed-occurrence";
 import { reviewedChanges } from "@/modules/scans/review-history";
 import Link from "next/link";
@@ -22,6 +23,6 @@ export async function ReviewOperationControls({id,scanId,error}:{id:string;scanI
   {request.results.some(r => !["applied", "already_applied"].includes(r.status)) && <p className="mt-4 text-sm"><Link className="ui-btn" href={"/dashboard/scans/" + scanId + "?filter=pending"}>{t("Conferir itens com falha ou conflito nos pendentes")}</Link></p>}
   {error && <p role="alert" className="mt-4 text-amber-800">{t("Não foi possível concluir a operação. Confira os status dos itens e atualize a prévia antes de tentar novamente.")}</p>}
   {request.status==="preview" && <ExistingPreview id={id} reverting={!!request.reverts_request_id}/>}
-  {request.status==="confirmed" && <><ChangeProgress id={id} cursor={request.cursor} total={request.total} paused={request.background_paused ?? false}/><form action={cancelChanges}><input type="hidden" name="id" value={id}/><p className="mb-2 text-sm">{t("Confirmo interromper os campos restantes. Alterações já aplicadas serão mantidas.")}</p><SubmitButton name="confirmed" value="yes" pendingLabel={t("Salvando…")}>{t("Cancelar alterações restantes")}</SubmitButton></form></>}
+  {request.status==="confirmed" && <><ChangeProgress id={id} cursor={request.cursor} total={request.total} paused={request.background_paused ?? false}/><ConfirmationDialog title={t("Cancelar alterações restantes")} tone="danger"><form action={cancelChanges}><input type="hidden" name="id" value={id}/><p className="mb-2 text-sm">{t("Confirmo interromper os campos restantes. Alterações já aplicadas serão mantidas.")}</p><SubmitButton name="confirmed" value="yes" pendingLabel={t("Salvando…")}>{t("Cancelar alterações restantes")}</SubmitButton></form></ConfirmationDialog></>}
  </section>;
 }

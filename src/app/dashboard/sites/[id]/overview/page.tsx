@@ -11,7 +11,7 @@ import { QuickSearch } from "@/components/sites/quick-search";
 import { savedQuerySchema } from "@/modules/scans/saved-search";
 import { getText } from "@/i18n/server";
 import Link from "next/link";
-import { CircleCheck, CircleAlert, ArrowUpRight, ArrowRight, FileText, Database, TriangleAlert, Compass, Plus } from "lucide-react";
+import { CircleAlert, ArrowUpRight, ArrowRight, FileText, Database, TriangleAlert, Compass, Plus } from "lucide-react";
 import { SitePage } from "@/components/sites/site-page";
 import { StatusBadge, EmptyState } from "@/components/ui";
 import { siteOverview } from "@/modules/sites/page-service";
@@ -31,20 +31,6 @@ export default async function OverviewPage({ params, searchParams }: { params: P
         <div className="mt-auto pt-4"><Link prefetch={false} href={base + "/scans/new"} className="ui-btn ui-btn-primary"><Plus size={16} aria-hidden="true" />{t("Novo scan")}</Link></div>
       </section>
     </div>
-    <section aria-labelledby="manage-site-heading" className="mb-6">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 id="manage-site-heading" className="text-lg font-semibold">{t("Gerenciar este site")}</h2><Link href={base + '/cms'} prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"><Compass size={16} aria-hidden="true"/>{t("Explorar CMS")}<ArrowRight size={15} aria-hidden="true"/></Link></div>
-    <section aria-label={t("Resumo do site")} className=" grid divide-y overflow-hidden rounded-2xl border bg-white md:grid-cols-3 md:divide-x md:divide-y-0">{[
-      { label: t("Variáveis ativas"), value: view.activeValues, href: base + '/variables', Icon: Database },
-      { label: t("Scans registrados"), value: view.scanCount, href: base + '/scans', Icon: FileText },
-      { label: t("Fontes incertas"), value: view.uncertainCount, href: base + '/variables', Icon: TriangleAlert },
-    ].map(({ label, value, href, Icon }) => <Link prefetch={false} href={href} key={label} className="flex min-w-0 items-center gap-4 px-5 py-4 transition-colors hover:bg-accent-soft focus-visible:-outline-offset-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={21} aria-hidden="true" /></span><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p></div></Link>)}</section>
-    </section>
-    <section className="mb-6 rounded-xl border bg-white p-6"><div className="mb-4 flex items-center gap-2">{attention?<CircleAlert size={20} className="text-amber-700" />:<CircleCheck size={20} className="text-green-700" />}<h2 className="text-lg font-semibold">{attention?t("Precisa de atenção"):t("Nenhuma pendência encontrada neste resumo")}</h2></div>
-      <ul className="space-y-3 text-sm">{view.running.map(scan=><li key={scan.id}><Link className="inline-flex items-center gap-2 underline" href={view.scanLinks[scan.id]!}>{scan.status==='paused'?t("Retomar scan pausado"):t("Acompanhar scan em andamento")} · Scan #{view.scanLinks[scan.id]!.split("/").at(-1)}<ArrowUpRight size={14} /></Link></li>)}
-      {view.uncertain.map((binding,index)=><li key={binding.managed_value_id+index}><Link className="underline" href={view.valueLinks[binding.managed_value_id]! + "#managed-sources"}>{t("Conferir fonte com resultado incerto")}</Link></li>)}
-      {view.recent.filter(row=>row.attention).map(row=><li key={row.id}><Link prefetch={false} href={row.href} className="inline-flex flex-wrap items-center gap-2 underline">{t(row.title)} · {row.target} · {siteDate(row.createdAt,t.dateLocale)}<StatusBadge status={row.status} label={row.label}/></Link></li>)}</ul>
-      <p className="mt-3 text-xs text-muted">{t("Resumo dos registros salvos e das últimas cinco operações. Não é uma verificação em tempo real do Webflow; confira os resultados dos scans para revisar o conteúdo encontrado.")}</p>
-    </section>
     <div className="overview-history grid items-start gap-6 xl:grid-cols-2">
       <section aria-labelledby="recent-scans-heading" className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 id="recent-scans-heading" className="text-lg font-semibold">{t("Scans recentes")}</h2><Link prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline" href={base + '/scans'}>{t("Ver todos os scans")}<ArrowRight size={15} aria-hidden="true" /></Link></div>
@@ -55,5 +41,19 @@ export default async function OverviewPage({ params, searchParams }: { params: P
         {!view.recent.length ? <EmptyState title={t("Nenhuma alteração registrada")} description={t("As alterações do CMS e do Designer aparecerão aqui.")} /> : <ul className="space-y-3">{view.recent.slice(0, 3).map(row => <ChangeCard key={row.source + row.id} row={row} />)}</ul>}
       </section>
     </div>
+    {attention && <section className="mt-6 rounded-xl border bg-white p-6"><div className="mb-4 flex items-center gap-2"><CircleAlert size={20} className="text-amber-700" /><h2 className="text-lg font-semibold">{t("Precisa de atenção")}</h2></div>
+      <ul className="space-y-3 text-sm">{view.running.map(scan=><li key={scan.id}><Link className="inline-flex items-center gap-2 underline" href={view.scanLinks[scan.id]!}>{scan.status==='paused'?t("Retomar scan pausado"):t("Acompanhar scan em andamento")} · Scan #{view.scanLinks[scan.id]!.split("/").at(-1)}<ArrowUpRight size={14} /></Link></li>)}
+      {view.uncertain.map((binding,index)=><li key={binding.managed_value_id+index}><Link className="underline" href={view.valueLinks[binding.managed_value_id]! + "#managed-sources"}>{t("Conferir fonte com resultado incerto")}</Link></li>)}
+      {view.recent.filter(row=>row.attention).map(row=><li key={row.id}><Link prefetch={false} href={row.href} className="inline-flex flex-wrap items-center gap-2 underline">{t(row.title)} · {row.target} · {siteDate(row.createdAt,t.dateLocale)}<StatusBadge status={row.status} label={row.label}/></Link></li>)}</ul>
+      <p className="mt-3 text-xs text-muted">{t("Resumo dos registros salvos e das últimas cinco operações. Não é uma verificação em tempo real do Webflow; confira os resultados dos scans para revisar o conteúdo encontrado.")}</p>
+    </section>}
+    <section aria-labelledby="manage-site-heading" className="mt-8">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h2 id="manage-site-heading" className="text-lg font-semibold">{t("Gerenciar este site")}</h2><Link href={base + '/cms'} prefetch={false} className="inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline"><Compass size={16} aria-hidden="true"/>{t("Explorar CMS")}<ArrowRight size={15} aria-hidden="true"/></Link></div>
+    <section aria-label={t("Resumo do site")} className=" grid divide-y overflow-hidden rounded-2xl border bg-white md:grid-cols-3 md:divide-x md:divide-y-0">{[
+      { label: t("Variáveis ativas"), value: view.activeValues, href: base + '/variables', Icon: Database },
+      { label: t("Scans registrados"), value: view.scanCount, href: base + '/scans', Icon: FileText },
+      { label: t("Fontes incertas"), value: view.uncertainCount, href: base + '/variables', Icon: TriangleAlert },
+    ].map(({ label, value, href, Icon }) => <Link prefetch={false} href={href} key={label} className="flex min-w-0 items-center gap-4 px-5 py-4 transition-colors hover:bg-accent-soft focus-visible:-outline-offset-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent"><Icon size={21} aria-hidden="true" /></span><div className="min-w-0"><p className="text-sm font-medium text-muted">{label}</p><p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p></div></Link>)}</section>
+    </section>
   </SitePage>;
 }

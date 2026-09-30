@@ -1,4 +1,6 @@
 "use client";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+
 import {workerHealthMessage,type WorkerState} from "@/modules/sync-worker/health";
 import {OPERATION_OBSERVED} from "@/modules/activity/progress-updates";
 import {notifyActivityChanged} from "@/modules/activity/polling";
@@ -53,11 +55,11 @@ export function ChangeProgress({ id, cursor, total, paused, onCompleted }: { onC
     {live.status !== "confirmed" && <p role="status" className="mt-3 text-sm">{t("{0} fontes verificadas · {1} com conflito, falha ou resultado incerto",live.verified,live.issues)}</p>}
     <p role="status" className={"mt-3 text-sm "+(['stalled','worker_error','missing','unknown'].includes(worker)?'text-amber-800':'text-muted')}>{t(workerHealthMessage(worker))}</p>
     {error && <p role="alert" className="mt-3 text-amber-800">{t(error)}</p>}
-    {live.paused && <><p className="mt-3 text-sm">{t("Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.")}</p><button disabled={resuming || worker === "missing"} onClick={async () => {
+    {live.paused && <ConfirmationDialog key={pollVersion} title={t("Confirmar continuação das etapas pendentes")} disabled={resuming || worker === "missing"} busy={resuming}><p className="mt-3 text-sm">{t("Confira os resultados abaixo. Continuar processa somente as etapas ainda pendentes; resultados incertos não serão reenviados.")}</p><button disabled={resuming || worker === "missing"} onClick={async () => {
       setResuming(true);
       try { const result = await resumeChanges({ id, cursor: live.cursor, confirmed: true }); if (!result.ok) setError(result.message); else {router.refresh();setPollVersion(v=>v+1);} }
       catch { setError(t("Não foi possível confirmar a retomada. Atualize o progresso antes de tentar novamente.")); }
       finally { setResuming(false); }
-    }} className="mt-3 ui-btn">{resuming ? t("Confirmando…") : t("Confirmar continuação das etapas pendentes")}</button></>}
+    }} className="mt-3 ui-btn ui-btn-primary">{resuming ? t("Confirmando…") : t("Confirmar continuação das etapas pendentes")}</button></ConfirmationDialog>}
   </section>;
 }

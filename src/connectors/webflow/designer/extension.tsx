@@ -1,3 +1,4 @@
+import { HelpWidget } from "@/components/support/help-widget";
 import { LiveTextContext } from "@/components/live-text-context";
 import {newScanFromSitePath} from "../../../modules/routes/resources";
 import {useSearchTabState,type SearchMode} from "./use-search-tab-state";
@@ -245,4 +246,4 @@ function Extension() {
 }
 
 const root = document.getElementById("root");
-if (root) createRoot(root).render(<DesignerLanguageProvider><Extension /></DesignerLanguageProvider>);
+if (root) createRoot(root).render(<DesignerLanguageProvider><Extension /><HelpWidget supportUrl={dashboardUrl+"/dashboard/support"} /></DesignerLanguageProvider>);

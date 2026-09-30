@@ -2,12 +2,11 @@
 
 import { RouteMotion } from "./route-motion";
 import { SidebarDisclosure } from "./sidebar-disclosure";
-import { AppLimitations } from "@/components/app-limitations";
 import { useText } from "@/i18n/use-text";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, ChevronRight, Globe2, History, LayoutGrid, Layers3, Menu, ScanLine, ShieldCheck, X } from "lucide-react";
+import { ChevronRight, Globe2, History, LayoutGrid, Layers3, Menu, ScanLine, ShieldCheck, X } from "lucide-react";
 import { RememberedLink } from "./navigation-state";
 import { AccountMenu } from "./account-menu";
 import { SiteSwitcher, type NavigationWorkspace } from "./site-switcher";
@@ -72,7 +71,6 @@ export function AppShell({ children, workspaces, email, workspaceError, plan, us
       </>}
     </nav>
     <div className="mt-auto pt-8">
-      <details className="mb-5 rounded-lg bg-subtle p-3 text-xs text-muted"><summary className="font-medium"><BookOpen size={14} className="mr-2 inline" aria-hidden="true" />{t("Como funciona")}</summary><p className="mt-3 leading-6">{t("Conecte um site, prepare um scan e revise as ocorrências. Toda alteração no CMS exige sua confirmação. O site não é publicado automaticamente.")}</p><AppLimitations /></details>
       <AccountMenu email={email} plan={plan} workspaceId={workspaceId} onNavigate={close} />
     </div>
   </>;

@@ -17,7 +17,7 @@ await Promise.all(["index.html", "styles.css"].map(file => copyFile(path.join(ex
 // Bundle the same motion tokens/rules as the dashboard, without another network request.
 await writeFile(path.join(out, "styles.css"),
   await readFile(path.join(extension, "styles.css"), "utf8") + "\n" +
-  await readFile(path.join(root, "src/styles/product-motion.css"), "utf8"));
+  await readFile(path.join(root, "src/styles/product-motion.css"), "utf8") + "\n" + await readFile(path.join(root, "src/styles/help.css"), "utf8"));
 // Change asset URLs with their contents so reopening the extension loads the current build.
 let html = await readFile(path.join(out, "index.html"), "utf8");
 for (const file of ["index.js", "styles.css"]) {

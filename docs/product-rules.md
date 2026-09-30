@@ -60,3 +60,7 @@ Dashboard and Designer use ReplaceAll, Find, Review occurrences, Replace with, P
 Resource cards for scans, history and Variables show the permanent public resource number in the leading badge and the type icon beside the title, including recent overview cards. History uses the operation number when linking into a scan. Numbers come from existing authenticated links, never list positions or internal UUIDs. This presentation adds no Q/W/I/E/G work.
 
 Site connection settings show an account-wide site-limit warning before authorization when the Free allowance is full. Adding to an empty workspace is disabled at that limit; reconnecting existing sites remains available. Database quota enforcement remains authoritative, and connection failures preserve the specific quota reason.
+
+## Help and support
+
+Help is static and shared across Dashboard/Designer: local synonym search, prepared answers and explicit escalation to tickets. No AI, polling, implicit provider calls or automatic ticket submission. Support is account-scoped; only the owner and existing administrators can read a ticket. Messages/status changes are append-audited and idempotent; no attachments or email notifications. See [support](support.md).

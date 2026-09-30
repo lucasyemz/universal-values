@@ -47,3 +47,5 @@ Comece pelo [Mapa do projeto](project-map.md), abra [ReplaceAll.canvas](ReplaceA
 - [Consolidação e remoção de documentos legados](archive/2026-09/documentation-consolidation.md)
 
 Uma fonte de verdade por assunto. Propostas ficam em `design`, verificações datadas em `qa` e decisões superadas em `archive`. Não inferir implantação, preços ou aprovação atual a partir de relatórios antigos.
+
+- [Ajuda e suporte](support.md): busca estática local, chamados e atendimento administrativo.

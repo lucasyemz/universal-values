@@ -8,7 +8,7 @@ tags: [replaceall, guia]
 
 ## Start and scope
 
-Open a site's New Scan, choose collections/types or a specific term and explicitly start from the configuration form. The atomic start contract is detailed below. Opening or reviewing uses persisted structure and consumes no scan quota/provider requests. Show structure freshness; **Refresh from Webflow** is explicit when absent/expired. Run Again loads the previous DB configuration, shows a summary and offers Run again / Customize; current execution checks still apply.
+Open a site's New Scan, choose collections/types or a specific term and explicitly start from the configuration form. The atomic start contract is detailed below. Successful start redirects directly to the canonical numbered scan page, which shows progress and refreshes into results when execution finishes. Opening or reviewing uses persisted structure and consumes no scan quota/provider requests. Show structure freshness; **Refresh from Webflow** is explicit when absent/expired. Run Again loads the previous DB configuration, shows a summary and offers Run again / Customize; current execution checks still apply.
 
 CMS scans read supported fields in selected collections, including draft items. They do not crawl public HTML or prove whole-site coverage. Archived items and the system slug field are excluded. Supported detection includes text, numeric values, prices, phones, dates, links and images/galleries; example/placeholder text can be found without repetition. Generic repeated-value groups require repeated occurrences; specific-term and placeholder findings may be singletons.
 
@@ -22,7 +22,7 @@ Numeric fields support exact numeric-term matching (2000 does not match 12000), 
 
 ## Results and review
 
-Pending / Reviewed filter the already-formed groups; Variables created lists only variables created in this scan. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Variables or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
+Pending remains visible when the scan has results. Empty scans hide the review tabs and local results search; recent-scan and history cards also omit both zero review counters. Reviewed appears only after the scan has reviewed occurrences, and Variables created only after it has creation provenance. Visibility uses the entire scan, not a local search subset; links to unavailable tabs fall back to Pending. A scan with no results shows a dedicated no-results message, distinct from an empty local filter. Pending / Reviewed filter the already-formed groups; Variables created lists only variables created in this scan. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Variables or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
 
 The local results filter searches saved labels/context; it never invents editable ranges from context. Quick Search on Overview uses only compatible completed/limited saved scans, explicitly showing date and collection scope. No match means only no match in that saved scan. Offer a targeted scan if exact editable evidence or coverage is missing; never start it automatically.
 
@@ -91,3 +91,25 @@ Manual repeat and matching admission share a site/actor advisory lock before res
 Version selection uses a native auto popover with Escape/outside dismissal, viewport-bounded placement and explicit trigger/panel association. Secondary version/collection controls have at least 24px targets (44px for coarse pointers). Replacement inputs expose item/field labels, invalid state and associated error descriptions. Comparison colors use semantic before/after tokens. History list desktop rules are scoped to the list, preserving compact overview variants.
 
 Live text parsing uses a component-local display cache bounded to 200 entries, keyed by exact source, rich-text mode and selected match ranges. It is discarded with the editor and never persisted or used for authorization or confirmation. Domain validation still runs against the current selection and values. Request cost delta: Q/W/I/E/G = 0.
+
+Operation comparisons keep recorded Variable text ranges bold even when before and after are identical (already applied). Highlight only validated snapshot offsets, never all matching words; this is display-only and does not change execution status or payloads.
+
+Variable operation details show a non-collapsible “Variable” section with the recorded values and a right-aligned “Open Variable” link beside the heading, with a navigation arrow, to its canonical numbered route.
+
+Operation details use browser history for Back (with a source fallback on direct visits) and omit the duplicate completion paragraph at the bottom. The explicit Open Variable action still opens the linked Variable.
+
+During execution, collection scope, start time and the explicit cancel confirmation live inside the progress card. Live counters are shown only by ScanProgress, avoiding stale server-rendered totals. Completed scans have a compact scope/date/count summary without a second collection list or “About this scan” disclosure.
+
+Cancelled scans display “Scan cancelled”. Partial results are excluded from review counters, Pending/Reviewed filters and editing; the scan remains in history and may be repeated. Stored evidence and cancellation audit are retained; cancelling a read does not revert earlier CMS operations.
+
+Activity cards in Overview and History show one new-value reference from the stored variable value or the first replacement. Cards show only the new value, shortened to 60 Unicode characters with the full value available on hover or click, while full operation details remain accessible. One batched, site-scoped projection per present origin (CMS/Designer) loads only visible rows, at most 20 on History and five on Overview: Q +0–2, W/I/E/G +0, no schema changes.
+
+Scan and activity cards share a three-row layout in lists and Overview: icon/title/status, date/scope/version, then a divided footer with counts and actions. Activity titles use the new-value excerpt; full content remains available from the title popup and operation details. Empty and cancelled scans preserve this structure while omitting review counts/actions. Presentation changes add no requests (Q/W/I/E/G delta 0).
+
+Resource summaries for scans, history and Variables use the shared RecordCard/RecordHeading primitives, including scan-created Variables. Variable summaries preserve linked-source counts, origin links, archive/uncertain states and existing actions. Full-value expansion remains limited to values exceeding 60 characters.
+
+Image values in Variable cards use the existing decoded filename presentation (without Webflow hash prefixes), never the full URL as display text. A lazy 56px thumbnail is shown beside short names; names longer than 60 characters load the thumbnail only when expanded. Failed images retain the existing “No preview” fallback. No extra database/provider API requests; visible thumbnails fetch the original image URL.
+
+Value excerpts remain on one line. Expansion is also available when the viewport clips a value shorter than the character limit.
+
+Expanded image previews fill the popup content width with a 208px image area and preserve aspect ratio without cropping. Inline thumbnails remain 56px. The popup body scrolls within 60vh.

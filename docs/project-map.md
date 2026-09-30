@@ -43,3 +43,5 @@ Ponto de entrada para entender o produto, navegar pelos guias e planejar a próx
 - [Índice completo](README.md) e [histórico técnico](archive/2026-09/README.md).
 
 > Documentado no código, validado localmente e implantado são estados diferentes. Confirme o ambiente de destino antes de qualquer publicação ou migration.
+
+- [Ajuda e suporte](support.md): busca estática local, chamados e atendimento administrativo.

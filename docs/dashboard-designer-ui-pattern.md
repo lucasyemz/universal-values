@@ -94,3 +94,13 @@ Activity details migration 20260928000100 appends read-only metadata to the exis
 History cards use the History icon and content types as their title, without the repetitive operation prefix or numeric counters. Date, scope tags, status and View details remain. CMS scan detail links include #operation-results with the existing scoped operation number. The selected operation renders its own verified occurrence history in an always-open anchored section, independent of current result pagination or newer operations; pending/failed work stays distinct. Existing request loading and authorization are reused, with no provider calls.
 
 The full Scans list shares desktop column tracks across its cards, with a shared right-aligned actions column. Missing counters retain their column space; when repeat is unavailable, the review button aligns to the right edge; compact overview cards and mobile stacking keep their existing presentation. Q/W/I/E/G delta: 0.
+
+Authentication provider options follow the supplied compact-card reference: after the email form, an “Or continue with” divider introduces a two-column grid with equal-height buttons, provider logo above name, and a complete accessible action label. Google/Webflow use local supplied SVG assets. Provider enablement and OAuth actions remain unchanged. Q/W/I/E/G delta: 0.
+
+### Dashboard confirmations
+
+Existing action confirmations use the centered native `ConfirmationDialog`, with a labelled heading, focus containment, Escape/close support and no execution on opening. Cancellation, archival, revocation and reversal use danger red; ordinary confirmations use primary blue. Preserve exact preview receipts, required acknowledgements, server validation and idempotency. Simple actions that already run without a confirmation remain unchanged. Cancelled scan badges use danger red.
+
+Scan history cards use explicit grid areas: identity/status, a wrapping date/collection/version row, then counts/actions. Empty and cancelled cards keep those same positions. Avoid the old five-column subgrid, which squeezed collection names and dates beside long action labels. Overview compact cards retain their existing layout.
+
+Site overview prioritizes scan actions followed immediately by recent scans and changes. Attention is rendered only when actionable records exist. Site management metrics appear last.

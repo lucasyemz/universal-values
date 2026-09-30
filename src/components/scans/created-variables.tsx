@@ -1,9 +1,12 @@
+import { RecordCard, RecordHeading, RecordFooter } from "@/components/ui/record-card";
+import { ResourceNumber } from "@/components/ui/resource-number";
+import { Layers, ArrowRight } from "lucide-react";
 import { ImagePreview } from "./image-change-preview";
 import type { Occurrence } from "@/modules/scans/schema";
 import { ReviewedOccurrence } from "./reviewed-occurrence";
 import Link from "next/link";
 import { getText } from "@/i18n/server";
-import { EmptyState } from "@/components/ui";
+import { EmptyState, StatusBadge } from "@/components/ui";
 import { variableEvidence, CREATED_VARIABLES_PAGE_SIZE, type scanCreatedVariables } from "@/modules/scans/created-variables";
 
 export async function CreatedVariables({view,page,href,siteId,occurrences,linkedValues}:{siteId:string;occurrences:Occurrence[];linkedValues:Record<string,{id:string}>;view:Awaited<ReturnType<typeof scanCreatedVariables>>;page:number;href:string}) {
@@ -14,15 +17,17 @@ export async function CreatedVariables({view,page,href,siteId,occurrences,linked
   {!view.values.length ? <EmptyState title={t("Nenhuma variável criada neste scan")} description={t("Selecione pelo menos dois campos em Pendentes e escolha Criar variável e aplicar na prévia.")}/> : <div className="space-y-5">{view.values.map((value,index)=>{
    const saved=evidence[index];
    const rows=saved?.rows ?? occurrences.filter(row=>linkedValues[row.source_key]?.id===value.id);
-   return <article key={value.id} className="ui-card p-5">
-    <header className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">{value.name}</h2><p className="text-sm text-muted">{t("Variável criada neste scan")} · {t(value.archived_at?"Arquivado":"Ativo")}</p></div><Link prefetch={false} href={view.links[value.id]!} className="ui-btn">{t("Abrir Variável")}</Link></header>
+   return <RecordCard key={value.id} as="article">
+    <RecordHeading icon={<Layers size={25} aria-hidden="true" />} title={<span className="block truncate" title={value.name}>{value.name}</span>} subtitle={<>{t("Variável criada neste scan")} · <ResourceNumber href={view.links[value.id]!} inline /></>} status={<StatusBadge status={value.archived_at ? "archived" : "active"} label={value.archived_at ? "Arquivado" : "Ativo"} />} />
+
     {rows.map(row=>{
      const verified=saved?.history[row.id];
      const result=saved?.results.find(result=>result.sourceKey===row.source_key);
      return verified ? <ReviewedOccurrence key={row.id} occurrence={row} history={{...verified,reversible:false}} outcome={result}/> : <section key={row.id} className="mt-4 rounded-xl border p-5"><h3 className="font-semibold">{row.item_name}</h3><p className="text-sm text-muted">{row.collection_name} → {row.field_name}</p><p className="mt-2 text-sm">{t("Sem alteração verificada nesta operação.")}</p>{result && <p className="text-sm">{t(result.message)}</p>}{row.canonical.type === "image" ? <ImagePreview url={row.canonical.url} label={t("Valor original do scan")}/> : <p className="mt-3 break-words whitespace-pre-wrap">{row.source_value}</p>}</section>;
     })}
     {!rows.length && <p className="mt-4 text-sm text-muted">{t("Sem alteração verificada nesta operação.")}</p>}
-   </article>;
+    <RecordFooter actions={<Link prefetch={false} href={view.links[value.id]!} className="ui-btn ui-btn-primary">{t("Abrir Variável")}<ArrowRight size={16} aria-hidden="true" /></Link>} />
+   </RecordCard>;
   })}</div>}
 
   {view.total>CREATED_VARIABLES_PAGE_SIZE && <nav className="mt-4 flex gap-3" aria-label={t("Paginação")}>

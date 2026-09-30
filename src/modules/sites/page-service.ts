@@ -1,3 +1,5 @@
+import { activityReferences } from "./activity-reference-service";
+import type { ActivityReference } from "./activity-reference";
 import { ACTIVITY_PAGE_SIZE, loadActivityPage } from "./activity-batches";
 import { operationLinks, resourceLinks } from "@/modules/routes/links";
 import { scanListSchema, reviewSummarySchema, scanReviewSummary } from "@/modules/scans/list-summary";
@@ -38,7 +40,7 @@ export async function siteValuesPage(id: string, page: number, query: string, fi
   const sources=Object.fromEntries(z.array(z.object({managed_value_id:z.uuid(),count:z.number().int().nonnegative(),uncertain:z.boolean()})).parse(bindings.data).map(row=>[row.managed_value_id,{count:row.count,uncertain:row.uncertain}]));
   return { site, values, sources, valueLinks: await resourceLinks("managed-values",values.map(value=>value.id)), total: result.count ?? 0 };
 }
-export type SiteActivity = { id: string; source: "cms" | "static"; title: string; target: string; status: string; label?: string; verified: number; total: number; createdAt: string; href: string; attention: boolean; details?: z.infer<typeof activityDetailsSchema> | null };
+export type SiteActivity = { reference?: ActivityReference; id: string; source: "cms" | "static"; title: string; target: string; status: string; label?: string; verified: number; total: number; createdAt: string; href: string; attention: boolean; details?: z.infer<typeof activityDetailsSchema> | null };
 export async function siteChangesPage(id: string, page: number, filter: string, cursor?: string, previous = false) {
   const site = await getScanSite(id); const { client } = await requireUser();
   const decoded = decodeActivityCursor(cursor);
@@ -49,8 +51,9 @@ export async function siteChangesPage(id: string, page: number, filter: string, 
   }, decoded, decoded ? 0 : (page-1)*ACTIVITY_PAGE_SIZE);
   const visible = rows.slice(0,ACTIVITY_PAGE_SIZE);
   if (decoded && previous) visible.reverse();
+  const references=await activityReferences(id,visible);
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(visible.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",visible.filter(row=>row.source==="static").map(row=>row.id))]);
-  return { site, rows: visible.map(row=>({...row, createdAt: row.created_at, label: row.label ?? undefined, href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!, row.attention, row.status)})), hasMore: decoded && previous ? true : rows.length>ACTIVITY_PAGE_SIZE, limited: filter === "attention",
+  return { site, rows: visible.map(row=>({...row, reference:references[row.source+":"+row.id], createdAt: row.created_at, label: row.label ?? undefined, href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!, row.attention, row.status)})), hasMore: decoded && previous ? true : rows.length>ACTIVITY_PAGE_SIZE, limited: filter === "attention",
     nextCursor: visible.length ? encodeActivityCursor(visible[visible.length-1]!) : undefined,
     previousCursor: visible.length ? encodeActivityCursor(visible[0]!) : undefined };
 }
@@ -74,7 +77,8 @@ export async function siteOverview(id: string) {
     return [scan.id, row ? scanReviewSummary(scan, row) : null];
   }));
   const [cmsLinks,staticLinks]=await Promise.all([operationLinks(data.recent.filter(row=>row.source==="cms").map(row=>row.id)),resourceLinks("static-changes",data.recent.filter(row=>row.source==="static").map(row=>row.id))]);
-  const recent={rows:data.recent.map(row=>({...row,createdAt:row.created_at,label:row.label??undefined,href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!,row.attention,row.status)}))};
+  const references=await activityReferences(id,data.recent);
+  const recent={rows:data.recent.map(row=>({...row,reference:references[row.source+":"+row.id],createdAt:row.created_at,label:row.label??undefined,href:activityDestination((row.source==="cms"?cmsLinks:staticLinks)[row.id]!,row.attention,row.status)}))};
   const scans={data:data.scans,count:data.scanCount},running={data:data.running},uncertain={data:data.uncertain,count:data.uncertainCount};
   const [scanLinks,valueLinks]=await Promise.all([resourceLinks("scans",[...new Set([...(scans.data??[]),...recentScans,...(running.data??[])].map(scan=>scan.id))]),resourceLinks("managed-values",[...new Set((uncertain.data??[]).map(binding=>binding.managed_value_id))])]);
   const activity = [

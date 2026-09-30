@@ -72,3 +72,7 @@ Migration `20260924000400_workspace_edit.sql` was applied with explicit approval
 ## Variables presentation aliases
 
 Canonical lists/details/previews use `/variables`, `/variables/{number}` and `/variables/preview/{number}`. Existing `/managed-values` paths remain authenticated GET/HEAD redirects; POST requests rewrite into unchanged internal handlers. Resource kinds `managed-values` and `managed-value-previews`, numbers, UUID payloads, API/MCP contracts and database identifiers are unchanged. Query parameters and original request bodies are preserved. No migration or new lookup is required.
+
+## Account support
+
+`/dashboard/support` is an authenticated account utility. Its `ticket` query uses a persistent global positive integer from support_tickets, not a site resource or UUID. RLS checks owner/admin for every read and RPC; guessed numbers cannot expose other accounts. Pagination uses page/messages, and no existing site routing contract changes.

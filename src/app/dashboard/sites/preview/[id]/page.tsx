@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { dashboardMetadata } from "@/modules/dashboard/metadata";
 
 export async function generateMetadata() {
@@ -28,11 +29,11 @@ export default async function SitePreviewPage({ params, searchParams }: {
       <p className="mt-4 leading-7 text-muted">{t("Este site ficará disponível para consultar o CMS e preparar alterações, sempre com prévia e confirmação.")} {preview.expected_connection_id ? t("A confirmação substituirá a conexão atual deste site.") : t("A confirmação criará um novo vínculo.")}  {t("O site não será publicado. A operação ficará registrada no histórico.")}</p>
       {error && <p role="alert" className="mt-4 text-amber-800">{t("Não foi possível confirmar. O site pode ter mudado, a autorização pode ter expirado ou a prévia ficou desatualizada. Volte e revise o vínculo novamente.")}</p>}
       {preview.site_id ? <Link className="ui-btn ui-btn-primary mt-6" href={"/dashboard/sites/" + preview.site_id + "/scans"}>{t("Vínculo concluído. Abrir scans")}</Link> : preview.expired ? <p role="alert" className="mt-6 text-amber-800">{t("A prévia expirou. Volte e gere uma nova.")}</p> :
-        <form action={confirmSiteConnection} className="mt-6 space-y-5">
+        <ConfirmationDialog title={t("Confirmar")} tone="primary"><form action={confirmSiteConnection} className="mt-6 space-y-5">
           <input type="hidden" name="id" value={preview.id} />
           <label className="flex items-start gap-3 text-sm"><input className="mt-1" type="checkbox" name="confirmed" value="yes" required />{t("Confirmo o vínculo deste site com a autorização escolhida.")}</label>
           <SubmitButton pendingLabel={t("Conectando site…")}>{t("Confirmar vínculo")}</SubmitButton>
-        </form>}
+        </form></ConfirmationDialog>}
     </section>
   </main>;
 }

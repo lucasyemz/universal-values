@@ -89,6 +89,15 @@
       "y": 450,
       "width": 520,
       "height": 300
+    },
+    {
+      "id": "support",
+      "type": "file",
+      "file": "docs/support.md",
+      "x": 0,
+      "y": 650,
+      "width": 520,
+      "height": 300
     }
   ],
   "edges": [
@@ -154,6 +163,13 @@
       "fromSide": "right",
       "toNode": "release",
       "toSide": "left"
+    },
+    {
+      "id": "help-edge",
+      "fromNode": "map",
+      "fromSide": "bottom",
+      "toNode": "support",
+      "toSide": "top"
     }
   ]
 }

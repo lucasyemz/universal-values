@@ -1,8 +1,10 @@
+import { RecordCard, RecordHeading } from "@/components/ui/record-card";
+import { ActivityValue } from "@/components/sites/activity-value";
 import { ResourceNumber } from "@/components/ui/resource-number";
 import { CollectionTags } from "@/components/scans/collection-cell";
 import { detectionLabels } from "@/modules/scans/schema";
 import Link from "next/link";
-import { ArrowRight, History } from "lucide-react";
+import { ArrowRight, CalendarDays, History } from "lucide-react";
 import { getText } from "@/i18n/server";
 import { StatusBadge } from "@/components/ui";
 import type { SiteActivity } from "@/modules/sites/page-service";
@@ -11,14 +13,19 @@ import { siteDate } from "@/modules/sites/presentation";
 export async function ChangeCard({ row, horizontal = false }: { row: SiteActivity; horizontal?: boolean }) {
   const t = await getText();
   const types = row.details?.types ?? [];
-  return <li className={"change-history-card" + (horizontal ? " change-history-card-horizontal" : "")}>
-    <div className="flex flex-wrap items-start gap-3">
-      <ResourceNumber href={row.href} />
-      <div className="min-w-0 flex-1"><h3 className="flex items-center gap-2 break-words font-semibold"><History size={17} className="shrink-0 text-accent" aria-hidden="true" /><span>{types.length ? types.map(type => t(detectionLabels[type])).join(", ") : t(row.title)}</span></h3><p className="mt-1 break-words text-xs text-muted">{row.source === "static" ? t("Página estática · ") : ""}{row.target}</p><p className="mt-1 text-xs text-muted">{siteDate(row.createdAt, t.dateLocale)}</p>{row.source === "cms" && !!row.details?.collections.length && <div className="mt-2"><CollectionTags collections={row.details.collections} /></div>}</div>
-      <StatusBadge status={row.status} label={row.label} />
+  return <RecordCard compact={!horizontal}>
+    <RecordHeading icon={<History size={25} aria-hidden="true" />}
+      title={row.reference?.after !== undefined ? <ActivityValue value={row.reference.after} imageUrl={row.reference.imageUrl ?? (row.source === "static" && types.length === 1 && types[0] === "image" ? row.reference.after : undefined)} heading /> : <span>{types.length ? types.map(type => t(detectionLabels[type])).join(", ") : t(row.title)}</span>}
+      subtitle={<>{row.reference?.after !== undefined && <>{t("activity.newValue")} · </>}{types.length ? types.map(type => t(detectionLabels[type])).join(", ") : t(row.title)} · <ResourceNumber href={row.href} inline /></>}
+      status={<StatusBadge status={row.status} label={row.label} />} />
+    <div className="record-metadata"><div className="record-scope">
+      <p className="flex items-center gap-2 text-sm text-muted"><CalendarDays size={17} aria-hidden="true" />{siteDate(row.createdAt, t.dateLocale)}</p>
+      <span className="text-sm text-muted">{row.source === "static" ? t("Página estática · ") : ""}{row.target}</span>
+      {row.source === "cms" && !!row.details?.collections.length && <CollectionTags collections={row.details.collections} />}
+    </div></div>
+    <div className="record-footer">
+      {row.reference?.after !== undefined && <p className="text-xs text-muted">{t("activity.detailsHint")}</p>}
+      <div className="record-actions"><Link prefetch={false} className="ui-btn ui-btn-primary" href={row.href}>{t("Ver detalhes")}<ArrowRight size={16} aria-hidden="true" /></Link></div>
     </div>
-    <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-4">
-      <Link prefetch={false} className="ui-btn" href={row.href}>{t("Ver detalhes")}<ArrowRight size={15} aria-hidden="true" /></Link>
-    </div>
-  </li>;
+  </RecordCard>;
 }

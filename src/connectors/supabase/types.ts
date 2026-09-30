@@ -10,6 +10,8 @@ type ReadTable<Row> = {
 export type Database = {
   public: {
     Tables: {
+      support_tickets: ReadTable<{id:number;request_id:string;owner_id:string;category:string;subject:string;status:string;created_at:string;updated_at:string}>;
+      support_messages: ReadTable<{id:number;request_id:string;ticket_id:number;author_id:string;is_staff:boolean;body:string;status:string;created_at:string}>;
       site_transfers: ReadTable<{id:string;site_id:string;target_connection:string;target_workspace:string;site_name:string;source_name:string;target_name:string;confirmed_at:string|null}>;
       dashboard_resource_routes: ReadTable<{kind: string; resource_id: string; scope_id: string; account_id: string; site_id: string | null; number: number}>;
       global_fact_versions: ReadTable<{ site_id: string; version: number; facts: Json; actor_id: string; preview_id: string; created_at: string }>;
@@ -39,6 +41,8 @@ export type Database = {
     };
     Views: { cms_operation_summaries: ReadTable<{id:string;actor_id:string;site_id:string;status:string;cursor:number;total:number;created_at:string;background_paused:boolean;scan_id:string|null;managed_value_id:string|null;issues:number}> };
     Functions: {
+      create_support_ticket: { Args: {p_request:string;p_category:string;p_subject:string;p_body:string}; Returns:number };
+      reply_support_ticket: { Args: {p_request:string;p_ticket:number;p_body:string;p_status:string}; Returns:number };
       managed_reference_results: {Args:{p_request:string};Returns:Json};
       preview_managed_reference_system: {Args:{p_id:string;p_reference:string};Returns:string};
       preview_managed_reference: {Args:{p_id:string;p_request:string;p_binding:string;p_source:string};Returns:Json};

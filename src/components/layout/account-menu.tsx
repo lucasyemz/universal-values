@@ -4,7 +4,7 @@ import { useText } from "@/i18n/use-text";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronsUpDown, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { CircleHelp, ChevronsUpDown, LogOut, ShieldCheck, Sparkles } from "lucide-react";
 import { LanguageSwitcher } from "./language-switcher";
 import { logout } from "@/modules/auth/actions";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -63,6 +63,7 @@ export function AccountMenu({ email, plan, onNavigate }: {
       <nav aria-label={t("Configurações da conta")} className="space-y-1 py-2">
         <Link onClick={navigate} href="/dashboard/plan" className="ui-nav-link" aria-current={pathname === "/dashboard/plan" ? "page" : undefined}><ShieldCheck size={18} className="shrink-0" aria-hidden="true" /><span>{t("Plano e consumo")}<span className="block text-xs text-muted">{t("Ver limites e trocar de plano")}</span></span></Link>
         <Link onClick={navigate} href="/dashboard/settings/integrations" className="ui-nav-link" aria-current={pathname === "/dashboard/settings/integrations" || pathname.endsWith("/settings/webflow") ? "page" : undefined}><Sparkles size={18} className="shrink-0" aria-hidden="true" />{t("Integrações")}</Link>
+        <Link onClick={navigate} prefetch={false} href="/dashboard/support" className="ui-nav-link" aria-current={pathname === "/dashboard/support" ? "page" : undefined}><CircleHelp size={18} className="shrink-0" aria-hidden="true" />{t("Ajuda e suporte")}</Link>
         <LanguageSwitcher />
       </nav>
       <form action={logout} className="border-t pt-2"><SubmitButton variant="secondary" className="w-full justify-start" pendingLabel={t("Saindo…")}><LogOut size={18} aria-hidden="true" />{t("Sair")}</SubmitButton></form>

@@ -13,3 +13,10 @@ it("searches collection, term and localized type without reordering", () => {
  expect(filterScanHistory(scans,counts,{},"PARTNER","all").map(s=>s.id)).toEqual(["pending"]);
  expect(filterScanHistory(scans,counts,{done:"Images and galleries"},"images","reviewed").map(s=>s.id)).toEqual(["done"]);
 });
+
+it("keeps cancelled scans in history but out of both review filters",()=>{
+ const cancelled=[{...scans[0]!,status:"cancelled" as const}];
+ expect(filterScanHistory(cancelled,counts,{},"","all")).toHaveLength(1);
+ expect(filterScanHistory(cancelled,counts,{},"","pending")).toEqual([]);
+ expect(filterScanHistory(cancelled,{pending:{pending:0,reviewed:0}},{},"","reviewed")).toEqual([]);
+});

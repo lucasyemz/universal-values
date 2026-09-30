@@ -1,3 +1,4 @@
+import { HelpWidget } from "@/components/support/help-widget";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { robots: { index: false, follow: false } };
@@ -18,5 +19,5 @@ export default async function DashboardLayout({ children }: { children: React.Re
   let workspaces: Awaited<ReturnType<typeof getWorkspaceNavigation>> = [];
   let workspaceError = false;
   try { workspaces = await getWorkspaceNavigation(); } catch (error) { unstable_rethrow(error); workspaceError = true; }
-  return <AiProvider key={user.id}><AiWork userId={user.id}><NavigationState userId={user.id}><AppShell userId={user.id} plan={usage.plan} email={user.email} workspaces={workspaces} workspaceError={workspaceError}>{children}<ActivityPanel key={user.id} userId={user.id} /></AppShell></NavigationState></AiWork></AiProvider>;
+  return <AiProvider key={user.id}><AiWork userId={user.id}><NavigationState userId={user.id}><AppShell userId={user.id} plan={usage.plan} email={user.email} workspaces={workspaces} workspaceError={workspaceError}>{children}<HelpWidget key={"help:" + user.id} /><ActivityPanel key={"activity:" + user.id} userId={user.id} /></AppShell></NavigationState></AiWork></AiProvider>;
 }

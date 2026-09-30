@@ -1,3 +1,4 @@
+@import "../styles/help.css";
 @import "tailwindcss";
 @import "../styles/product-motion.css";
 
@@ -148,13 +149,7 @@
 .scan-history-count>span { display:grid; place-items:center; min-width:38px; height:38px; padding:4px; border-radius:9px; font-size:16px; font-weight:600; font-variant-numeric:tabular-nums; }
 .scan-history-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .scan-history-list { display:grid; gap:12px; }
-@media(min-width:1440px) {
- .scan-history-list { grid-template-columns:minmax(150px,1fr) minmax(140px,.8fr) max-content max-content max-content; column-gap:18px; }
- .scan-history-list > .scan-history-card { grid-template-columns:subgrid; grid-column:1/-1; }
- .scan-history-list .scan-history-actions { grid-column:auto; justify-content:flex-end; flex-wrap:nowrap; }
- .scan-history-list .scan-history-counts { display:grid; grid-template-columns:1fr 1fr; border-left:1px solid var(--border-default); padding-left:20px; }
- .scan-history-list .scan-history-counts > span { grid-column:1/-1; }
-}
+
 @media(min-width:768px) { .scan-history-card { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } .scan-history-actions { grid-column:1/-1; } }
 
 
@@ -246,8 +241,8 @@
 .scan-history-card-compact .scan-history-actions { grid-column:1/-1; justify-content:flex-start; }
 @media(min-width:640px) {
  .scan-history-card.scan-history-card-compact { grid-template-columns:minmax(0,1fr) auto; }
- .scan-history-card-compact > :nth-child(2) { grid-column:1/-1; grid-row:2; }
- .scan-history-card-compact > :nth-child(4) { grid-column:2; grid-row:1; }
+ .scan-history-card-compact .scan-history-metadata { grid-column:1/-1; grid-row:2; }
+ .scan-history-card-compact .scan-history-status { grid-column:2; grid-row:1; }
  .scan-history-card-compact .scan-history-counts { grid-column:1/-1; }
 }
 
@@ -269,3 +264,82 @@
 
 .ui-touch-target { min-width:24px; min-height:24px; }
 @media (pointer:coarse) { .ui-touch-target, .ui-btn, .ui-tab { min-height:44px; min-width:44px; } }
+
+/* Provider cards share the reference's compact, equal-height layout. */
+.auth-provider-card {
+  width: 100%;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 5%);
+  font-weight: 500;
+}
+
+
+
+.ui-btn-danger { background:var(--danger); border-color:var(--danger); color:white; }
+.ui-btn-danger:hover:not(:disabled) { filter:brightness(.92); }
+.confirmation-dialog-danger button[type="submit"], .confirmation-dialog-danger button[data-confirm-action] { background:var(--danger); border-color:var(--danger); color:white; }
+
+.confirmation-dialog { width:calc(100% - 2rem); margin:auto; }
+.confirmation-dialog form { margin-top:0; }
+
+/* Explicit positions keep empty/cancelled cards aligned with populated cards. */
+.scan-history-list > .scan-history-card {
+ grid-template-columns:minmax(0,1fr) auto;
+ grid-template-areas:"identity status" "metadata metadata" "counts actions";
+ gap:14px 24px;
+ padding:20px 24px;
+}
+.scan-history-list .scan-history-identity { grid-area:identity; }
+.scan-history-list .scan-history-status { grid-area:status; justify-self:end; }
+.scan-history-list .scan-history-metadata { grid-area:metadata; justify-content:flex-start; gap:16px; }
+.scan-history-list .scan-history-scope { display:flex; align-items:center; flex-wrap:wrap; gap:12px 20px; }
+.scan-history-list .scan-history-scope > * { margin:0; }
+.scan-history-list .scan-history-date { white-space:nowrap; }
+.scan-history-list .scan-history-counts { grid-area:counts; gap:20px; }
+.scan-history-list .scan-history-count>span { min-width:30px; height:30px; font-size:14px; }
+.scan-history-list .scan-history-actions { grid-area:actions; justify-content:flex-end; }
+@media(max-width:767px) {
+ .scan-history-list > .scan-history-card { grid-template-columns:minmax(0,1fr); grid-template-areas:"identity" "status" "metadata" "counts" "actions"; padding:18px; gap:12px; }
+ .scan-history-list .scan-history-status { justify-self:start; }
+ .scan-history-list .scan-history-actions { justify-content:flex-start; }
+ .scan-history-list .scan-history-metadata { align-items:flex-start; }
+}
+
+@media(min-width:768px) { .change-history-card-horizontal .change-history-reference { flex:1; max-width:28rem; margin:0; } }
+
+/* Scans and changes share the same three-row record structure. */
+.record-card { display:flex; flex-direction:column; min-width:0; height:100%; gap:22px; padding:24px; border:1px solid var(--border-default); border-radius:18px; background:var(--bg-surface,white); box-shadow:0 3px 14px #102a5605; }
+.record-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; }
+.record-identity { display:flex; flex:1; min-width:0; align-items:center; gap:16px; }
+.record-icon { display:flex; align-items:center; justify-content:center; flex-shrink:0; width:54px; height:54px; border-radius:16px; background:var(--accent-soft,#eaf1ff); color:var(--accent); }
+.record-title { min-width:0; font-size:20px; font-weight:650; line-height:1.4; }
+.record-subtitle { margin-top:4px; font-size:13px; color:var(--text-secondary); overflow-wrap:anywhere; }
+.record-metadata { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.record-scope { display:flex; flex-wrap:wrap; min-width:0; align-items:center; gap:12px 20px; }
+.record-footer { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin-top:auto; padding-top:18px; border-top:1px solid var(--border-default); }
+.record-actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-left:auto; }
+.record-counts { display:flex; flex-wrap:wrap; align-items:center; gap:16px; }
+.record-count { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text-secondary); }
+.record-count + .record-count { border-left:1px solid var(--border-default); padding-left:16px; }
+.record-count span { font-weight:600; font-variant-numeric:tabular-nums; }
+.record-count:first-child:has(.text-orange-700)::before { content:""; width:8px; height:8px; border-radius:50%; margin-right:5px; background:#f5a623; box-shadow:0 0 0 5px #fff7eb; }
+.record-count:hover { color:var(--accent); }
+.record-card-compact { padding:20px; gap:18px; }
+.record-card-compact .record-title { font-size:18px; }
+.record-card-compact .record-icon { width:44px; height:44px; border-radius:12px; }
+@media(max-width:640px) {
+ .record-card { padding:16px; gap:18px; }
+ .record-heading { flex-wrap:wrap; gap:12px; }
+ .record-identity { flex-basis:100%; }
+ .record-title { font-size:18px; }
+ .record-actions { margin-left:0; width:100%; }
+ .record-actions .ui-btn { flex:1; justify-content:center; }
+}

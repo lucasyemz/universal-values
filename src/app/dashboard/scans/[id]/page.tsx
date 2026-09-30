@@ -1,8 +1,9 @@
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 import { ScanVersionSelector } from "@/components/scans/version-selector";
 import { scanDisplayStatus } from "@/modules/scans/list-summary";
 import { CreatedVariables } from "@/components/scans/created-variables";
 import { scanCreatedVariables } from "@/modules/scans/created-variables";
-import { scanResultTab, scanResultTabs, scanResultTabLabels } from "@/modules/scans/result-tabs";
+import { availableScanResultTab, visibleScanResultTabs, scanResultTabLabels } from "@/modules/scans/result-tabs";
 import { sitePageNumber } from "@/modules/sites/presentation";
 import { GroupActions } from "@/components/scans/group-actions";
 import { dashboardMetadata } from "@/modules/dashboard/metadata";
@@ -34,7 +35,7 @@ import { detectionLabels } from "@/modules/scans/schema";
 import { countReviewedOccurrences, filterReviewedGroups, withoutVariableFields } from "@/modules/scans/reviewed-content";
 import { ReviewFlag } from "@/components/scans/review-flag";
 import { resultsSearchSchema, searchResultGroups } from "@/modules/scans/search-results";
-import { PageHeader, Notice, StatusBadge, SectionHeader, Steps, ContextHelp, EmptyState } from "@/components/ui";
+import { PageHeader, Notice, StatusBadge, SectionHeader, Steps, EmptyState } from "@/components/ui";
 import { SiteContext } from "@/components/layout/app-shell";
 import { SubmitButton } from "@/components/ui/submit-button";
 
@@ -51,9 +52,12 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
   const searched = filterSavedGroup(searchResultGroups(ordinarySections, query), groupKey);
   const counts = countReviewedOccurrences(searched, view.reviewedIds);
   const displayStatus = scanDisplayStatus(view.scan.status, countReviewedOccurrences(ordinarySections, view.reviewedIds));
-  const filter = scanResultTab(filterInput,counts);
+  const scanCounts = countReviewedOccurrences(ordinarySections, view.reviewedIds);
   const page = sitePageNumber(pageInput);
-  const created = await scanCreatedVariables(view.scan,page,filter === "variables");
+  const created = await scanCreatedVariables(view.scan,page,filterInput === "variables");
+  const tabs = visibleScanResultTabs({ reviewed: scanCounts.reviewed, variables: created.total });
+  const filter = availableScanResultTab(filterInput, counts, tabs);
+  const noResults = countReviewedOccurrences(view.sections, view.reviewedIds).all === 0 && created.total === 0;
   const sections = filterReviewedGroups(searched, view.reviewedIds, filter === "variables" ? "pending" : filter);
   const { scan } = view;
   const readOnly = !scan.is_latest;
@@ -64,7 +68,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       navigation={<RememberedLink className="ui-btn" href={scanHref.replace(/\/\d+$/, "")}>{t("← Scans")}</RememberedLink>}
       eyebrow={site.display_name}
       title={scan.status === "preview" ? t("Revisar scan") : t("Revisão do scan")}
-      status={<><StatusBadge status={displayStatus}/><ScanVersionSelector id={scan.id} version={scan.scan_version}/></>}
+      status={<><StatusBadge status={displayStatus} label={scan.status === "cancelled" ? "Scan cancelado" : undefined}/><ScanVersionSelector id={scan.id} version={scan.scan_version}/></>}
       actions={!readOnly && ["completed", "limited", "cancelled"].includes(scan.status) && scan.plan.length > 0 ? <Link prefetch={false} className="ui-btn" href={scanHref.replace(/\/scans\/\d+$/, "/scans/new") + "?repeat=" + scanHref.split("/").at(-1)}>{t("Repetir scan")}</Link> : undefined}
     />
 
@@ -85,16 +89,16 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
       </details>
       {scan.truncated && <p className="mt-3 text-amber-800">{t("Este site tem mais de 20 coleções. Apenas as primeiras 20, ordenadas por ID, serão lidas.")}</p>}
       {view.expired ? <p className="mt-6 text-amber-800">{t("Prévia expirada. Volte e prepare outro scan.")}</p> :
-        <form action={confirmScan} className="ui-action-bar mt-6 space-y-4"><input type="hidden" name="id" value={id} /><label className="flex gap-3"><input type="checkbox" name="confirmed" value="yes" required />{t("Confirmo a leitura e o armazenamento das ocorrências deste scan.")}</label><SubmitButton pendingLabel={t("Iniciando scan…")}>{t("Iniciar scan")}</SubmitButton></form>}
-    </section> : ["queued","running","paused"].includes(scan.status) ? <ScanProgress key={scan.revision} initial={scanProgress(scan)} /> :
-      scan.status === "cancelled" ? <p role="status" className="my-3">{t("Scan cancelado.")}</p> : null}
-    {scan.status !== "preview" && <ScanCollectionSummary scan={scan} reviewCount={countReviewedOccurrences(view.sections, view.reviewedIds).all}><ContextHelp title={t("Como funciona esta revisão")} className="mt-3"><p className="text-muted">{t("Cada grupo mantém o texto original encontrado. Variações de acentos e maiúsculas ficam em grupos separados para você revisar com precisão. Altere cada caso ou preencha um novo valor apenas para as ocorrências daquele grupo.")}</p><p className="text-sm text-muted">{t("Filtra grupos pelo valor, trecho, coleção, item ou campo já registrado, ignorando maiúsculas/minúsculas e acentos. Mantém juntas as ocorrências de cada grupo e não faz novas consultas ao Webflow. Para encontrar um trecho dentro de parágrafos, informe Texto específico ao preparar um novo scan.")}</p><p className="mt-3 text-sm text-muted">{t("Os números contam ocorrências nos grupos da pesquisa atual. Revisados são ocorrências já conferidas; centralizados são vínculos para futuras atualizações. Uma ocorrência pode ser ambos. Aplicações bem-sucedidas são revisadas automaticamente. Uma busca específica começa com os textos e números correspondentes pendentes, sem herdar revisões de outros scans. Trechos de Variáveis continuam protegidos. Edições externas aparecem como pendentes em um novo scan.")}</p><p>{t("Os valores aplicados são registros históricos verificados, não uma consulta ao CMS atual. Reverter exige prévia e confirmação nesta tela.")}</p></ContextHelp></ScanCollectionSummary>}
-    {["queued","running","paused"].includes(scan.status) && <details className="mt-6"><summary className="cursor-pointer text-sm">{t("Cancelar este scan")}</summary><form action={cancelScan} className="mt-4 space-y-3"><input type="hidden" name="id" value={id} /><p>{t("Os lotes salvos serão preservados, mas este scan não poderá criar novas Variáveis.")}</p><label className="flex gap-2"><input type="checkbox" name="confirmed" value="yes" required />{t("Confirmo o cancelamento.")}</label><button className="ui-btn">{t("Cancelar scan")}</button></form></details>}
+        <ConfirmationDialog title={t("Iniciar scan")} tone="primary"><form action={confirmScan} className="ui-action-bar mt-6 space-y-4"><input type="hidden" name="id" value={id} /><label className="flex gap-3"><input type="checkbox" name="confirmed" value="yes" required />{t("Confirmo a leitura e o armazenamento das ocorrências deste scan.")}</label><SubmitButton pendingLabel={t("Iniciando scan…")}>{t("Iniciar scan")}</SubmitButton></form></ConfirmationDialog>}
+    </section> : ["queued","running","paused"].includes(scan.status) ? <ScanProgress key={scan.revision} initial={scanProgress(scan)}><ScanCollectionSummary compact scan={scan} reviewCount={0} /><ConfirmationDialog title={t("Cancelar scan")} tone="danger"><form action={cancelScan} className="mt-4 space-y-3"><input type="hidden" name="id" value={id} /><p>{t("Os resultados parciais serão desconsiderados e este scan não poderá criar novas Variáveis.")}</p><input type="hidden" name="confirmed" value="yes" /><SubmitButton pendingLabel={t("Salvando…")}>{t("Cancelar scan")}</SubmitButton></form></ConfirmationDialog></ScanProgress> :
+      scan.status === "cancelled" ? <Notice tone="danger" title={t("Scan cancelado")}>{t("Os resultados parciais deste scan foram desconsiderados. Nenhuma alteração foi aplicada ao CMS por este scan.")}</Notice> : null}
+    {["completed","limited"].includes(scan.status) && <ScanCollectionSummary scan={scan} reviewCount={countReviewedOccurrences(view.sections, view.reviewedIds).all} />}
+
     {["completed","limited"].includes(scan.status) && <section className="mt-4">
 
       {groupKey && filter !== "variables" && <p className="mb-3 text-sm">{t("Exibindo o grupo salvo selecionado.")} <Link prefetch={false} className="text-accent underline" href={scanHref + "?filter=" + filter}>{t("Ver todos os resultados do scan")}</Link></p>}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <nav aria-label={t("Filtrar por revisão")} className="ui-tabs">{scanResultTabs.map((option) => <TabLink key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}), ...(groupKey ? { group: groupKey } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(scanResultTabLabels[option])} ({option === "variables" ? created.total : counts[option]})</TabLink>)}</nav>
+      {!noResults && <div className="flex flex-wrap items-center justify-between gap-3">
+        <nav aria-label={t("Filtrar por revisão")} className="ui-tabs">{tabs.map((option) => <TabLink key={option} href={scanHref + "?" + new URLSearchParams({ filter: option, ...(query ? { q: query } : {}), ...(groupKey ? { group: groupKey } : {}) }).toString()} aria-current={filter === option ? "page" : undefined} className="ui-tab">{t(scanResultTabLabels[option])} ({option === "variables" ? created.total : counts[option]})</TabLink>)}</nav>
         {filter !== "variables" && <form method="get" className="flex w-full gap-2 sm:w-auto">
           <input type="hidden" name="filter" value={filter}/>
           <label htmlFor="results-search" className="sr-only">{t("Pesquisar nos resultados")}</label>
@@ -102,7 +106,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
           <button className="ui-btn">{t("Pesquisar")}</button>
           {query && <Link href={scanHref + "?filter=" + filter} className="ui-btn">{t("Limpar")}</Link>}
         </form>}
-      </div>
+      </div>}
       {scan.status === "limited" && <Notice tone="warning" title={t("Cobertura parcial")}>{t("Alguns campos foram ignorados ou um limite foi atingido. As alterações abrangem apenas as ocorrências abaixo.")}</Notice>}
 
       {filter === "variables" ? <><CreatedVariables view={created} page={page} href={scanHref} siteId={scan.site_id} occurrences={view.occurrences} linkedValues={view.linkedValues}/>      {!readOnly && view.divergences.some(d=>created.createdIds.includes(d.value.id)) && <details className="mt-5" aria-label={t("Divergências de Variáveis")}><summary className="cursor-pointer font-medium">{t("Verificar Variáveis")}</summary>
@@ -117,7 +121,7 @@ export default async function ScanPage({ params, searchParams }: { params: Promi
 
 
 
-      {!sections.some(section => section.duplicates.length) && <div className="mt-6"><EmptyState title={t(filter === "pending" && counts.all > 0 ? "Tudo revisado nesta busca" : "Nenhuma ocorrência neste filtro")} description={t(filter === "pending" && counts.all > 0 ? "Consulte os valores revisados ou inicie outro scan para buscar mudanças no CMS." : "Altere o filtro ou limpe a pesquisa para ver outros resultados.")} action={<Link className="ui-btn" href={scanHref + "?filter=" + (filter === "pending" && counts.all > 0 ? "reviewed" : "pending")}>{t(filter === "pending" && counts.all > 0 ? "Ver revisados" : "Ver pendentes")}</Link>}/></div>}
+      {!sections.some(section => section.duplicates.length) && <div className="mt-6"><EmptyState title={t(noResults ? "Não tivemos resultados para este scan." : filter === "pending" && counts.all > 0 ? "Tudo revisado nesta busca" : "Nenhuma ocorrência neste filtro")} description={t(noResults ? "Nenhuma ocorrência corresponde aos critérios deste scan. Você pode iniciar outro scan com uma busca diferente." : filter === "pending" && counts.all > 0 ? "Consulte os valores revisados ou inicie outro scan para buscar mudanças no CMS." : "Altere o filtro ou limpe a pesquisa para ver outros resultados.")} action={noResults ? undefined : <Link className="ui-btn" href={scanHref + "?filter=" + (filter === "pending" && counts.all > 0 ? "reviewed" : "pending")}>{t(filter === "pending" && counts.all > 0 ? "Ver revisados" : "Ver pendentes")}</Link>}/></div>}
       {sections.filter(section => section.duplicates.length > 0).map((section) => <section key={section.type} className="mt-4">
         <SectionHeader title={t(section.label)} action={<span className="text-xs text-muted">{section.duplicates.length}  {t("grupos neste filtro")}</span>} />
         {!section.duplicates.length && <p className="mt-4 rounded-lg border border-dashed p-4 text-sm text-muted">{t("Nenhum grupo neste filtro. Alterne entre Pendentes e Revisados ou limpe a pesquisa.")}</p>}

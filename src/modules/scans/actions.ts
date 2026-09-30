@@ -4,6 +4,7 @@ import { scanStartError } from "./start-error";
 import { quotaErrorCode } from "@/modules/plans/errors";
 
 import { redirect } from "next/navigation";
+import { resourceLink } from "@/modules/routes/links";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/modules/auth/service";
@@ -32,7 +33,7 @@ export async function startScan(form: FormData) {
   const result = await client.rpc("start_matching_cms_scan", { p_id: input.data.id, p_site_id: site.id, p_plan: plan, p_truncated: truncated });
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/sites/" + site.id + "/scans/new?error=" + scanStartError(result.error));
-  redirect("/dashboard/scans/" + input.data.id);
+  redirect(await resourceLink("scans", input.data.id));
 }
 export async function confirmScan(form: FormData) {
   const input = confirmScanSchema.safeParse({ id: form.get("id"), confirmed: form.get("confirmed") });
@@ -53,7 +54,7 @@ export async function cancelScan(form: FormData) {
   if (quotaErrorCode(result.error)) redirect("/dashboard?error=" + quotaErrorCode(result.error));
   if (result.error) redirect("/dashboard/scans/" + input.data.id + "?error=cancel");
   revalidatePath("/dashboard/scans/" + input.data.id);
-  redirect("/dashboard/scans/" + input.data.id);
+  redirect(await resourceLink("scans", input.data.id));
 }
 export async function runScanBatch(input: unknown) {
   const parsed = processScanSchema.safeParse(input);
