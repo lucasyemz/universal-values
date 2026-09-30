@@ -1,3 +1,9 @@
+---
+title: "CopyReplace simplification audit"
+status: historico
+tags: [replaceall, historico]
+---
+
 # CopyReplace simplification audit
 
 Date: 2026-09-25. Status: **audit complete; implementation awaits approval**.

@@ -1,3 +1,9 @@
+---
+title: "Dashboard URLs"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Dashboard URLs
 
 Site resource addresses and workspace lists/settings use the same workspace folder namespace, resolved inside the signed-in account. Site slugs and resource numbers remain stable. Site resources add a permanent positive number per resource type and site. IDs in PostgreSQL, actions, API calls and audit records remain UUIDs.

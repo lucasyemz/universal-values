@@ -1,3 +1,9 @@
+---
+title: "Plano gratuito e administrador"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Plano gratuito e administrador
 
 A migration `20260920001600_free_plan_limits.sql` aplica cotas no PostgreSQL, inclusive para chamadas diretas às RPCs. A UI somente apresenta consumo e erros; não decide privilégios.

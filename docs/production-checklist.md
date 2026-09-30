@@ -1,15 +1,21 @@
+---
+title: "Production readiness — ReplaceAll"
+status: planejamento
+tags: [replaceall, planejamento]
+---
+
 # Production readiness — ReplaceAll
 
-Initial assessment: 2026-09-28. Scope: prepare a closed beta; no deployment, remote changes or customer website writes authorized by this checklist.
+Initial assessment: 2026-09-28; documentation update: 2026-09-29. Scope: prepare a closed beta; no deployment, remote changes or customer website writes authorized by this checklist.
 
 ## Current evidence
 
 | Area | Status | Evidence / remaining work |
 | --- | --- | --- |
 | Database migrations | User confirmed current | Confirmation in this conversation; remote schema and migration ledger were not independently checked in this assessment. Do not replay migrations blindly. |
-| Local validation | Passed before this assessment | 935 tests, lint, TypeScript and webpack production build. This is not proof of production provider execution. |
+| Local validation | Passed before this assessment | Latest preceding local validation reported 961 tests, lint, TypeScript and webpack production build (2026-09-29). This documentation update did not rerun them. This is not proof of production provider execution. |
 | Dashboard hosting and domain | Not established | Confirm destination, HTTPS origin and deployment owner. |
-| Authentication | Signup, social login and recovery implemented locally | Configure providers, SMTP and recovery template; validate live flows. See [authentication](authentication.md). |
+| Authentication | Signup, social login and recovery implemented locally | User reported successful local Google/Webflow login and email recovery with Brevo on 2026-09-29. Microsoft was deferred. Validate selected providers and delivery again in the target environment. See [authentication](authentication.md). |
 | Webflow OAuth | Implemented | Production callback, permissions, cancellation and reconnection still need validation in the destination environment. |
 | CMS worker | Deployment documented on 2026-09-23 | Current artifact, Cron, Vault/secret alignment and health require fresh read-only verification; migrations do not deploy worker code. |
 | Designer extension | Build/bundle supported | Production build must explicitly set `DESIGNER_DASHBOARD_URL`; otherwise it defaults to localhost. Distribution and installation need verification. |
@@ -88,4 +94,4 @@ This assessment changed documentation only. No remote deployment, migrations, cr
 
 ### Authentication release gate
 
-Follow [authentication setup](authentication.md): configure APP_ORIGIN, Google/Apple/Microsoft, email confirmation, SMTP and the required recovery template. Local implementation does not establish live provider readiness.
+Follow [authentication setup](authentication.md): configure APP_ORIGIN, the providers selected for release, email confirmation, SMTP and the required recovery template. Microsoft/Apple are not mandatory release gates unless included in the chosen scope. Local implementation does not establish live provider readiness.

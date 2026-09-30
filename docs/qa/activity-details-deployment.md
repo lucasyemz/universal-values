@@ -1,3 +1,9 @@
+---
+title: "Activity details deployment — 2026-09-28"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Activity details deployment — 2026-09-28
 
 Applied with explicit user authorization to Supabase project nxibjpprjorchjeoudss (Universal Value, main production) through the authenticated SQL Editor.

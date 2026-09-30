@@ -1,3 +1,9 @@
+---
+title: "CMS scan queue deployment"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # CMS scan queue deployment
 
 Date: 2026-09-28. Applied with explicit user authorization through the authenticated Supabase SQL Editor.

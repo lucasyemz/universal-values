@@ -12,9 +12,9 @@
 
 **ReplaceAll** é um SaaS em desenvolvimento para descobrir informações repetidas em sites Webflow, revisar cada ocorrência e manter valores de negócio consistentes a partir de um dashboard central.
 
-O dashboard reúne o CMS, os Variables e o histórico. A extensão do **Webflow Designer** permite trabalhar com elementos de páginas estáticas no contexto do editor. Toda aplicação de alterações exige uma ação explícita do usuário; a publicação no Webflow permanece separada.
+O dashboard reúne o CMS, as Variáveis e o histórico. A extensão do **Webflow Designer** permite trabalhar com elementos de páginas estáticas no contexto do editor. Toda aplicação de alterações exige uma ação explícita do usuário; a publicação no Webflow permanece separada.
 
-> O projeto começou como **Universal Values** e passou pela marca **ReplaceAll**. O repositório e alguns identificadores internos mantêm esses nomes por compatibilidade; a marca atual é **ReplaceAll**.
+> O projeto começou como **Universal Values** e usou a marca **CopyReplace**. O repositório e alguns identificadores internos mantêm esses nomes por compatibilidade; a marca atual é **ReplaceAll**.
 
 ## Funcionalidades
 
@@ -28,7 +28,6 @@ O dashboard reúne o CMS, os Variables e o histórico. A extensão do **Webflow 
 | **Histórico e controle** | Flags de revisão, acompanhamento das operações, novas tentativas e reversão nos fluxos suportados, com validação de conflitos. |
 | **Execução CMS** | Worker em segundo plano, fila de alterações confirmadas e tratamento de falhas, limites e resultados parciais. |
 | **Páginas estáticas** | Extensão do Designer para pesquisa e edição de textos, links e imagens suportados, com prévia e histórico central. |
-| **Global Facts** | Referência de negócio versionada por site, aprovação, histórico e comparação determinística de evidências fornecidas. |
 | **Sugestões com IA** | Integração pessoal com Gemini para preparar sugestões individuais ou em lote; aplicar o conteúdo continua exigindo revisão e confirmação. |
 | **Dashboard** | Busca em scans salvos, repetição de configuração, filtros preservados e edição contextual de Variables. |
 | **Idiomas e identidade** | Inglês e português, marca ReplaceAll e títulos/metadescrições específicos por página. |
@@ -186,7 +185,7 @@ docs/                       # Guias, decisões e roteiros de validação
 - **Sem publicação automática:** alterações CMS usam conteúdo staged; o site publicado pode continuar diferente até a publicação no Webflow.
 - **Limites do provedor:** operações podem ser parciais e não constituem uma transação atômica de todo o site. O histórico informa os resultados por fonte.
 - **Cobertura estática:** depende dos elementos e APIs disponíveis no Designer; não equivale a ler qualquer embed, estrutura HTML ou conteúdo entre nós.
-- **Global Facts:** o cadastro e a comparação já existem; coleta automática de páginas publicadas, auditoria de JSON-LD e verificação de links quebrados ainda não estão disponíveis.
+- **Facts:** retirado da interface; registros e contratos internos permanecem por compatibilidade. SEO, coleta de páginas publicadas e verificação de links quebrados não estão disponíveis.
 - **Acesso:** cadastro público, recuperação de senha e gestão completa de membros ainda não compõem o fluxo atual.
 
 ## Qualidade

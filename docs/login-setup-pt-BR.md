@@ -1,3 +1,9 @@
+---
+title: "Configuração dos logins — guia para retomar"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Configuração dos logins — guia para retomar
 
 Preparado em **29/09/2026** para continuar em **30/09/2026**.
@@ -24,7 +30,7 @@ Este documento é uma checklist operacional. Os contratos técnicos estão em [A
 | E-mail/senha | Supabase Auth e serviço SMTP | Remetente, domínio e credenciais SMTP | Configuração e teste de entrega |
 | Google | Google Cloud + Supabase | Acesso ao projeto Google | Client ID, secret e callback |
 | Microsoft | Microsoft Entra + Supabase | Permissão para registrar um aplicativo | Client ID, secret e callback |
-| Webflow | **Mesmo app ReplaceAll existente** + Supabase | Credenciais atuais e URL pública do adaptador | Scope, callback e provedor customizado |
+| Webflow | **App ReplaceAll Login separado** + Supabase | Credenciais de login e URL da Edge Function | Scope, callback e provedor customizado |
 | Apple | Apple Developer + Supabase | Acesso habilitado para Sign in with Apple | App ID, Services ID, chave e client secret |
 | ChatGPT | Fora desta etapa | Disponibilidade para nosso aplicativo não confirmada | Não implementado |
 
@@ -149,16 +155,16 @@ Painéis: [Microsoft Entra](https://entra.microsoft.com/) → App registrations 
 
 O código já solicita o escopo `email`. [Documentação oficial](https://supabase.com/docs/guides/auth/social-login/auth-azure).
 
-## 5. Webflow — reutilizar o app atual
+## 5. Webflow — app exclusivo para login
 
-**Não precisa criar outro app.** Usaremos as mesmas credenciais, mantendo a conexão atual com o CMS.
+Use **ReplaceAll Login**, separado do app CMS, pois o formulário atual aceita um callback por app.
 
 ### No Webflow
 
-- [ ] Workspace → Apps & Integrations → App Development → app ReplaceAll existente.
-- [ ] Acrescentar `authorized_user:read` aos scopes disponíveis, preservando os atuais.
+- [ ] Workspace → Apps & Integrations → App Development → app ReplaceAll Login.
+- [ ] Habilitar `authorized_user:read` no app de login.
 - [ ] Adicionar o callback exibido pelo provedor customizado do Supabase.
-- [ ] Preservar o callback atual da integração CMS e `WEBFLOW_REDIRECT_URI`.
+- [ ] Preservar o app original, o callback CMS e `WEBFLOW_REDIRECT_URI`.
 
 ### No Supabase
 
@@ -168,22 +174,22 @@ Authentication → Providers → New Provider → Manual configuration / OAuth2:
 | --- | --- |
 | Identifier | `custom:webflow` |
 | Name | `Webflow` |
-| Client ID / Client Secret | Credenciais do app Webflow atual |
+| Client ID / Client Secret | Credenciais do app ReplaceAll Login |
 | Authorization URL | `https://webflow.com/oauth/authorize` |
 | Token URL | `https://api.webflow.com/oauth/access_token` |
-| UserInfo URL | `https://SEU-HOST-PUBLICO/api/auth/webflow/userinfo` |
+| UserInfo URL | `https://nxibjpprjorchjeoudss.supabase.co/functions/v1/webflow-userinfo` |
 | Scopes | `authorized_user:read` |
 | Email optional | Desativado |
 | Attribute mapping | Vazio |
 
 ### Dependência para o teste real
 
-**O Supabase hospedado não acessa o nosso localhost.** O adaptador UserInfo precisa de uma publicação HTTPS ou de um túnel de desenvolvimento previamente combinado. A escolha de hospedagem/URL pública continua pendente.
+**O Supabase hospedado não acessa o nosso localhost.** Usamos a Edge Function `webflow-userinfo` no próprio projeto. O dashboard pode continuar local, sem túnel.
 
 - [ ] Definir a URL pública e disponibilizar o adaptador.
 - [ ] Configurar o provedor e seu callback.
 - [ ] Manter PKCE inicialmente; confirmar compatibilidade da troca de código antes de alterar qualquer opção.
-- [ ] Para o teste controlado, ativar `WEBFLOW_LOGIN_ENABLED=true` nos ambientes que servem o login e o adaptador; reiniciar.
+- [ ] Para o teste controlado, ativar `WEBFLOW_LOGIN_ENABLED=true` no dashboard local; reiniciar.
 - [ ] Testar novo usuário, usuário existente e cancelamento.
 - [ ] Validar eventual confirmação de e-mail exigida pelo Supabase. O Webflow não fornece comprovação de e-mail verificado; não forçar essa informação para passar no teste.
 - [ ] Conferir que entrar novamente não afetou a conexão CMS existente.

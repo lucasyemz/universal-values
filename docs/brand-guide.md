@@ -1,3 +1,9 @@
+---
+title: "ReplaceAll — Brand Guide v2"
+status: atual
+tags: [replaceall, guia]
+---
+
 # ReplaceAll — Brand Guide v2
 
 ## 1. Brand idea

@@ -1,3 +1,9 @@
+---
+title: "Slice 1 — terminology implementation plan"
+status: historico
+tags: [replaceall, historico]
+---
+
 # Slice 1 — terminology implementation plan
 
 Approved scope: terminology only, Dashboard and Designer, 2026-09-25. No workflow, selection, validation, preview scheduling, confirmation, navigation hierarchy or capability changes.

@@ -1,3 +1,9 @@
+---
+title: "CMS editing, confirmation and execution"
+status: atual
+tags: [replaceall, guia]
+---
+
 # CMS editing, confirmation and execution
 
 ## Inline preview

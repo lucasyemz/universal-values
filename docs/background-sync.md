@@ -1,3 +1,9 @@
+---
+title: "Sincronização CMS em segundo plano"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Sincronização CMS em segundo plano
 
 ## Modelo de hospedagem: Supabase Free

@@ -1,3 +1,9 @@
+---
+title: "Compact site cards and workspace transfers"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Compact site cards and workspace transfers
 
 ## UI

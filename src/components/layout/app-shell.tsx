@@ -1,5 +1,6 @@
 "use client";
 
+import { RouteMotion } from "./route-motion";
 import { SidebarDisclosure } from "./sidebar-disclosure";
 import { AppLimitations } from "@/components/app-limitations";
 import { useText } from "@/i18n/use-text";
@@ -47,7 +48,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan, us
     { path: "changes", label: t("Histórico"), Icon: History },
     { path: "cms", label: t("CMS Explorer"), Icon: Globe2 },
   ];
-  const activeSection = siteBase ? [...siteSections, {path:"facts",label:t("Referência do negócio (legado)"),Icon:BookOpen}].find(section => pathname === siteBase + "/" + section.path || pathname.startsWith(siteBase + "/" + section.path + "/") || pathname.startsWith("/dashboard/" + section.path + "/")) : undefined;
+  const activeSection = siteBase ? siteSections.find(section => pathname === siteBase + "/" + section.path || pathname.startsWith(siteBase + "/" + section.path + "/") || pathname.startsWith("/dashboard/" + section.path + "/")) : undefined;
   const isOverview = pathname === siteBase + "/overview";
   const pageTitle = current?.title ?? (routeWorkspace ? workspaces.find(w => w.id === routeWorkspace)?.name : pathname === "/dashboard" ? t("Visão geral") : pathname === "/dashboard/plan" ? t("Plano e consumo") : pathname === "/dashboard/settings/integrations" ? t("Integrações") : t("Revisão"));
   const close = () => dialog.current?.close();
@@ -67,9 +68,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan, us
           {siteSections.map(({path,label,Icon}) => <li key={path}><RememberedLink onClick={close} href={siteBase + "/" + path} className="ui-nav-link" aria-current={activeSection?.path === path ? "page" : undefined}><Icon size={16} className="shrink-0" aria-hidden="true" /><span>{label}</span></RememberedLink></li>)}
         </ul>
         </SidebarDisclosure>
-        <details className="pt-2" open={pathname.startsWith(siteBase + "/facts") || pathname === siteBase + "/static" || undefined}><summary className="px-3 py-2 text-xs font-medium text-muted">{t("Avançado")}</summary>
-          <Link onClick={close} href={siteBase + "/facts"} className="ui-nav-link" aria-current={pathname.startsWith(siteBase + "/facts") ? "page" : undefined}><BookOpen size={17} aria-hidden="true" />{t("Referência do negócio (legado)")}</Link>
-        </details>
+
       </>}
     </nav>
     <div className="mt-auto pt-8">
@@ -97,7 +96,7 @@ export function AppShell({ children, workspaces, email, workspaceError, plan, us
         </div>
         <span className="hidden items-center gap-2 text-xs text-muted sm:flex"><ShieldCheck size={15} className="text-accent" aria-hidden="true" />{t("Alterações sob seu controle")}</span>
       </div>
-      <div id="page-content" tabIndex={-1}>{children}</div>
+      <RouteMotion>{children}</RouteMotion>
     </div>
   </PageContext.Provider>;
 }

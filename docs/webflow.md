@@ -1,3 +1,9 @@
+---
+title: "Conexão Webflow"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Conexão Webflow
 
 ## Ativação em desenvolvimento
@@ -9,7 +15,7 @@
 5. Execute `npm run setup:webflow`. Isso prepara as variáveis locais e gera uma chave de criptografia se ausente. Valores existentes são preservados.
 6. No `.env.local`, preencha `WEBFLOW_CLIENT_ID` e `WEBFLOW_CLIENT_SECRET` com os dados do App. Nunca coloque estes valores em variáveis `NEXT_PUBLIC_*`, no Git ou no chat.
 7. Reinicie `npm run dev`, entre e abra **Configurações do Webflow** no menu de conta para o workspace desejado.
-8. Revise e confirme a conexão de leitura e escrita do CMS, autorize no Webflow, escolha um site, revise e confirme o vínculo.
+8. Clique em **Conectar Webflow** e autorize os sites no provedor. Ao retornar, os sites autorizados são vinculados automaticamente ao workspace escolhido, sem outra tela de confirmação.
 9. Abra **Explorar CMS**. A estrutura vem do cache identificado por data; atualize explicitamente quando necessário. O conteúdo dos itens é carregado por ação explícita.
 
 Documentação oficial: [OAuth Webflow](https://developers.webflow.com/data/reference/oauth-app), [scopes](https://developers.webflow.com/data/reference/scopes) e [CMS](https://developers.webflow.com/data/reference).
@@ -22,7 +28,7 @@ Documentação oficial: [OAuth Webflow](https://developers.webflow.com/data/refe
 - Rich text é mostrado como texto escapado, nunca como HTML executável.
 - A coleção consultada precisa pertencer ao site selecionado. A autorização do site é verificada novamente antes de consultar seu CMS.
 - Nesta etapa, gerenciar conexões e explorar conteúdo é restrito ao proprietário que autorizou a conexão. Compartilhamento de credenciais entre membros fica para uma etapa posterior.
-- Uma nova autorização pode reconectar um site existente, mediante nova prévia e confirmação. Prévias desatualizadas não sobrescrevem conexões mais recentes.
+- Uma nova autorização pode reconectar um site do mesmo workspace. Preparação e confirmação persistidas acontecem na mesma ação; os guardas de concorrência continuam impedindo sobrescrever uma conexão alterada entre as duas RPCs. Um site já presente em outro workspace exige o fluxo de transferência.
 
 ## Persistência e segurança
 
@@ -34,9 +40,12 @@ Tokens são criptografados com AES-256-GCM e contexto que inclui conexão, works
 
 Mantenha `WEBFLOW_TOKEN_ENCRYPTION_KEY` estável e guardada no gerenciador de segredos do deploy. Todos os processos da aplicação precisam usar a mesma chave. Perder ou trocar essa chave impede a leitura de tokens existentes e exige nova autorização. A ferramenta de setup não gira uma chave existente.
 
-Eventos de início da autorização, claim, conclusão, prévia e vínculo ficam registrados, sem tokens, códigos OAuth ou dados de conteúdo. Transações do banco garantem idempotência e atomicidade com auditoria. As mutações de vínculo exigem uma prévia imutável de 15 minutos e confirmação explícita.
+Eventos de início da autorização, claim, conclusão, prévia e vínculo ficam registrados, sem tokens, códigos OAuth ou dados de conteúdo. Transações do banco garantem idempotência e atomicidade com auditoria. As mutações de vínculo preservam a preparação imutável de 15 minutos e a confirmação transacional. A ação Conectar e o consentimento no Webflow autorizam a conclusão, sem exigir outro checkbox. URLs antigas de prévia continuam compatíveis. Falhas parciais não desfazem vínculos bem-sucedidos; a ação Tentar conexão novamente só aparece em caso de falha e reutiliza a autorização mais recente. A tela lista diretamente os sites conectados, sem descoberta manual.
 
 ## Falhas e limites
+
+A conclusão automática preserva códigos seguros de falha (limites do plano, acesso negado, site em outro workspace, leitura Webflow negada, preparação ou persistência). A tela de configurações traduz esses códigos; nunca exibe mensagens brutas do banco, tokens ou respostas do provedor. Um erro genérico de conexão não prova que a autorização OAuth falhou. A ação de recuperação reutiliza a autorização mais recente e os mesmos IDs de operação.
+
 
 - Se o processo cair entre obter o token e persistir a credencial, inicie uma nova autorização. Não há transação distribuída com Webflow nem repetição automática da troca de códigos.
 - Token revogado/permissões insuficientes: a UI orienta reautorizar.

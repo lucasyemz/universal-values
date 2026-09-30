@@ -1,3 +1,9 @@
+---
+title: "Landing page"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Landing page
 
 A exportação do Awesomic é servida como HTML independente no mesmo deploy do Next.js, preservando estilos e animações sem interferir no dashboard.

@@ -1,11 +1,20 @@
+---
+title: "Business reference (legacy) — referência versionada (etapa 1)"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Business reference (legacy) — referência versionada (etapa 1)
+
+> Retired from the dashboard. The following documents preserved internal/storage contracts, not an available product workflow. Facts, preview and version pages redirect to the authorized site overview. No stored records were deleted.
+
 
 Cada site tem uma sequência de referências aprovadas pelo owner do workspace. O cadastro começa vazio: exemplos do handoff não são tratados como fatos aprovados nem enviados ao banco automaticamente.
 
 ## Ativar
 
 1. Configure o esquema completo seguindo [o guia do banco](../supabase/README.md). As migrations 010/011 introduziram versões e arquivamento; não constituem uma instalação completa nem comprovam o estado atual do ambiente.
-2. No dashboard, abra um site e escolha **Global Facts** na sidebar. A tela funciona sem consultar a API Webflow.
+2. Fluxo histórico: a antiga tela Global Facts foi removida da sidebar; seus links agora levam à visão geral do site.
 3. Cadastre os fatos e identifique sua fonte. Clique **Revisar primeira versão**, confira os valores e marque a confirmação. A prévia dura 15 minutos.
 4. Confira a versão aprovada no histórico. Para alterar, prepare e confirme uma nova versão.
 
@@ -53,4 +62,4 @@ A migration 011 adiciona `archived_at` e o evento de auditoria `archived`. A RPC
 
 Teste manual: abra a prévia desatualizada criada no teste de conflito, arquive e confira que saiu de Pendentes. Abra Arquivadas, verifique seus valores e que não existe opção de confirmar a referência. A suíte de banco cobre idempotência, isolamento, bloqueio de aprovação e rollback quando a auditoria falha.
 
-The UI calls this legacy tool **Business reference (legacy)** / **Referência do negócio (legado)**. Existing facts routes, APIs and storage keep their compatibility identifiers.
+The dashboard no longer exposes this tool. Existing facts routes redirect to the site overview; API/storage identifiers remain for compatibility.

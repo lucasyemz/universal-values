@@ -1,3 +1,9 @@
+---
+title: "Dashboard QA — 21 September 2026"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Dashboard QA — 21 September 2026
 
 ## Scope and evidence

@@ -32,7 +32,12 @@ export async function requestRecovery(_previous: AccessState, form: FormData): P
   try {
     const client = createRecoveryClient();
     // Same response for existing/unknown addresses, provider rate limits and delivery errors.
-    await client.auth.resetPasswordForEmail(email.data, { redirectTo: `${authOrigin()}/auth/reset-password` });
+    const result = await client.auth.resetPasswordForEmail(email.data, { redirectTo: `${authOrigin()}/auth/reset-password` });
+    if (result.error) {
+      // Operator diagnostics only: never log provider messages, addresses or tokens.
+      const category = result.error.status === 429 ? "rate_limited" : "auth_delivery_failed";
+      console.warn("[auth:recovery]", { category, status: result.error.status });
+    }
     return { message: "sent" };
   } catch { return { message: "unavailable" }; }
 }

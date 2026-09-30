@@ -6,6 +6,10 @@ import { encryptToken, hashOAuthState, verifyOAuthState } from "@/connectors/web
 import { exchangeCode } from "@/connectors/webflow/client";
 import { credentialContext } from "@/modules/sites/service";
 import { connectionSchema } from "@/modules/sites/schema";
+import { connectionFailure, connectionFeedback } from "@/modules/sites/connection-errors";
+import { connectAuthorizedConnection } from "@/modules/sites/connect-service";
+import { workspaceLink } from "@/modules/routes/links";
+import { revalidatePath } from "next/cache";
 import { finishOAuth } from "@/modules/sites/oauth-flow";
 
 export const runtime = "nodejs";
@@ -57,5 +61,12 @@ export async function GET(request: NextRequest) {
     // No raw provider exceptions, OAuth query or credentials are logged.
     return done(back + "?error=authorization");
   }
-  return done(back + "?sites=1");
+  try {
+    const sites = await connectAuthorizedConnection(id);
+    revalidatePath("/dashboard", "layout");
+    if (sites.failed || !sites.connected) return done(back + connectionFeedback(sites.reasons?.[0] ?? "no_sites"));
+    return done(await workspaceLink(connection.workspace_id));
+  } catch (error) {
+    return done(back + connectionFeedback(connectionFailure(error)));
+  }
 }

@@ -1,8 +1,14 @@
+---
+title: "CMS scans and saved search"
+status: atual
+tags: [replaceall, guia]
+---
+
 # CMS scans and saved search
 
 ## Start and scope
 
-Open a site's New Scan, choose collections/types or a specific term, review the saved plan and explicitly start. Opening or reviewing uses persisted structure and consumes no scan quota/provider requests. Show structure freshness; **Refresh from Webflow** is explicit when absent/expired. Run Again loads the previous DB configuration, shows a summary and offers Run again / Customize; current execution checks still apply.
+Open a site's New Scan, choose collections/types or a specific term and explicitly start from the configuration form. The atomic start contract is detailed below. Opening or reviewing uses persisted structure and consumes no scan quota/provider requests. Show structure freshness; **Refresh from Webflow** is explicit when absent/expired. Run Again loads the previous DB configuration, shows a summary and offers Run again / Customize; current execution checks still apply.
 
 CMS scans read supported fields in selected collections, including draft items. They do not crawl public HTML or prove whole-site coverage. Archived items and the system slug field are excluded. Supported detection includes text, numeric values, prices, phones, dates, links and images/galleries; example/placeholder text can be found without repetition. Generic repeated-value groups require repeated occurrences; specific-term and placeholder findings may be singletons.
 
@@ -16,7 +22,7 @@ Numeric fields support exact numeric-term matching (2000 does not match 12000), 
 
 ## Results and review
 
-Pending / Reviewed / All filter the already-formed groups. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Variables or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
+Pending / Reviewed filter the already-formed groups; Variables created lists only variables created in this scan. Applying one occurrence leaves its untouched peers pending, even the last member of a repeated group. Verified results are read-only with actual recorded before/after. Failures/conflicts/uncertainty are not applied outcomes. Manual flags do not create Variables or apply drafts; compatible source/value/snapshot flags can carry forward, but specific-term searches must not inherit unrelated historical review.
 
 The local results filter searches saved labels/context; it never invents editable ranges from context. Quick Search on Overview uses only compatible completed/limited saved scans, explicitly showing date and collection scope. No match means only no match in that saved scan. Offer a targeted scan if exact editable evidence or coverage is missing; never start it automatically.
 

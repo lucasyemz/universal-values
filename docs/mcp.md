@@ -1,3 +1,9 @@
+---
+title: "ReplaceAll MCP — read-only preview release"
+status: atual
+tags: [replaceall, guia]
+---
+
 # ReplaceAll MCP — read-only preview release
 
 Implemented scope: Phase E1 + E2. Remote Streamable HTTP at **`/api/mcp`**, hosted by the existing Next.js application, using the official TypeScript MCP SDK. No separate domain or hosting service is required. No LLM is required by this feature.

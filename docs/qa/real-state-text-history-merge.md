@@ -1,3 +1,9 @@
+---
+title: "Real State Website text history consolidation"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Real State Website text history consolidation
 
 Applied on 2026-09-28 to Supabase project `nxibjpprjorchjeoudss`, workspace `kazama-test`, site `real-state-website`, after explicit user approval to include identical text searches in this one-off merge.

@@ -1,0 +1,159 @@
+{
+  "nodes": [
+    {
+      "id": "map",
+      "type": "file",
+      "file": "docs/project-map.md",
+      "x": 0,
+      "y": 0,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "product",
+      "type": "file",
+      "file": "docs/project-product.md",
+      "x": -700,
+      "y": -450,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "glossary",
+      "type": "file",
+      "file": "docs/project-glossary.md",
+      "x": -700,
+      "y": 0,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "flows",
+      "type": "file",
+      "file": "docs/scans.md",
+      "x": -700,
+      "y": 450,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "arch",
+      "type": "file",
+      "file": "docs/architecture.md",
+      "x": 700,
+      "y": -450,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "ops",
+      "type": "file",
+      "file": "docs/background-sync.md",
+      "x": 700,
+      "y": 0,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "delivery",
+      "type": "file",
+      "file": "docs/project-roadmap.md",
+      "x": 700,
+      "y": 450,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "designer",
+      "type": "file",
+      "file": "docs/designer-dashboard.md",
+      "x": -1400,
+      "y": 450,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "variables",
+      "type": "file",
+      "file": "docs/managed-value-sync.md",
+      "x": -1400,
+      "y": 0,
+      "width": 520,
+      "height": 300
+    },
+    {
+      "id": "release",
+      "type": "file",
+      "file": "docs/production-checklist.md",
+      "x": 1400,
+      "y": 450,
+      "width": 520,
+      "height": 300
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "fromNode": "map",
+      "fromSide": "left",
+      "toNode": "product",
+      "toSide": "right"
+    },
+    {
+      "id": "e1",
+      "fromNode": "map",
+      "fromSide": "left",
+      "toNode": "glossary",
+      "toSide": "right"
+    },
+    {
+      "id": "e2",
+      "fromNode": "map",
+      "fromSide": "left",
+      "toNode": "flows",
+      "toSide": "right"
+    },
+    {
+      "id": "e3",
+      "fromNode": "map",
+      "fromSide": "right",
+      "toNode": "arch",
+      "toSide": "left"
+    },
+    {
+      "id": "e4",
+      "fromNode": "map",
+      "fromSide": "right",
+      "toNode": "ops",
+      "toSide": "left"
+    },
+    {
+      "id": "e5",
+      "fromNode": "map",
+      "fromSide": "right",
+      "toNode": "delivery",
+      "toSide": "left"
+    },
+    {
+      "id": "e6",
+      "fromNode": "flows",
+      "fromSide": "left",
+      "toNode": "designer",
+      "toSide": "right"
+    },
+    {
+      "id": "e7",
+      "fromNode": "glossary",
+      "fromSide": "left",
+      "toNode": "variables",
+      "toSide": "right"
+    },
+    {
+      "id": "e8",
+      "fromNode": "delivery",
+      "fromSide": "right",
+      "toNode": "release",
+      "toSide": "left"
+    }
+  ]
+}

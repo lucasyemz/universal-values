@@ -1,3 +1,9 @@
+---
+title: "Edição central e sincronização de Variables"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Edição central e sincronização de Variables
 
 > Phase C: o cache de metadados usado na navegação e na detecção do scan não é usado para autorizar ou validar escritas. Releitura anterior, detecção de conflitos, confirmação, idempotência e verificação posterior permanecem independentes e inalteradas. [Contrato atual](architecture.md).
@@ -68,7 +74,7 @@ O botão de resolver também exige que o vínculo atual corresponda exatamente a
 
 ### Trecho alterado ou ambíguo: selecionar evidência em um novo scan
 
-Aplique `supabase/migrations/20260918001400_managed_value_resolution.sql` após a 013. Execute um novo scan, cobrindo os campos e tipos relevantes, depois abra seus resultados. A seção **Verificar Variables** compara o conteúdo dos campos detectados com o registro dos vínculos. Uma divergência aparece mesmo em ocorrências únicas ou revisadas, independentemente dos filtros dos grupos. Ocorrências repetidas vinculadas também ganham o aviso **Alterado no Webflow**.
+A resolução usa os contratos introduzidos na migration `20260918001400_managed_value_resolution.sql`; para preparar o banco, siga o histórico completo em [Supabase](../supabase/README.md), sem aplicar isoladamente instruções antigas. Execute um novo scan cobrindo os campos e tipos relevantes para obter evidências recentes. Gerencie divergências pela área de Variáveis. A aba Variáveis criadas do scan permanece restrita à origem de criação naquele scan; variáveis apenas encontradas não entram nessa aba nem em avisos gerais sobre os grupos pendentes.
 
 1. Confira o campo registrado e o encontrado no scan. O horário do scan fica visível; não é uma consulta em tempo real.
 2. Selecione exatamente os trechos atuais que representam o dado gerenciado. Os trechos selecionados devem conter um mesmo valor do tipo e moeda originais. Esta seleção redefine as posições gerenciadas daquela fonte após um resultado verificado.

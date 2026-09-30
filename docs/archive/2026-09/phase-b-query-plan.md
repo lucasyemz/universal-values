@@ -1,3 +1,9 @@
+---
+title: "Phase B — query efficiency plan"
+status: historico
+tags: [replaceall, historico]
+---
+
 > Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
 
 # Phase B — query efficiency plan

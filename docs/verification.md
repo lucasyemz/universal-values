@@ -1,3 +1,9 @@
+---
+title: "Verification and maintenance"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Verification and maintenance
 
 ## Required checks

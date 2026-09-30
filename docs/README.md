@@ -1,6 +1,12 @@
+---
+title: "Documentation"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Documentation
 
-Current guides were consolidated on 2026-09-23. Start with rules, then the feature you are changing. Historical plans explain decisions and measurements; they do not override current behavior.
+Documentation navigation was reorganized on 2026-09-29. Start with rules, then the feature you are changing. Historical plans explain decisions and measurements; they do not override current behavior.
 
 | Purpose | Source of truth |
 | --- | --- |
@@ -17,7 +23,7 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 | Database lifecycle | [Supabase](../supabase/README.md) |
 | Plans and personal AI | [Limits](free-plan.md) · [Gemini](ai-suggestions.md) |
 | Read-only agent integration | [MCP](mcp.md) |
-| Reference data | [Business reference (legacy)](global-facts.md) |
+| Retired compatibility | [Facts: stored records and internal contracts](global-facts.md) |
 | Visual implementation | [Dashboard/Designer pattern](dashboard-designer-ui-pattern.md) · [Brand](brand-guide.md) |
 | Language and public site | [Internationalization](internationalization.md) · [Landing page](landing-page.md) |
 | Test expectations | [Verification](verification.md) |
@@ -26,18 +32,18 @@ Current guides were consolidated on 2026-09-23. Start with rules, then the featu
 | Unimplemented design | [Group pagination](design/group-pagination.md) |
 | Dated plans and original evidence | [Archive](archive/2026-09/README.md) |
 
-## Consolidation map
+## Navegar no Obsidian
 
-- `inline-review.md`, `cms-change-queue.md`, `sequential-scan-edits.md` → `cms-changes.md`.
-- `text-search.md` → `scans.md`; `site-urls.md` → `dashboard-urls.md`.
-- `static-text-designer-poc.md` → `designer-dashboard.md`.
-- Old handoff/scans/CMS/Designer versions and the merged guides are retained together in [historical feature notes](archive/2026-09/feature-notes.md).
-- Original optimization proposal, audit, Phase A–E reports and old UI inventories moved to the archive. Existing QA artifacts remain available. Group pagination moved to design because it is not shipped.
+Comece pelo [Mapa do projeto](project-map.md), abra [ReplaceAll.canvas](ReplaceAll.canvas) e siga o [guia do Obsidian](obsidian-guide.md). Produto, vocabulário e próximos passos estão em notas curtas; os guias técnicos acima continuam sendo a fonte de verdade.
 
-Keep one canonical rule per subject and link to it. Guides describe current contracts; reports describe evidence at a date. Do not infer current deployment, pricing or completion from an old report. If implementation and rules disagree, identify the difference and fix/document it rather than silently treating the archive as authority.
+- [Produto e superfícies](project-product.md)
+- [Vocabulário](project-glossary.md)
+- [Estado e próximos passos](project-roadmap.md)
+- [CMS Explorer](cms-explorer-ux-plan.md)
+- [Autenticação](authentication.md)
+- [Login Webflow](webflow-login.md)
+- [Configuração dos logins em PT-BR](login-setup-pt-BR.md)
+- [Templates de e-mail](email-templates/README.md)
+- [Consolidação e remoção de documentos legados](archive/2026-09/documentation-consolidation.md)
 
-- [CMS Explorer UX, request budgets and session cache](cms-explorer-ux-plan.md)
-
-- [Authentication and recovery](authentication.md): social providers, email signup and one-time recovery setup.
-- [Webflow sign-in](webflow-login.md): custom OAuth provider, existing app reuse and public adapter setup.
-- [Guia de configuração dos logins (PT-BR)](login-setup-pt-BR.md): checklist para e-mail, Google, Microsoft, Webflow e Apple, com roteiro de retomada.
+Uma fonte de verdade por assunto. Propostas ficam em `design`, verificações datadas em `qa` e decisões superadas em `archive`. Não inferir implantação, preços ou aprovação atual a partir de relatórios antigos.

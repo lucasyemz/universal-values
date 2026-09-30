@@ -1,3 +1,9 @@
+---
+title: "Dashboard / Designer interaction pattern"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Dashboard / Designer interaction pattern
 
 ## Implemented: scan review

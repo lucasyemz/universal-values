@@ -1,3 +1,9 @@
+---
+title: "Authentication and recovery"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Authentication and recovery
 
 ReplaceAll supports email/password signup and login plus Google, Apple and Microsoft (Supabase `azure`). Social login also creates an account when allowed by Supabase. This does not add manual account/workspace merging. Existing account ownership and RLS remain authoritative.
@@ -35,3 +41,5 @@ Set the template's origin to localhost only for development. Keep Supabase's OTP
 Automated coverage validates proof purpose, no update on invalid/expired proof, password confirmation before consumption, cleanup, provider whitelist and trusted origins. Live Google/Apple/Microsoft credentials, signup delivery, recovery delivery/reuse/expiry and SMTP rate limits require configured provider testing; local unit tests are not proof of live configuration.
 
 References: [Supabase email templates](https://supabase.com/docs/guides/auth/auth-email-templates), [Azure](https://supabase.com/docs/guides/auth/social-login/auth-azure), [Apple](https://supabase.com/docs/guides/auth/social-login/auth-apple), [SSR](https://supabase.com/docs/guides/auth/server-side/creating-a-client).
+
+Access pages (login, signup, forgot/reset password) do not expose a language selector. They retain the existing locale resolution; language selection remains available inside the dashboard. Recovery delivery errors retain the same public response to avoid account enumeration. Server diagnostics record only a fixed category and HTTP status, never email, token, SMTP credentials or upstream error text. These diagnostics indicate Auth rejection, not proof of delivery; inspect Auth/Brevo logs for SMTP cause and delivery status.

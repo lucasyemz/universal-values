@@ -1,3 +1,9 @@
+---
+title: "Architecture and request budgets"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Architecture and request budgets
 
 ## Boundaries
@@ -63,3 +69,13 @@ The sidebar includes a collapsible site list for the selected workspace, linking
 Dashboard page headings use the shared `PageHeader` (directly or through `SitePage`): a light card groups the title, context, description, status and actions. Back navigation belongs in its optional separated top strip. Nested operation sections use the compact `embedded` variant with an `h2`, avoiding a second page heading and nested header cards. Spacing and responsive alignment belong in this component rather than individual routes.
 
 Scan editing memoizes source projections, selection signatures and display previews by their current input references. CMS Explorer reuses one filtered page and a field-name index; Variables indexes live sources and retains comparisons during unrelated state changes. These are component-local presentation derivations, never authorization caches. Text comparisons coalesce adjacent equal-status segments and share TextParts; exact strings and change boundaries remain preserved. Request contracts are unchanged. Measurements and scope: [render performance review](qa/dashboard-render-performance.md).
+
+## Setup without repeated confirmation
+
+Workspace creation keeps the same two mutation RPCs (prepare then confirm), now within one explicit server action. Sign-out still uses one local-session auth sign-out. Site linking reuses the existing RLS/owner, quota, expected-connection and audit RPCs. The OAuth callback completes encrypted credential persistence first, then performs one authorized-sites read (W=1, I=1 for all sites), links sites sequentially with stable per-connection/site operation IDs and stores display metadata. This replaces discovery plus individual prepare/confirm reads (previously roughly W/I=1+2N for N sites on one connection). Site linking uses 2 mutation RPCs per site as before, plus existing metadata persistence and scoped connection/ownership reads; one additional narrow account sites query prevents copying an existing site from another workspace. E/G unchanged. GET navigation/prefetch remains provider-free; the OAuth callback is the explicit authorization completion. Existing write-safety paths are unchanged. No migration is required.
+
+## Product motion
+
+Dashboard and Designer share `src/styles/product-motion.css`: short entrance, disclosure/popover, pressed/hover and loading transitions. The extension build embeds these rules into its existing stylesheet before content hashing, with no new remote asset or animation dependency. Dashboard route motion uses Web Animations on pathname changes only, without keying/remounting content or animating query/filter updates. It cancels on cleanup and when reduced motion is enabled. Content is visible without JavaScript, native focus/keyboard semantics remain unchanged, and no exit animation delays an action. CSS reduced-motion rules cover both surfaces. No Q/W/I/E/G delta.
+
+Workspace creation eligibility reuses request-scoped `getPlanUsage` (one narrow account RPC, shared with plan usage UI). When the Free account already has its allowed site, creation links/forms and server actions reject new workspaces; admin remains exempt. A completed creation replay checks the actor-scoped preview and returns the existing workspace. No Webflow/credential/Edge/AI calls are added. This application preflight improves setup UX; it is not a replacement for the transactional database site quota.

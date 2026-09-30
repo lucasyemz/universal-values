@@ -1,3 +1,9 @@
+---
+title: "Gemini pessoal e Integrações"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Gemini pessoal e Integrações
 
 A tela `/dashboard/settings/integrations` centraliza Gemini e links de gerenciamento Webflow por workspace. `/dashboard/settings/ai` redireciona para ela. O botão **Sugerir com IA** também permite conectar o Gemini sem sair do editor.

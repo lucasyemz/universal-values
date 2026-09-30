@@ -1,3 +1,9 @@
+---
+title: "CMS Explorer UX implementation plan"
+status: atual
+tags: [replaceall, guia]
+---
+
 # CMS Explorer UX implementation plan
 
 ## Inspection / baseline

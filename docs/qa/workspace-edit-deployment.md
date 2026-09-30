@@ -1,3 +1,9 @@
+---
+title: "Workspace edit deployment — 2026-09-24"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Workspace edit deployment — 2026-09-24
 
 Applied `20260924000400_workspace_edit` after explicit user approval to linked Supabase project `nxibjpprjorchjeoudss`.

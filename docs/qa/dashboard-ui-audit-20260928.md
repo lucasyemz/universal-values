@@ -1,3 +1,9 @@
+---
+title: "Dashboard — technical UI audit"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Dashboard — technical UI audit
 
 Date: 2026-09-28. Workflow: UIAudit / Impeccable audit. Read-only inspection of the current working tree, including uncommitted changes. No interface fixes applied.

@@ -1,3 +1,9 @@
+---
+title: "Designer extension"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Designer extension
 
 ## Connection and local setup

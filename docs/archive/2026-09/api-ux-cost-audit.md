@@ -1,9 +1,15 @@
+---
+title: "Dashboard UX and API cost audit"
+status: historico
+tags: [replaceall, historico]
+---
+
 > Historical report, archived 2026-09-23. Counts, pending deployment notes and constraints describe that implementation stage, not the current environment. See [current guides](../../README.md).
 
 # Dashboard UX and API cost audit
 
 Date: 2026-09-22. Baseline: commit `8076d81`.
-Scope: **Phase 1 — audit only** of [the supplied optimization guide](COPYREPLACE_DASHBOARD_UX_API_COST_OPTIMIZATION.md).
+Scope: **Phase 1 — audit only** of [the supplied optimization guide](documentation-consolidation.md).
 No production behavior, quota, migration, worker schedule or external content is changed in this phase.
 
 ## Evidence and counting method

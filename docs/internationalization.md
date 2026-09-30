@@ -1,3 +1,9 @@
+---
+title: "Product language"
+status: atual
+tags: [replaceall, guia]
+---
+
 # Product language
 
 English is the default language of the dashboard, login and Webflow Designer extension. Brazilian Portuguese remains available.

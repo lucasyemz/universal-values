@@ -13,3 +13,7 @@ extensions/webflow-designer/bundle.zip
 
 supabase/functions/cms-worker/*.js
 supabase/.temp/
+supabase/functions/webflow-userinfo/*.js
+
+# Local Obsidian workspace preferences
+.obsidian/

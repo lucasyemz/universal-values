@@ -11,7 +11,8 @@ import { getText } from "@/i18n/server";
 import { PlanUsage } from "@/components/layout/plan-usage";
 import { quotaMessage } from "@/modules/plans/errors";
 import Link from "next/link";
-import { ArrowRight, Globe2, Plus, BookOpen, Lightbulb, File, ScanLine, Layers } from "lucide-react";
+import { ArrowRight, Globe2, BookOpen, Lightbulb, File, ScanLine, Layers } from "lucide-react";
+import { CreateWorkspaceLink } from "@/components/workspaces/create-workspace-link";
 import { WorkspaceEdit } from "@/components/workspaces/workspace-edit";
 import { workspaceOverviewCounts } from "@/modules/workspaces/overview";
 import { getWorkspaceNavigation } from "@/components/layout/workspace-data";
@@ -27,12 +28,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   if (destination) redirect(await workspaceLink(destination));
   const counts = await workspaceOverviewCounts();
   return <main className="ui-page">
-    <PageHeader eyebrow={t("Seu centro de controle")} title={t("Visão geral")} description={t("Informações consistentes. Mudanças sob seu controle. Escolha um workspace para acessar seus sites.")} actions={<Link className="ui-btn ui-btn-primary" href="/dashboard/settings/webflow?new=1"><Plus size={16} />{t("Criar workspace")}</Link>} />
+    <PageHeader eyebrow={t("Seu centro de controle")} title={t("Visão geral")} description={t("Informações consistentes. Mudanças sob seu controle. Escolha um workspace para acessar seus sites.")} actions={<CreateWorkspaceLink />} />
     {params.error && <Notice tone="danger" title={t("Não foi possível concluir")}>{quotaMessage(params.error) ?? t("Confira os dados e gere uma nova prévia se necessário.")}</Notice>}
     {params.created && <Notice tone="success" title={t("Workspace criado")}>{t("Agora você pode conectar seu site Webflow.")}</Notice>}
     <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.9fr)_minmax(300px,1fr)]">
       <section aria-label={t("Workspaces disponíveis")} className="min-w-0"><PlanUsage compact /><SectionHeader title={`${t("Seus workspaces")} · ${workspaces.length}`} />
-        {!workspaces.length ? <EmptyState title={t("Seu primeiro workspace")} description={t("Organize seus sites, scans e Variáveis em um só espaço. Comece criando um workspace.")} action={<Link href="/dashboard/settings/webflow?new=1" className="ui-btn ui-btn-primary">{t("Criar workspace")}</Link>} /> :
+        {!workspaces.length ? <EmptyState title={t("Seu primeiro workspace")} description={t("Organize seus sites, scans e Variáveis em um só espaço. Comece criando um workspace.")} action={<CreateWorkspaceLink />} /> :
           <ul className="space-y-4">{workspaces.map((workspace) => {
             const count=counts.find(row=>row.id===workspace.id);
             return <li key={workspace.id} className="ui-card p-5 sm:p-6"><div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-4 sm:grid-cols-[56px_minmax(0,1fr)_auto] sm:gap-5"><span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-accent"><Globe2 size={27}/></span><div className="min-w-0 flex-1"><h2 className="break-words text-base font-semibold">{workspace.name}</h2><p className="mt-1 text-sm text-muted">{t("Sites, scans e variáveis")}</p></div><div className="col-span-2 flex items-center justify-end gap-2 sm:col-span-1"><Link href={workspace.href} className="ui-btn text-accent">{t("Abrir workspace")}<ArrowRight size={16}/></Link><WorkspaceEdit workspace={workspace}/></div></div>

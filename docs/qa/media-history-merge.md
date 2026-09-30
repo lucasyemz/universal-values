@@ -1,3 +1,9 @@
+---
+title: "Media scan history consolidation"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Media scan history consolidation
 
 Date: 2026-09-28. User explicitly requested merging existing equivalent media scans chronologically. Applied through the Supabase SQL Editor using the computer-use skill.

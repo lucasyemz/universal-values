@@ -65,7 +65,7 @@ export function AccountMenu({ email, plan, onNavigate }: {
         <Link onClick={navigate} href="/dashboard/settings/integrations" className="ui-nav-link" aria-current={pathname === "/dashboard/settings/integrations" || pathname.endsWith("/settings/webflow") ? "page" : undefined}><Sparkles size={18} className="shrink-0" aria-hidden="true" />{t("Integrações")}</Link>
         <LanguageSwitcher />
       </nav>
-      <details className="border-t pt-2"><summary className="ui-nav-link cursor-pointer list-none [&::-webkit-details-marker]:hidden"><LogOut size={18} className="shrink-0" aria-hidden="true" />{t("Sair")}</summary><form action={logout} className="space-y-3 px-3 pb-3 pt-2"><p className="text-xs text-muted">{t("Sair desta sessão neste navegador?")}</p><SubmitButton variant="secondary" pendingLabel={t("Saindo…")}>{t("Confirmar saída")}</SubmitButton></form></details>
+      <form action={logout} className="border-t pt-2"><SubmitButton variant="secondary" className="w-full justify-start" pendingLabel={t("Saindo…")}><LogOut size={18} aria-hidden="true" />{t("Sair")}</SubmitButton></form>
     </div>
   </div>;
 }

@@ -1,3 +1,9 @@
+---
+title: "Dashboard component and rendering review"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Dashboard component and rendering review
 
 2026-09-28. Scope: local component structure and CPU/rendering work. Request scheduling, provider APIs, database queries, commercial limits and write flows are unchanged.

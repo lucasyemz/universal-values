@@ -14,6 +14,10 @@ if (dashboardUrl.username || dashboardUrl.password || dashboardUrl.pathname !== 
 await mkdir(out, { recursive: true });
 await build({ entryPoints: [path.join(root, "src/connectors/webflow/designer/extension.tsx")], bundle: true, outfile: path.join(out, "index.js"), platform: "browser", target: "es2022", jsx: "automatic", minify: true, define: { "process.env.NODE_ENV": '"production"', DESIGNER_DASHBOARD_URL: JSON.stringify(dashboardUrl.origin) } });
 await Promise.all(["index.html", "styles.css"].map(file => copyFile(path.join(extension, file), path.join(out, file))));
+// Bundle the same motion tokens/rules as the dashboard, without another network request.
+await writeFile(path.join(out, "styles.css"),
+  await readFile(path.join(extension, "styles.css"), "utf8") + "\n" +
+  await readFile(path.join(root, "src/styles/product-motion.css"), "utf8"));
 // Change asset URLs with their contents so reopening the extension loads the current build.
 let html = await readFile(path.join(out, "index.html"), "utf8");
 for (const file of ["index.js", "styles.css"]) {

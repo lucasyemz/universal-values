@@ -9,6 +9,9 @@ import { hashOAuthState, newOAuthState, verifyOAuthState } from "@/connectors/we
 import { requireUser } from "@/modules/auth/service";
 import { getConnectionReader, loadSitePreview, requireWorkspaceOwner } from "./service";
 import { confirmSiteSchema, sitePreviewInputSchema, startConnectionSchema } from "./schema";
+import { connectionFailure, connectionFeedback } from "./connection-errors";
+import { connectAuthorizedConnection } from "./connect-service";
+import { workspaceLink } from "@/modules/routes/links";
 import { rememberConnectedSite } from "./metadata-service";
 import type { WebflowSite } from "@/connectors/webflow/schemas";
 
@@ -87,4 +90,43 @@ export async function revokeWebflowAccess(form: FormData) {
   if (result.error) redirect(back + "?error=revoke");
   revalidatePath("/dashboard", "layout");
   redirect(back + "?revoked=1");
+}
+
+export async function connectSite(form: FormData) {
+  const input = sitePreviewInputSchema.safeParse({ id: form.get("id"), connectionId: form.get("connectionId"), siteId: form.get("siteId") });
+  if (!input.success) redirect("/dashboard?error=invalid");
+  const { getConnection } = await import("./service");
+  const connection = await getConnection(input.data.connectionId);
+  const destination = await workspaceLink(connection.workspace_id);
+  let failed = false;
+  let reason = "unavailable";
+  try {
+    const result = await connectAuthorizedConnection(input.data.connectionId, input.data.siteId, input.data.id);
+    failed = result.failed > 0;
+    reason = result.reasons?.[0] ?? "unavailable";
+  } catch (error) { failed = true; reason = connectionFailure(error); }
+  revalidatePath("/dashboard", "layout");
+  redirect(failed ? destination.replace(/sites$/, "settings/webflow") + connectionFeedback(reason) : destination);
+}
+
+// Recovery only after failed OAuth completion, never a second normal setup step.
+export async function retryWorkspaceConnection(form: FormData) {
+  const { z } = await import("zod");
+  const workspaceId = z.uuid().parse(form.get("workspaceId"));
+  const { loadWorkspaceSites } = await import("./service");
+  const view = await loadWorkspaceSites(workspaceId);
+  // Most recent authorization only; older tokens must not replace it.
+  const connection = view.connections[0];
+  const destination = await workspaceLink(workspaceId);
+  let success = false;
+  let reason = "no_sites";
+  if (connection) {
+    try {
+      const result = await connectAuthorizedConnection(connection.id);
+      success = result.connected > 0 && result.failed === 0;
+      reason = result.reasons?.[0] ?? "no_sites";
+    } catch (error) { reason = connectionFailure(error); }
+  }
+  revalidatePath("/dashboard", "layout");
+  redirect(success ? destination : destination.replace(/sites$/, "settings/webflow") + connectionFeedback(reason));
 }

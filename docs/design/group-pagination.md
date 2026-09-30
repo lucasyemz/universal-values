@@ -1,3 +1,9 @@
+---
+title: "Group-aware result pagination contract (Phase B design)"
+status: proposta
+tags: [replaceall, planejamento]
+---
+
 > Design only — not implemented. Do not describe group pagination as available or select hidden occurrences.
 
 # Group-aware result pagination contract (Phase B design)

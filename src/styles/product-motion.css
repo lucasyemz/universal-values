@@ -1,0 +1,59 @@
+/* Shared by dashboard and Designer; motion never hides content by default. */
+:root {
+  --motion-fast: 140ms;
+  --motion-normal: 240ms;
+  --motion-enter: 360ms;
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes product-enter {
+  from { opacity: .35; translate: 0 8px; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes product-pop {
+  from { opacity: 0; scale: .98; }
+  to { opacity: 1; scale: 1; }
+}
+@keyframes product-pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: no-preference) {
+  :is(.ui-btn, .ui-tab, .ui-nav-link, .ui-selection, .scan-result,
+      .extension-shell button, .extension-shell .lab-link, .result-card) {
+    transition: background-color var(--motion-fast), border-color var(--motion-fast),
+      box-shadow var(--motion-normal), color var(--motion-fast),
+      translate var(--motion-fast) var(--motion-ease), scale var(--motion-fast) var(--motion-ease);
+  }
+  :is(.ui-btn, .extension-shell button, .extension-shell .lab-link):active:not(:disabled):not([aria-disabled=true]) {
+    scale: .98;
+  }
+  /* Only page-level blocks enter, not every occurrence in potentially long lists. */
+  :is(.ui-page, .extension-shell) > :is(header, section, form, .workspace-grid):nth-child(-n+8) {
+    animation: product-enter var(--motion-enter) var(--motion-ease) backwards;
+  }
+  :is(.ui-page, .extension-shell) > :is(section, form):nth-child(2) { animation-delay: 35ms; }
+  :is(.ui-page, .extension-shell) > :is(section, form):nth-child(3) { animation-delay: 70ms; }
+  :is(.ui-page, .extension-shell) > :is(section, form):nth-child(4) { animation-delay: 105ms; }
+  :is(.inspector-panel, .review-panel) { animation: product-enter var(--motion-normal) var(--motion-ease); }
+  :is([popover]:popover-open, dialog[open]) { animation: product-pop var(--motion-normal) var(--motion-ease); }
+  dialog[open]::backdrop { animation: product-pop var(--motion-normal) var(--motion-ease); }
+  details[open] > :not(summary) { animation: product-enter var(--motion-normal) var(--motion-ease); }
+  :is(.ui-page, .extension-shell) :is([role=alert], [role=status]):not(:empty) {
+    animation: product-enter var(--motion-normal) var(--motion-ease);
+  }
+  .ui-skeleton { animation: product-pulse 1600ms ease-in-out infinite; }
+  progress::-webkit-progress-value { transition: width var(--motion-normal) var(--motion-ease); }
+  progress::-moz-progress-bar { transition: width var(--motion-normal) var(--motion-ease); }
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :is(.ui-btn, .extension-shell button.primary, .lab-link):hover:not(:disabled):not([aria-disabled=true]) {
+    translate: 0 -1px;
+  }
+  :is(.ui-card, .result-card):has(a:hover, button:hover) {
+    border-color: var(--border-strong, #8490A3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -4,6 +4,8 @@ export async function generateMetadata() {
   return dashboardMetadata("workspacePreview");
 }
 
+import { getPlanUsage } from "@/modules/plans/service";
+import { canCreateWorkspace, workspaceSiteLimitMessage } from "@/modules/workspaces/creation-policy";
 import { getText } from "@/i18n/server";
 import { FreshLink } from "@/components/ui/fresh-link";
 import { notFound } from "next/navigation";
@@ -17,13 +19,14 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
 
   const preview = await getWorkspacePreview((await params).id);
   if (!preview) notFound();
+  const allowed = canCreateWorkspace(await getPlanUsage());
   return <main className="ui-page !max-w-2xl">
     <PageHeader navigation={<FreshLink href="/dashboard" >{t("← Workspaces")}</FreshLink>} title={t("Revisar workspace")} description={t("Confira o nome. Você poderá conectar seus sites depois da criação.")} />
     <Steps steps={[t("Nomear workspace"), t("Revisar e criar")]} current={1} />
     <section className="mt-6 ui-card p-6">
       <h2 className="text-xl font-semibold">{preview.name}</h2>
       <p className="mt-4 leading-7 text-muted">{t("Será criado um workspace com este nome, com você como proprietário. A criação ficará registrada no histórico.")}</p>
-      {preview.workspace_id ? <p role="status" className="mt-6 text-accent">{t("Esta criação já foi concluída.")}</p> : preview.expired ? <p role="alert" className="mt-6 text-amber-800">{t("Esta prévia expirou. Volte e revise uma nova criação.")}</p> :
+      {preview.workspace_id ? <p role="status" className="mt-6 text-accent">{t("Esta criação já foi concluída.")}</p> : !allowed ? <p role="status" className="mt-4 text-sm text-muted">{t(workspaceSiteLimitMessage)}</p> : preview.expired ? <p role="alert" className="mt-6 text-amber-800">{t("Esta prévia expirou. Volte e revise uma nova criação.")}</p> :
         <form action={confirmWorkspace} className="mt-6 space-y-5">
           <input type="hidden" name="id" value={preview.id} />
           <label className="flex items-start gap-3 text-sm"><input type="checkbox" name="confirmed" value="yes" required className="mt-1" />{t("Confirmo a criação do workspace com o nome acima.")}</label>

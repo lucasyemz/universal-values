@@ -1,3 +1,9 @@
+---
+title: "Scan variable creation deployment — 2026-09-24"
+status: evidencia
+tags: [replaceall, qa]
+---
+
 # Scan variable creation deployment — 2026-09-24
 
 Applied with explicit user approval to linked Supabase project `nxibjpprjorchjeoudss`:
